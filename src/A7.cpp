@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_1_10.h"
@@ -7,14 +7,14 @@ using namespace cv;
 
 void A7(void)
 {
-	printf_s("½«Í¼Æ¬°´ÕÕ¹Ì¶¨´óĞ¡Íø¸ñ·Ö¸î£¬Íø¸ñÄÚµÄÏñËØÖµÈ¡Íø¸ñÄÚËùÓĞÏñËØµÄÆ½¾ùÖµ");
-	//×¢ÒâÕâÀïĞèÒªÊ¹ÓÃÅ¼Êı³ß´çµÄÍ¼Æ¬£º128x128³Ø»¯·¶Î§ºÍ²½ÊıÓ¦¸ÃÂú×ã±¶Êı¹ØÏµ
+	printf_s("å°†å›¾ç‰‡æŒ‰ç…§å›ºå®šå¤§å°ç½‘æ ¼åˆ†å‰²ï¼Œç½‘æ ¼å†…çš„åƒç´ å€¼å–ç½‘æ ¼å†…æ‰€æœ‰åƒç´ çš„å¹³å‡å€¼");
+	//æ³¨æ„è¿™é‡Œéœ€è¦ä½¿ç”¨å¶æ•°å°ºå¯¸çš„å›¾ç‰‡ï¼š128x128æ± åŒ–èŒƒå›´å’Œæ­¥æ•°åº”è¯¥æ»¡è¶³å€æ•°å…³ç³»
 	Mat imgSrc = imread("C:\\Users\\Administrator\\Desktop\\img3.jpg");
 	int imgHeight = imgSrc.rows;
 	int imgWidth = imgSrc.cols;
 	int channel = imgSrc.channels();
-	int r = 8;//³Ø»¯·¶Î§
-	int step = 8;//²½³¤
+	int r = 8;//æ± åŒ–èŒƒå›´
+	int step = 8;//æ­¥é•¿
 	Mat imgOut = Mat::zeros(imgHeight, imgWidth, CV_8UC3);
 
 	for (int y = 0; y < imgHeight; y += step)
@@ -23,7 +23,7 @@ void A7(void)
 		{
 			for (int c = 0; c < channel; c++)
 			{
-				//Í³¼ÆÔÚr·¶Î§ÄÚµÄËùÓĞÏñËØÖ®ºÍ
+				//ç»Ÿè®¡åœ¨rèŒƒå›´å†…çš„æ‰€æœ‰åƒç´ ä¹‹å’Œ
 				int val = 0;
 				for (int dy = 0; dy < r; dy++)
 				{
@@ -32,10 +32,10 @@ void A7(void)
 						val += (double)imgSrc.at<Vec3b>(y + dy, x + dx)[c];
 					}
 				}
-				//¼ÆËãÆ½¾ùÖµ
+				//è®¡ç®—å¹³å‡å€¼
 				val = val / (r * r);
 				printf_s("%d", val);
-				//ÔÚr·¶Î§ÄÚËùÍ³Ò»¸³Öµ
+				//åœ¨rèŒƒå›´å†…æ‰€ç»Ÿä¸€èµ‹å€¼
 				for (int dy = 0; dy < r; dy++)
 				{
 					for (int dx = 0; dx < r; ++dx)

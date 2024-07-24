@@ -1,45 +1,27 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_1_10.h"
-
 using namespace cv;
-
-void A3(int th)
+void A2(void)
 {
-	printf_s("°ÑÍ¼Ïñ½øĞĞ¶şÖµ»¯");
+	printf_s("è®¡ç®—å›¾ç‰‡ç°åº¦");
 	Mat imgSrc = imread("C:\\Users\\Administrator\\Desktop\\img1.jpg");
-	int imgHeight = imgSrc.rows;
 	int imgWeight = imgSrc.cols;
+	int imgHeight = imgSrc.rows;
 	Mat imgOut = Mat::zeros(imgHeight, imgWeight, CV_8UC1);
-	//ÏÈ½øĞÔ»Ò¶È»¯
 	for (int y = 0; y < imgHeight; ++y)
 	{
-		for (int x = 0; x < imgWeight; ++x)
+		for (int x = 0; x < imgWeight; x++)
 		{
+			//GRAY=b0.114 + g0.587 + r0.299 
 			imgOut.at<uchar>(y, x) = 0.114 * (float)imgSrc.at<Vec3b>(y, x)[2]
 				+ 0.587 * (float)imgSrc.at<Vec3b>(y, x)[1]
 				+ 0.299 * (float)imgSrc.at<Vec3b>(y, x)[0];
 		}
 	}
-	for (int y = 0; y < imgHeight; ++y)
-	{
-		for (int x = 0; x < imgWeight; ++x)
-		{
-			if (imgOut.at<uchar>(y, x) > th)
-			{
-				imgOut.at<uchar>(y, x) = 255;//°×É«
-			}
-			else
-			{
-				imgOut.at<uchar>(y, x) = 0;//ºÚÉ«
-			}
-
-		}
-	}
-
 	imshow("imgSrc", imgSrc);
-	imshow("imgOut", imgOut);
+	imshow("imgGray", imgOut);
 	waitKey(0);
 	destroyAllWindows();
 }

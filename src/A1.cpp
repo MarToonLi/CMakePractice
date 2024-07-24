@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_1_10.h"
@@ -6,22 +6,22 @@
 using namespace cv;
 void A1(void)
 {
-	//Í¼ĞÎ¿í¸ß
-	printf_s("//¶ÁÈ¡Í¼Ïñ£¬È»ºó½«{RGB}Í¨µÀÌæ»»³É{BGR}Í¨µÀ\n");
+	//å›¾å½¢å®½é«˜
+	printf_s("//è¯»å–å›¾åƒï¼Œç„¶åå°†{RGB}é€šé“æ›¿æ¢æˆ{BGR}é€šé“\n");
 
 	Mat imgSrc = imread("C:\\Users\\Administrator\\Desktop\\img1.jpg");
 	int imgWidth = imgSrc.cols;
 	int imgHeight = imgSrc.rows;
 
-	//¹¹½¨Í¼Æ¬¾ØÕó,CV_8UC3:uchar 8bit depth:3
+	//æ„å»ºå›¾ç‰‡çŸ©é˜µ,CV_8UC3:uchar 8bit depth:3
 	Mat imgOut = Mat::zeros(imgHeight, imgWidth, CV_8UC3);
 
-	//±éÀúÍ¼Æ¬£º´Ó×óµ½ÓÒ£¬´ÓÉÏµ½ÏÂ
+	//éå†å›¾ç‰‡ï¼šä»å·¦åˆ°å³ï¼Œä»ä¸Šåˆ°ä¸‹
 	for (int y = 0; y < imgHeight; y++)
 	{
 		for (int x = 0; x < imgWidth; x++)
 		{
-			//Mat.at:ÓÃÓÚ»ñÈ¡Í¼Ïñ¾ØÕóÄ³µãµÄÖµ»ò¸Ä±äÄ³µãµÄÖµ¡£[0][1][2]Èı¸öÍ¨µÀ
+			//Mat.at:ç”¨äºè·å–å›¾åƒçŸ©é˜µæŸç‚¹çš„å€¼æˆ–æ”¹å˜æŸç‚¹çš„å€¼ã€‚[0][1][2]ä¸‰ä¸ªé€šé“
 			//typedef Vec<uchar,3> Vec3b;0-255
 			// R -> B
 			imgOut.at<Vec3b>(y, x)[0] = imgSrc.at<Vec3b>(y, x)[2];

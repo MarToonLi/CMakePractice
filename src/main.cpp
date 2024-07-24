@@ -39,7 +39,7 @@ int main()
 	Mat seg = imread("C:\\Users\\Administrator\\Desktop\\OpencvTestImg\\seg.png");
 	Mat img10 = imread("C:\\Users\\Administrator\\Desktop\\OpencvTestImg\\img10.png");
 	Mat words = imread("C:\\Users\\Administrator\\Desktop\\OpencvTestImg\\words.png");
-	//A1();
+	A1();
 	//A2();
 	//A3();
 	//A4();
@@ -78,7 +78,7 @@ int main()
 	//A37(imgSrc128);
 	//A38(imgSrc128);
 	//A39(imgSrc128);
-	A40(imgSrc128);
+	//A40(imgSrc128);
 	//A41(imgSrc512);
 	//A42(imgSrc512);
 	//A43(img_canny);
@@ -112,5 +112,5 @@ int main()
 	//A77();
 	//A78();
 	//A79(imori);
-
+	return 0;
 }

@@ -1,17 +1,17 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_1_10.h"
 using namespace cv;
 
-//·­×ªÉ«µ÷
+//ç¿»è½¬è‰²è°ƒ
 Mat InverseHue(Mat imgHSV)
 {
-	//·­×ªÉ«µ÷
+	//ç¿»è½¬è‰²è°ƒ
 	for (int y = 0; y < imgHSV.rows; y++)
 		for (int x = 0; x < imgHSV.cols; x++)
 			imgHSV.at<Vec3f>(y, x)[0] = fmod(imgHSV.at<Vec3f>(y, x)[0] + 180, 360);
-
+	
 	return imgHSV;
 }
 
@@ -28,7 +28,7 @@ Mat RGB2HSV(Mat rgb)
 	{
 		for (int x = 0; x < imgWeight; ++x)
 		{
-			//»ñÈ¡RGB
+			//è·å–RGB
 			R = (float)rgb.at<Vec3b>(y, x)[2] / 255;
 			G = (float)rgb.at<Vec3b>(y, x)[1] / 255;
 			B = (float)rgb.at<Vec3b>(y, x)[0] / 255;
@@ -46,14 +46,14 @@ Mat RGB2HSV(Mat rgb)
 			else if (Cmin == G)
 				H = 60 * (R - B) / delta + 300;
 
-			//¼ÆËãS(0-1)
+			//è®¡ç®—S(0-1)
 			if (Cmax == 0)
 				S = 0;
 			else
 				S = delta;
-			//S = delta/Cmax;Ğ§¹û²»ºÃ
+			//S = delta/Cmax;æ•ˆæœä¸å¥½
 
-		//¼ÆËãV(0-1)
+		//è®¡ç®—V(0-1)
 			V = Cmax;
 
 			imgHSV.at<Vec3f>(y, x)[0] = H;
@@ -131,7 +131,7 @@ void A5(void)
 	Mat imgSrc = imread("C:\\Users\\Administrator\\Desktop\\OpencvTestImg\\img256.png");
 
 	Mat HSV = RGB2HSV(imgSrc);
-	//·­×ªÉ«µ÷
+	//ç¿»è½¬è‰²è°ƒ
 	HSV = InverseHue(HSV);
 	Mat RGB = HSV2RGB(HSV);
 	imshow("_HSV", RGB);
