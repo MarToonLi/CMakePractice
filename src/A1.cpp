@@ -9,7 +9,7 @@ void A1(void)
 	//图形宽高
 	printf_s("//读取图像，然后将{RGB}通道替换成{BGR}通道\n");
 
-	Mat imgSrc = imread("C:\\Users\\Administrator\\Desktop\\img1.jpg");
+	Mat imgSrc = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img1.jpg");
 	int imgWidth = imgSrc.cols;
 	int imgHeight = imgSrc.rows;
 
