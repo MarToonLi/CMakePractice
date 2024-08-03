@@ -12,6 +12,7 @@
 //#include "A_51_60.h"
 //#include "A_61_70.h"
 //#include "A_71_80.h"
+#include "A_101_120.h"
 
 using namespace std;
 using namespace cv;
@@ -46,7 +47,7 @@ int main()
 	Mat words = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\words.png");
 	//A1_P(); 
 	//A2_P();
-	A3_P();
+	//A3_P();
 	//A4();
 	//A5();
 	//A6();
@@ -117,6 +118,7 @@ int main()
 	//A77();
 	//A78();
 	//A79(imori);
+	A101();
 	return 0;
 }
 
