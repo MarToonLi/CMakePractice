@@ -1,18 +1,18 @@
 ﻿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
-#include "A_1_10.h"
+//#include "A_1_10.h"
 #include <windows.h>
 #include <stdio.h>
 
 //#include "A_11_20.h"
-//#include "A_21_30.h"
+#include "A_21_30.h"
 //#include "A_31_40.h"
 //#include "A_41_50.h"
 //#include "A_51_60.h"
 //#include "A_61_70.h"
 //#include "A_71_80.h"
-#include "A_101_120.h"
+//#include "A_101_120.h"
 
 using namespace std;
 using namespace cv;
@@ -29,6 +29,7 @@ int main()
 	Mat imgSrc256 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img256.png");
 
 	Mat imgSrc512 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img512.png");
+	//Mat imgSrc512 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\512_2.png");
 
 
 	Mat img_dark = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img_dark.png");
@@ -55,7 +56,7 @@ int main()
 	//A8();
 	//A9();
 	//A10();
-	//A11(imgSrc2);
+	//A11(imgSrc32);
 	//A12(imgSrc1);
 	//A13(imgSrc512);
 	//A14(imgSrc512);
@@ -65,7 +66,7 @@ int main()
 	//A18(imgSrc512);
 	//A19(imgSrc512);
 	//A20(imgSrc512);
-	//A21(img_dark);
+	A21(img_dark);
 	//A22(img_dark);
 	//A23(img_dark);
 	//A24(img_gamma);
@@ -118,7 +119,7 @@ int main()
 	//A77();
 	//A78();
 	//A79(imori);
-	A101();
+	//A101();
 	return 0;
 }
 

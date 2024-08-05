@@ -42,16 +42,11 @@ void A11(Mat img)
 	{
 		kArray[i] = 1;
 	}
-
-
-
-	//复制一张原图，并且添加边框: 且是在左侧添加边框
+	//复制一张原图，并且添加边框
 	for (int y = 0; y < imgHeight; y++)
 		for (int x = 0; x < imgWidth; x++)
 			for (int c = 0; c < channel; c++)
 				imgtemp.at<Vec3b>(y + kRadius, x + kRadius)[c] = imgSrc.at<Vec3b>(y, x)[c];
-
-
 
 	for (int y = 0; y < imgHeight; y++)
 	{

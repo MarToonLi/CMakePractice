@@ -4,44 +4,6 @@
 #include "A_21_30.h"
 
 using namespace cv;
-using namespace std;
-
-// 定义图像尺寸常量
-const int IMAGE_HEIGHT = 256;
-const int IMAGE_WIDTH = 256;
-
-// 图像均衡化函数
-void histogramEqualization(vector<vector<int>>& image) {
-	int totalPixels = IMAGE_HEIGHT * IMAGE_WIDTH;
-	vector<int> histogram(256, 0);
-
-	// Step 1: 计算直方图
-	for (int i = 0; i < IMAGE_HEIGHT; ++i) {
-		for (int j = 0; j < IMAGE_WIDTH; ++j) {
-			histogram[image[i][j]]++;
-		}
-	}
-
-	// Step 2: 计算累积分布函数（CDF）
-	vector<int> cdf(256, 0);
-	cdf[0] = histogram[0];
-	for (int i = 1; i < 256; ++i) {
-		cdf[i] = cdf[i - 1] + histogram[i];
-	}
-
-	// Step 3: 应用均衡化映射
-	vector<int> mapping(256, 0);
-	for (int i = 0; i < 256; ++i) {
-		mapping[i] = (int)((double)cdf[i] / totalPixels * 255);
-	}
-
-	// Step 4: 生成输出图像
-	for (int i = 0; i < IMAGE_HEIGHT; ++i) {
-		for (int j = 0; j < IMAGE_WIDTH; ++j) {
-			image[i][j] = mapping[image[i][j]];
-		}
-	}
-}
 
 void A23(Mat img)
 {
@@ -51,6 +13,8 @@ void A23(Mat img)
 	int channel = imgSrc.channels();
 	Mat imgOut = Mat::zeros(imgHeight, imgWidth, CV_8UC3);
 
+	//S是总的像素数；Z_{ max }是像素点的最大取值（在这里是255）；
+	//h(z)表示取值为z的累积分布函数： Z' = \frac{Z_{max}}{S} \ \sum\limits_{i=0}^z\ h(i) 
 
 	double ZMax = 255;
 	double hist[255];

@@ -7,7 +7,7 @@
 using namespace cv;
 
 
-void A15(Mat img)
+void A14(Mat img)
 {
 	Mat imgSrc = img;
 	int imgHeight = imgSrc.rows;
@@ -27,24 +27,15 @@ void A15(Mat img)
 				+ 0.0722 * (float)img.at<cv::Vec3b>(y, x)[0];
 		}
 	}
-
 	const int kSize = 3;
 	//卷积半径
 	int kRadius = floor((double)kSize / 2);//卷积半径
 	//卷积核
 	//设置卷积核:水平
-	double kSobelHorizontal[kSize][kSize] = { {-1, 0, 1}, 
-											{-2, 0, 2}, 
-											{-1, 0, 1} };
+	double kHorizontal[kSize][kSize] = { {0,0,0},{-1,1,0},{0,0,0} };
 
-	////设置卷积核:垂直
-	//double kSobelVertical[kSize][kSize] = { {1, 2, 1}, 
-	//										{0, 0, 0}, 
-	//										{-1, -2, -1} };
-
-	double kSobelVertical[kSize][kSize] = { {1, 0, -1},
-											{2, 0, -2},
-											{1, 0, -1} };
+	//设置卷积核:垂直
+	double kVertical[kSize][kSize] = { {0,-1,0},{0,1,0},{0,0,0} };
 
 	for (int y = 0; y < imgHeight; ++y)
 	{
@@ -58,8 +49,8 @@ void A15(Mat img)
 				{
 					if (((y + dy >= 0)) && (x + dx) >= 0 && ((y + dy) < imgHeight) && ((x + dx) < imgWidth))
 					{
-						valH += imgGray.at<uchar>(y + dy, x + dx) * kSobelHorizontal[kRadius + dy][kRadius + dx];
-						valV += imgGray.at<uchar>(y + dy, x + dx) * kSobelVertical[kRadius + dy][kRadius + dx];
+						valH += imgGray.at<uchar>(y + dy, x + dx) * kHorizontal[kRadius + dy][kRadius + dx];
+						valV +=	imgGray.at<uchar>(y + dy, x + dx) * kVertical[kRadius + dy][kRadius + dx];
 					}
 
 				}
@@ -70,10 +61,11 @@ void A15(Mat img)
 		}
 	}
 
+
 	imshow("imgSrc", imgSrc);
 	imshow("imgOutH", imgOutH);
 	imshow("imgOutV", imgOutV);
 	waitKey(0);
 	destroyAllWindows();
-
 }
+

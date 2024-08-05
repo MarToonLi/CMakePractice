@@ -7,15 +7,14 @@
 using namespace cv;
 
 
-void A15(Mat img)
+void A17(Mat img)
 {
 	Mat imgSrc = img;
 	int imgHeight = imgSrc.rows;
 	int imgWidth = imgSrc.cols;
 	int channel = imgSrc.channels();
 	Mat imgGray = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
-	Mat imgOutH = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
-	Mat imgOutV = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
+	Mat imgOut = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 
 	//先灰度化
 	for (int y = 0; y < imgHeight; ++y)
@@ -32,47 +31,30 @@ void A15(Mat img)
 	//卷积半径
 	int kRadius = floor((double)kSize / 2);//卷积半径
 	//卷积核
-	//设置卷积核:水平
-	double kSobelHorizontal[kSize][kSize] = { {-1, 0, 1}, 
-											{-2, 0, 2}, 
-											{-1, 0, 1} };
-
-	////设置卷积核:垂直
-	//double kSobelVertical[kSize][kSize] = { {1, 2, 1}, 
-	//										{0, 0, 0}, 
-	//										{-1, -2, -1} };
-
-	double kSobelVertical[kSize][kSize] = { {1, 0, -1},
-											{2, 0, -2},
-											{1, 0, -1} };
+	double kLaplacian[kSize][kSize] = { {0, 1, 0}, {1, -4, 1}, {0, 1, 0} };
 
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWidth; ++x)
 		{
-			uchar valH = 0;
-			uchar valV = 0;
+			uchar val = 0;
 			for (int dy = -kRadius; dy < kRadius + 1; dy++)
 			{
 				for (int dx = -kRadius; dx < kRadius + 1; dx++)
 				{
 					if (((y + dy >= 0)) && (x + dx) >= 0 && ((y + dy) < imgHeight) && ((x + dx) < imgWidth))
 					{
-						valH += imgGray.at<uchar>(y + dy, x + dx) * kSobelHorizontal[kRadius + dy][kRadius + dx];
-						valV += imgGray.at<uchar>(y + dy, x + dx) * kSobelVertical[kRadius + dy][kRadius + dx];
+						val += imgGray.at<uchar>(y + dy, x + dx) * kLaplacian[kRadius + dy][kRadius + dx];
 					}
-
 				}
 			}
-			imgOutH.at<uchar>(y, x) = (uchar)valH;
-			imgOutV.at<uchar>(y, x) = (uchar)valV;
+			imgOut.at<uchar>(y, x) = (uchar)val;
 
 		}
 	}
 
 	imshow("imgSrc", imgSrc);
-	imshow("imgOutH", imgOutH);
-	imshow("imgOutV", imgOutV);
+	imshow("imgOut", imgOut);;
 	waitKey(0);
 	destroyAllWindows();
 

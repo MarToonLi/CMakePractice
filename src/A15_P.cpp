@@ -33,18 +33,14 @@ void A15(Mat img)
 	int kRadius = floor((double)kSize / 2);//卷积半径
 	//卷积核
 	//设置卷积核:水平
-	double kSobelHorizontal[kSize][kSize] = { {-1, 0, 1}, 
-											{-2, 0, 2}, 
-											{-1, 0, 1} };
+	double kSobelHorizontal[kSize][kSize] = { {1, 0, 1}, 
+											{2, 0, -2}, 
+											{-1, 0, -1} };
 
-	////设置卷积核:垂直
-	//double kSobelVertical[kSize][kSize] = { {1, 2, 1}, 
-	//										{0, 0, 0}, 
-	//										{-1, -2, -1} };
-
-	double kSobelVertical[kSize][kSize] = { {1, 0, -1},
-											{2, 0, -2},
-											{1, 0, -1} };
+	//设置卷积核:垂直
+	double kSobelVertical[kSize][kSize] = { {1, 2, 1}, 
+											{0, 0, 0}, 
+											{-1, -2, -1} };
 
 	for (int y = 0; y < imgHeight; ++y)
 	{

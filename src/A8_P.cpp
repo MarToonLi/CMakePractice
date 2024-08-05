@@ -28,7 +28,7 @@ void A8(void)
 				{
 					for (int dx = 0; dx < r; ++dx)
 					{
-						val = fmax(imgSrc.at<Vec3b>(y + dy, x + dx)[c], val);
+						val = fmax(imgSrc.at<Vec3b>(y + dy, x + dx)[c],val);
 					}
 				}
 				printf_s("%d", val);
