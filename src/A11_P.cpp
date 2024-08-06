@@ -7,7 +7,7 @@
 using namespace cv;
 
 
-void A11(Mat img)
+void A11_P(Mat img)
 {
 	/*
 	‘≠¿Ì£∫

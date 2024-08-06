@@ -5,7 +5,7 @@
 #include "A_1_10.h"
 
 using namespace cv;
-void A4(void)
+void A4_P(void)
 {
 	printf_s("大津二值化算法");
 	Mat imgSrc = imread("C:\\Users\\Administrator\\Desktop\\img1.jpg");

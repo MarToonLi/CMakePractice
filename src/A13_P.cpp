@@ -7,7 +7,7 @@
 using namespace cv;
 
 
-void A13(Mat img)
+void A13_P(Mat img)
 {
 	Mat imgSrc = img;
 	int imgHeight = imgSrc.rows;

@@ -6,7 +6,7 @@
 
 using namespace cv;
 
-void A8(void)
+void A8_P(void)
 {
 	printf_s("将图片按照固定大小网格分割，网格内的像素值取网格内所有像素的最大值");
 	Mat imgSrc = imread("C:\\Users\\Administrator\\Desktop\\img3.jpg");

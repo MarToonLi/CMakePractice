@@ -7,7 +7,7 @@
 using namespace cv;
 
 
-void A12(Mat img)
+void A12_P(Mat img)
 {
 	Mat imgSrc = img;
 

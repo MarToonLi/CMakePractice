@@ -5,7 +5,7 @@
 #include <math.h>
 using namespace cv;
 
-void A9(void)
+void A9_P(void)
 {
 	printf_s("¸ßË¹ÂË²¨\n");
 	Mat imgSrc = imread("C:\\Users\\Administrator\\Desktop\\OpencvTestImg\\img512.png");

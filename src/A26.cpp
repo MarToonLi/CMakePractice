@@ -44,9 +44,9 @@ void A26(Mat img)
 			for (int c = 0; c < channel; ++c)
 			{
 				val = (1. - dx) * (1. - dy) * imgSrc.at<Vec3b>(yBefore, xBefore)[c] +
-					dx * (1. - dy) * imgSrc.at<Vec3b>(yBefore, MIN(xBefore + 1, imgWidth - 1))[c] +
-					(1. - dx) * dy * imgSrc.at<Vec3b>(MIN(yBefore + 1, imgHeight - 1), xBefore)[c] +
-					dx * dy * imgSrc.at<Vec3b>(MIN(yBefore + 1, imgHeight - 1), xBefore)[c];
+					         dx * (1. - dy) * imgSrc.at<Vec3b>(yBefore, MIN(xBefore + 1, imgWidth - 1))[c] +
+					         (1. - dx) * dy * imgSrc.at<Vec3b>(MIN(yBefore + 1, imgHeight - 1), xBefore)[c] +
+					                dx * dy * imgSrc.at<Vec3b>(MIN(yBefore + 1, imgHeight - 1), xBefore)[c];
 				imgOut.at<Vec3b>(y, x)[c] = (uchar)val;
 			}
 		}

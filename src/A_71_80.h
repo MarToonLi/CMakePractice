@@ -1,7 +1,7 @@
 #pragma once
 #include <opencv2/opencv.hpp>
-#ifndef _A_71_70_
-#define _A_71_70_
+#ifndef _A_71_80_
+#define _A_71_80_
 
 #define PI  atan(1) * 4
 

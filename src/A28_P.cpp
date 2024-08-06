@@ -11,7 +11,6 @@ void A28(Mat img)
 	int imgHeight = img.rows;
 	int imgWidth = img.cols;
 	int channel = img.channels();
-
 	//变换参数：仿射变换有6个自由度
 	/*
 	//矩阵乘法
@@ -19,10 +18,8 @@ void A28(Mat img)
 	[c,d,ty][y]=[_x]
 	[0,0,1] [1] [1]
 	*/
-	
 	//决定旋转，相似变换，剪切变换
 	double a = 1, b = 0, c = 0, d = 1;
-	
 	//决定平移位置
 	double tx = 30, ty = -30;
 
@@ -31,9 +28,7 @@ void A28(Mat img)
 	//缩放后的宽高
 	int resizeHeight = (int)(imgHeight * a);
 	int resizeWidth = (int)(imgWidth * d);
-
 	Mat imgOut = Mat::zeros(resizeHeight, resizeWidth, CV_8UC3);
-	
 	int xBefore, yBefore;
 	double dx, dy;
 	double	weightx = 0, weighty = 0;

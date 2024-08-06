@@ -1,11 +1,12 @@
-﻿#include <iostream>
+﻿#pragma once
+#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_1_10.h"
 using namespace cv;
 
 //翻转色调
-Mat InverseHue(Mat imgHSV)
+Mat InverseHue_P(Mat imgHSV)
 {
 	//翻转色调
 	for (int y = 0; y < imgHSV.rows; y++)
@@ -15,7 +16,7 @@ Mat InverseHue(Mat imgHSV)
 	return imgHSV;
 }
 
-Mat RGB2HSV(Mat rgb)
+Mat RGB2HSV_P(Mat rgb)
 {
 	int imgHeight = rgb.rows;
 	int imgWeight = rgb.cols;
@@ -64,7 +65,7 @@ Mat RGB2HSV(Mat rgb)
 	return imgHSV;
 }
 
-Mat HSV2RGB(Mat hsv)
+Mat HSV2RGB_P(Mat hsv)
 {
 	int imgHeight = hsv.rows;
 	int imgWeight = hsv.cols;
@@ -126,18 +127,18 @@ Mat HSV2RGB(Mat hsv)
 	return imgRGB;
 }
 
-void A5(void)
+void A5_P(void)
 {
 	Mat imgSrc = imread("C:\\Users\\Administrator\\Desktop\\OpencvTestImg\\img256.png");
 
-	Mat HSV = RGB2HSV(imgSrc);
+	Mat HSV = RGB2HSV_P(imgSrc);
 	//翻转色调
-	HSV = InverseHue(HSV);
-	Mat RGB = HSV2RGB(HSV);
+	HSV = InverseHue_P(HSV);
+	Mat RGB = HSV2RGB_P(HSV);
 	imshow("_HSV", RGB);
 
-	HSV = RGB2HSV(imgSrc);
-	RGB = HSV2RGB(HSV);
+	HSV = RGB2HSV_P(imgSrc);
+	RGB = HSV2RGB_P(HSV);
 
 	imshow("imgSrc", imgSrc);
 	imshow("RGB-HSV", HSV);
