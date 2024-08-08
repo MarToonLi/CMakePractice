@@ -24,7 +24,7 @@ Mat GetGobar(float Angle)
 
 	float max = 0;
 	float min = 999;
-	Mat gabor = Mat::zeros(kSize, kSize, CV_8UC1);
+	Mat gabor = Mat::zeros(kSize, kSize, CV_32FC1);
 	//计算卷积核权值
 	for (int y = 0; y < kSize; ++y)
 	{
@@ -48,21 +48,22 @@ Mat GetGobar(float Angle)
 	}
 	printf_s("%f,%f\n", max, min);
 
-	//for (int y = 0; y < kSize; y++)
-	//{
-	//	for (int x = 0; x < kSize; x++)
-	//	{
-	//		gabor.at<uchar>(y, x) = kernel[y][x] / kSum;
-	//		gabor.at<uchar>(y, x) -= min;
-	//		gabor.at<uchar>(y, x) /= max;
-	//		gabor.at<uchar>(y, x) *= 255;
-	//	}
-	//}
+	for (int y = 0; y < kSize; y++)
+	{
+		for (int x = 0; x < kSize; x++)
+		{
+			gabor.at<float>(y, x) = kernel[y][x] / kSum;
+			gabor.at<float>(y, x) -= min;
+			gabor.at<float>(y, x) /= max;
+			gabor.at<float>(y, x) *= 255;
+		}
+	}
 	return gabor;
 }
 
 void A79(Mat img)
 {
+	cv::resize(img, img, cv::Size(300, 250));
 	//灰度化
 	int imgHeight = img.rows;
 	int imgWidth = img.cols;
@@ -87,7 +88,7 @@ void A79(Mat img)
 	for (int i = 0; i < 4; ++i)
 		gaborOut[i] = GetGobar(angleA[i]);
 
-	Mat out = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
+	Mat out = Mat::zeros(imgHeight, imgWidth, CV_32FC1);
 	printf_s("%d\n", kRadius);
 	for (int t = 0; t < 4; ++t)
 	{
@@ -95,21 +96,22 @@ void A79(Mat img)
 		{
 			for (int x = 0; x < imgWidth; ++x)
 			{
-				int val = 0;
+				float val = 0;
 				for (int dy = -kRadius; dy < kRadius + 1; ++dy)
 				{
 					for (int dx = -kRadius; dx < kRadius + 1; ++dx)
 					{
 						if (((y + dy >= 0)) && (x + dx) >= 0 && ((y + dy) < imgHeight) && ((x + dx) < imgWidth))
 						{
-							val += imgGray.at<uchar>(y + dy, x + dx) * gaborOut[t].at<uchar>(kRadius + dy, kRadius + dx);
+							val += imgGray.at<uchar>(y + dy, x + dx) * gaborOut[t].at<float>(kRadius + dy, kRadius + dx);
 
 						}
 					}
 				}
-				out.at<uchar>(y, x) = (uchar)val;
+				out.at<float>(y, x) = (float)val;
 			}
 		}
+		printf_s("ss");
 		imgOut[t] = out;
 	}
 	for (int i = 0; i < 4; ++i)

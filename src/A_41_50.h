@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <opencv2/opencv.hpp>
 #ifndef _A_41_50_
 #define _A_41_50_
@@ -7,21 +7,32 @@
 
 using namespace cv;
 
+
+
+
 //Canny Function
-//»Ò¶È»¯
+//ç°åº¦åŒ–
 Mat ImgGray(Mat img);
+
 float Clip(float value, float min, float max);
-//¸ßË¹ÂË²¨
+
+//é«˜æ–¯æ»¤æ³¢
 Mat GaussianFilter(Mat img, double Sigma);
-//Sobel´¹Ö±
+
+//Sobelå‚ç›´
 Mat SobelFilterV(Mat img);
-//SobelË®Æ½
+
+//Sobelæ°´å¹³
 Mat SobelFilterH(Mat img);
+
 Mat GetEdge(Mat imgX, Mat imgY);
+
 Mat GetAngel(Mat imgX, Mat imgY);
-//·Ç¼«´óÖµÒÖÖÆ£ºNMS
+
+//éæå¤§å€¼æŠ‘åˆ¶ï¼šNMS
 Mat NMS(Mat angle, Mat edge);
-//Á¬½Ó±ß
+
+//è¿æ¥è¾¹
 Mat Histerisis(Mat edge, int HT, int LT);
 
 

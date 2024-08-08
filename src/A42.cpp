@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_41_50.h"
@@ -15,14 +15,14 @@ float _Clip(float value, float min, float max)
 	return fmin(fmax(value, 0), 255);
 }
 
-//Í¼Ïñ»Ò¶È»¯	
+//å›¾åƒç°åº¦åŒ–	
 Mat _ImgGray(Mat img)
 {
 	int imgHeight = img.rows;
 	int imgWidth = img.cols;
 	int channel = img.channels();
 	Mat imgGray = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
-	//»Ò¶È»¯
+	//ç°åº¦åŒ–
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWidth; ++x)
@@ -32,16 +32,16 @@ Mat _ImgGray(Mat img)
 				+ 0.0722 * (float)img.at<Vec3b>(y, x)[0];
 		}
 	}
-	imshow("imgGray", imgGray);
+	//imshow("imgGray", imgGray);
 	return imgGray;
 }
-//¸ßË¹ÂË²¨
+//é«˜æ–¯æ»¤æ³¢
 Mat _GaussianFilter(Mat img, double Sigma)
 {
 	int imgHeight = img.rows;
 	int imgWidth = img.cols;
 	int channel = img.channels();
-	//µ¥Í¨µÀ»òÕßÈıÍ¨µÀ
+	//å•é€šé“æˆ–è€…ä¸‰é€šé“
 	Mat imgGaussianOut;
 	if (channel == 1)
 		imgGaussianOut = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
@@ -49,12 +49,12 @@ Mat _GaussianFilter(Mat img, double Sigma)
 		imgGaussianOut = Mat::zeros(imgHeight, imgWidth, CV_8UC3);
 	const int kSize = 5;
 
-	int kRadius = floor((double)kSize / 2);//¾í»ı°ë¾¶
+	int kRadius = floor((double)kSize / 2);//å·ç§¯åŠå¾„
 	double kernel[kSize][kSize];
 	double kernel_sum = 0;
 	double _x, _y;
 
-	//¸ßË¹ÂË²¨,¼ÆËãËã×Ó
+	//é«˜æ–¯æ»¤æ³¢,è®¡ç®—ç®—å­
 	for (int y = 0; y < kSize; y++)
 	{
 		for (int x = 0; x < kSize; x++)
@@ -79,7 +79,7 @@ Mat _GaussianFilter(Mat img, double Sigma)
 	{
 		for (int x = 0; x < imgWidth; ++x)
 		{
-			//Èç¹ûÊÇµ¥Í¨µÀ
+			//å¦‚æœæ˜¯å•é€šé“
 			if (channel == 1)
 			{
 				val = 0;
@@ -96,7 +96,7 @@ Mat _GaussianFilter(Mat img, double Sigma)
 				}
 				imgGaussianOut.at<uchar>(y, x) = (uchar)_Clip(val, 0, 255);
 			}
-			//Èç¹ûÊÇÈıÍ¨µÀ
+			//å¦‚æœæ˜¯ä¸‰é€šé“
 			else
 			{
 				for (int c = 0; c < channel; ++c)
@@ -120,13 +120,13 @@ Mat _GaussianFilter(Mat img, double Sigma)
 		}
 	}
 
-	imshow("imgGaussianOut", imgGaussianOut);
+	//imshow("imgGaussianOut", imgGaussianOut);
 	return imgGaussianOut;
 
 }
 
 //Sobel filter
-//´¹Ö±
+//å‚ç›´
 Mat _SobelFilterV(Mat img)
 {
 	int imgHeight = img.rows;
@@ -134,10 +134,10 @@ Mat _SobelFilterV(Mat img)
 	int channel = img.channels();
 	Mat imgOutV = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 	const int kSize = 3;
-	//¾í»ı°ë¾¶
-	int kRadius = floor((double)kSize / 2);//¾í»ı°ë¾¶
-	//¾í»ıºË
-	//ÉèÖÃ¾í»ıºË:´¹Ö±
+	//å·ç§¯åŠå¾„
+	int kRadius = floor((double)kSize / 2);//å·ç§¯åŠå¾„
+	//å·ç§¯æ ¸
+	//è®¾ç½®å·ç§¯æ ¸:å‚ç›´
 	double kSobelVertical[kSize][kSize] = { {1, 2, 1},
 											{0, 0, 0},
 											{-1, -2, -1} };
@@ -162,11 +162,11 @@ Mat _SobelFilterV(Mat img)
 			imgOutV.at<uchar>(y, x) = (uchar)_Clip(valV, 0, 255);
 		}
 	}
-	imshow("imgOutV", imgOutV);
+	//imshow("imgOutV", imgOutV);
 	return imgOutV;
 
 }
-//Ë®Æ½
+//æ°´å¹³
 Mat _SobelFilterH(Mat img)
 {
 	int imgHeight = img.rows;
@@ -175,10 +175,10 @@ Mat _SobelFilterH(Mat img)
 
 	Mat imgOutH = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 	const int kSize = 3;
-	//¾í»ı°ë¾¶
-	int kRadius = floor((double)kSize / 2);//¾í»ı°ë¾¶
-	//¾í»ıºË
-	//ÉèÖÃ¾í»ıºË:Ë®Æ½
+	//å·ç§¯åŠå¾„
+	int kRadius = floor((double)kSize / 2);//å·ç§¯åŠå¾„
+	//å·ç§¯æ ¸
+	//è®¾ç½®å·ç§¯æ ¸:æ°´å¹³
 	double kSobelHorizontal[kSize][kSize] = { {1, 0, 1},
 											{2, 0, -2},
 											{-1, 0, -1} };
@@ -203,11 +203,11 @@ Mat _SobelFilterH(Mat img)
 			imgOutH.at<uchar>(y, x) = (uchar)_Clip(valH, 0, 255);
 		}
 	}
-	imshow("imgOutH", imgOutH);
+	//imshow("imgOutH", imgOutH);
 	return imgOutH;
 }
 
-//Á½¸ö·½ÏòÉÏµÄÂË²¨Í¼Æ¬:±ß
+//ä¸¤ä¸ªæ–¹å‘ä¸Šçš„æ»¤æ³¢å›¾ç‰‡:è¾¹
 Mat _GetEdge(Mat imgX, Mat imgY)
 {
 	int imgHeight = imgX.rows;
@@ -226,7 +226,7 @@ Mat _GetEdge(Mat imgX, Mat imgY)
 	return imgOut;
 }
 
-//Á½¸ö·½ÏòÉÏµÄÂË²¨Í¼Æ¬£º½Ç
+//ä¸¤ä¸ªæ–¹å‘ä¸Šçš„æ»¤æ³¢å›¾ç‰‡ï¼šè§’
 
 Mat _GetAngel(Mat imgX, Mat imgY)
 {
@@ -277,7 +277,7 @@ Mat _GetAngel(Mat imgX, Mat imgY)
 	return imgOut;
 }
 
-//·Ç¼«´óÖµÒÖÖÆ£ºNMS
+//éæå¤§å€¼æŠ‘åˆ¶ï¼šNMS
 Mat NMS(Mat angle, Mat edge)
 {
 	int imgHeight = angle.rows;
@@ -347,22 +347,22 @@ Mat NMS(Mat angle, Mat edge)
 void A42(Mat img)
 {
 	Mat out;
-	//Í¼Æ¬»Ò¶È»¯
+	//å›¾ç‰‡ç°åº¦åŒ–
 	out = _ImgGray(img);
-	//¸ßË¹ÂË²¨
-	out = _GaussianFilter(out, 1.4);
-	//sobel filter:Á½¸ö·½Ïò
+	//é«˜æ–¯æ»¤æ³¢
+	out = _GaussianFilter(out,40);
+	//sobel filter:ä¸¤ä¸ªæ–¹å‘
 	Mat imgx = _SobelFilterH(out);
 	Mat imgy = _SobelFilterV(out);
-	//±ß£¬½Ç
+	//è¾¹ï¼Œè§’
 	Mat edge = _GetEdge(imgx, imgy);
 	Mat angel = _GetAngel(imgx, imgy);
-	//·Ç¼«´óÖµÒÖÖÆ
-	edge = NMS(edge, angel);
+	//éæå¤§å€¼æŠ‘åˆ¶
+	cv::Mat nms_edge = NMS(edge, angel);
 
-	imshow("imgSrc", img);
-	imshow("edge", edge);
-	imshow("angel", angel);
+	imshow("imgSrcaa", img);
+	imshow("edgeaa", edge);
+	imshow("angelaa", angel);
 	waitKey(0);
 	destroyAllWindows();
 }

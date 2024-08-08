@@ -21,7 +21,7 @@ void A77()
 	float Psi = 0;
 	float max = 0;
 	float min=999;
-	Mat gabor = Mat::zeros(kSize, kSize, CV_8UC1);
+	Mat gabor = Mat::zeros(kSize, kSize, CV_32FC1);
 	//计算卷积核权值
 	for (int y = 0; y < kSize; ++y)
 	{
@@ -49,10 +49,10 @@ void A77()
 	{
 		for (int x = 0; x < kSize; x++) 
 		{
-			gabor.at<uchar>(y, x) = kernel[y][x] / kSum;
-			gabor.at<uchar>(y, x) -= min;
-			gabor.at<uchar>(y, x) /= max;
-			gabor.at<uchar>(y, x) *= 255;
+			gabor.at<float>(y, x) = kernel[y][x] / kSum;
+			gabor.at<float>(y, x) -= min;
+			gabor.at<float>(y, x) /= max;
+			gabor.at<float>(y, x) *= 255;
 		}
 	}
 

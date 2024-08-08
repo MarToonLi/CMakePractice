@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_41_50.h"
@@ -7,35 +7,35 @@
 
 using namespace cv;
 
-// »ô·ò±ä»»
-const int ANGLE_T = 180;//½Ç¶È
+// éœå¤«å˜æ¢
+const int ANGLE_T = 180;//è§’åº¦
 const int RHO_MAX = 127;
 
-// »ô·ò±í
+// éœå¤«è¡¨
 struct HoughTable {
     int table[RHO_MAX * 2][ANGLE_T];
 };
 
-//»ô·ò±ä»»£ºÍ¶Æ±
+//éœå¤«å˜æ¢ï¼šæŠ•ç¥¨
 HoughTable _HoughVote(HoughTable hough_table, Mat img)
 {
     int height = img.rows;
     int width = img.cols;
     int rho = 0;
     double angle = 0;
-    //±éÀúÕû¸öÍ¼Æ¬
+    //éå†æ•´ä¸ªå›¾ç‰‡
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             printf_s("y:%d,x:%d\n", y, x);
-            // Èç¹ûÕû¸öÏñËØ²»ÊÇ±ß£¬ÔòÖ±½ÓÌø¹ı
+            // å¦‚æœæ•´ä¸ªåƒç´ ä¸æ˜¯è¾¹ï¼Œåˆ™ç›´æ¥è·³è¿‡
             if (img.at<uchar>(y, x) != 255)
                 continue;
-            // 0 <= ½Ç¶È < 180
+            // 0 <= è§’åº¦ < 180
             for (int t = 0; t < ANGLE_T; t++) {
                 angle = PI / 180 * t;
-                //r = xcos¦È + ysin¦È
+                //r = xcosÎ¸ + ysinÎ¸
                 rho = (int)(x * cos(angle) + y * sin(angle));
-                //½øĞĞÍ¶Æ±
+                //è¿›è¡ŒæŠ•ç¥¨
                 hough_table.table[rho + RHO_MAX][t] ++;
             }
         }
@@ -43,13 +43,13 @@ HoughTable _HoughVote(HoughTable hough_table, Mat img)
     return hough_table;
 }
 
-//»ô·ò±ä»»£º·Ç¼«´óÖµÒÖÖÆ
+//éœå¤«å˜æ¢ï¼šéæå¤§å€¼æŠ‘åˆ¶
 HoughTable _HoughNMS(HoughTable hough_table)
 {
-    // Êä³ö±í
+    // è¾“å‡ºè¡¨
     HoughTable output_hough_table;
 
-    // ³õÊ¼»¯»ô·ò±í
+    // åˆå§‹åŒ–éœå¤«è¡¨
     for (int rho = 0; rho < RHO_MAX * 2; rho++) {
         for (int t = 0; t < ANGLE_T; t++)
         {
@@ -75,49 +75,49 @@ HoughTable _HoughNMS(HoughTable hough_table)
             if (hough_table.table[rho][t] == 0)
                 continue;
 
-            // ¶Ô±È×óÉÏ
+            // å¯¹æ¯”å·¦ä¸Š
             if (((t - 1) >= 0) && ((rho - 1) >= 0))
                 if (hough_table.table[rho][t] < hough_table.table[rho - 1][t - 1])
                     continue;
 
-            // ¶Ô±ÈÉÏÃæ
+            // å¯¹æ¯”ä¸Šé¢
             if ((rho - 1) >= 0) {
                 if (hough_table.table[rho][t] < hough_table.table[rho - 1][t]) {
                     continue;
                 }
             }
 
-            // ¶Ô±ÈÓÒÉÏ
+            // å¯¹æ¯”å³ä¸Š
             if (((t + 1) < ANGLE_T) && ((rho - 1) >= 0))
                 if (hough_table.table[rho][t] < hough_table.table[rho - 1][t + 1])
                     continue;
 
-            //¶Ô±È×ó±ß
+            //å¯¹æ¯”å·¦è¾¹
             if ((t - 1) >= 0)
                 if (hough_table.table[rho][t] < hough_table.table[rho][t - 1])
                     continue;
 
-            // ¶Ô±ÈÓÒ±ß
+            // å¯¹æ¯”å³è¾¹
             if ((t + 1) < ANGLE_T)
                 if (hough_table.table[rho][t] < hough_table.table[rho][t + 1])
                     continue;
 
-            // ¶Ô±È×óÏÂ
+            // å¯¹æ¯”å·¦ä¸‹
             if (((t - 1) >= 0) && ((rho + 1) < RHO_MAX * 2))
                 if (hough_table.table[rho][t] < hough_table.table[rho + 1][t - 1])
                     continue;
 
-            // ¶Ô±ÈÏÂÃæ
+            // å¯¹æ¯”ä¸‹é¢
             if ((rho + 1) < RHO_MAX * 2)
                 if (hough_table.table[rho][t] < hough_table.table[rho + 1][t])
                     continue;
 
-            // ¶Ô±ÈÓÒÏÂ
+            // å¯¹æ¯”å³ä¸‹
             if (((t + 1) < ANGLE_T) && ((rho + 1) < RHO_MAX * 2))
                 if (hough_table.table[rho][t] < hough_table.table[rho + 1][t + 1])
                     continue;
 
-            // Ñ¡ÔñÇ°NÆ±
+            // é€‰æ‹©å‰Nç¥¨
             for (int n = 0; n < N; n++) {
                 if (top_N_vote[n] <= hough_table.table[rho][t]) {
                     tmp_vote = top_N_vote[n];
@@ -148,7 +148,7 @@ HoughTable _HoughNMS(HoughTable hough_table)
         }
     }
 
-    // »ñµÃÇ°NÃûÍ¶Æ±µÄÏñËØ
+    // è·å¾—å‰NåæŠ•ç¥¨çš„åƒç´ 
     for (int n = 0; n < N; n++) {
         if (top_N_rho[n] == -1)
             break;
@@ -160,7 +160,7 @@ HoughTable _HoughNMS(HoughTable hough_table)
     return output_hough_table;
 }
 
-//»ô·òÄæ±ä»»
+//éœå¤«é€†å˜æ¢
 Mat HoughInverse(HoughTable hough_table, Mat img) {
     int height = img.rows;
     int width = img.cols;
@@ -216,11 +216,11 @@ void A46(Mat img)
     imshow("canny", edge);
 
     HoughTable hough_table;
-    //Í¶Æ±
+    //æŠ•ç¥¨
     hough_table = _HoughVote(hough_table, edge);
-    //·Ç¼«´óÖµÒÖÖÆ
+    //éæå¤§å€¼æŠ‘åˆ¶
     hough_table = _HoughNMS(hough_table);
-    //»ô·òÄæ±ä»»
+    //éœå¤«é€†å˜æ¢
     Mat imgHough = HoughInverse(hough_table, img);
     imshow("imgHough", imgHough);
     waitKey(0);

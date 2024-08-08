@@ -11,8 +11,8 @@
 //#include "A_41_50.h"
 //#include "A_51_60.h"
 //#include "A_61_70.h"
-//#include "A_71_80.h"
-#include "A_101_120.h"
+#include "A_71_80.h"
+//#include "A_101_120.h"
 
 using namespace std;
 using namespace cv;
@@ -21,31 +21,31 @@ int main()
 {
 	SetConsoleOutputCP(CP_UTF8); // allow the chinese log to show.
 
-	Mat imgSrc32 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img32.png");
+	//Mat imgSrc32 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img32.png");
 
-	Mat imgSrc128 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img128.png");
-	Mat imgSrc128part = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img128_part.png");
+	//Mat imgSrc128 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img128.png");
+	//Mat imgSrc128part = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img128_part.png");
 
-	Mat imgSrc256 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img256.png");
+	//Mat imgSrc256 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img256.png");
 
-	Mat imgSrc512 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img512.png");
-	//Mat imgSrc512 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\512_2.png");
+	//Mat imgSrc512 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img512.png");
+	////Mat imgSrc512 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\512_2.png");
 
 
-	Mat img_dark = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img_dark.png");
-	Mat img_gamma = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\gamma.png");
-	Mat img_canny = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\canny2.png");
+	//Mat img_dark = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img_dark.png");
+	//Mat img_gamma = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\gamma.png");
+	//Mat img_canny = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\canny2.png");
 
 	Mat imori = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\imori.png");
-	Mat imori_part = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\imori_part.png");
+	//Mat imori_part = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\imori_part.png");
 
 
-	Mat part1 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\color.png");
-	Mat part2 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\blue1_part.png");
+	//Mat part1 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\color.png");
+	//Mat part2 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\blue1_part.png");
 
-	Mat seg = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\seg.png");
-	Mat img10 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img10.png");
-	Mat words = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\words.png");
+	//Mat seg = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\seg.png");
+	//Mat img10 = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\img10.png");
+	//Mat words = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\words.png");
 	//A1_P(); 
 	//A2_P();
 	//A3_P();
@@ -118,9 +118,9 @@ int main()
 	//A76(imori);
 	//A77();
 	//A78();
-	//A79(imori);
+	A79(imori);
 	//A101();
-	A102();
+	//A102();
 	return 0;
 }
 

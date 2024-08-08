@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_41_50.h"
@@ -7,16 +7,16 @@
 
 using namespace cv;
 
-//±ÕÔËËã£ºÏÈÅòÕÍÔÙ¸¯Ê´
+//é—­è¿ç®—ï¼šå…ˆè†¨èƒ€å†è…èš€
 void A50(Mat img)
 {
 	int imgHeight = img.rows;
 	int imgWeight = img.cols;
-	//»Ò¶ÈÍ¼£¬¶şÖµÍ¼
+	//ç°åº¦å›¾ï¼ŒäºŒå€¼å›¾
 	Mat imgGray = Mat::zeros(imgHeight, imgWeight, CV_8UC1);
 	Mat imgBin = Mat::zeros(imgHeight, imgWeight, CV_8UC1);
 
-	//»Ò¶È»¯
+	//ç°åº¦åŒ–
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWeight; ++x)
@@ -28,21 +28,21 @@ void A50(Mat img)
 	}
 
 
-	const int grayScale = 256;//»Ò¶ÈÖµ
+	const int grayScale = 256;//ç°åº¦å€¼
 
-	int pixelCount[grayScale] = { 0 };//»Ò¶ÈÖ±·½Í¼
-	float pixelPro[grayScale] = { 0 };//¸÷¸ö»Ò¶ÈÖµÕ¼×ÜÌåµÄ±ÈÀı
+	int pixelCount[grayScale] = { 0 };//ç°åº¦ç›´æ–¹å›¾
+	float pixelPro[grayScale] = { 0 };//å„ä¸ªç°åº¦å€¼å æ€»ä½“çš„æ¯”ä¾‹
 
-	double w0, w1;//±³¾°/Ç°¾°ÏñËØÕ¼±È
-	double u0, u1;//Ç°¾°/±³¾°Æ½¾ù»Ò¶ÈÖµ
+	double w0, w1;//èƒŒæ™¯/å‰æ™¯åƒç´ å æ¯”
+	double u0, u1;//å‰æ™¯/èƒŒæ™¯å¹³å‡ç°åº¦å€¼
 	double p0, p1;
-	double g = 0;//Àà¼ä·½²î
+	double g = 0;//ç±»é—´æ–¹å·®
 
-	double max_g = 0;//×î´óÀà¼ä·½²î
-	double good_k = 0;//×îÓÅãĞÖµ
-	int pixelSum = imgHeight * imgWeight;//×ÜÏñËØÖµ
+	double max_g = 0;//æœ€å¤§ç±»é—´æ–¹å·®
+	double good_k = 0;//æœ€ä¼˜é˜ˆå€¼
+	int pixelSum = imgHeight * imgWeight;//æ€»åƒç´ å€¼
 
-	//Í³¼ÆÍ¼Æ¬ÖĞ¸÷¸ö»Ò¶ÈÖµµÄ¸öÊı
+	//ç»Ÿè®¡å›¾ç‰‡ä¸­å„ä¸ªç°åº¦å€¼çš„ä¸ªæ•°
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWeight; ++x)
@@ -52,40 +52,40 @@ void A50(Mat img)
 		}
 	}
 
-	//Í³¼ÆÍ¼Æ¬ÖĞ¸÷¸ö»Ò¶ÈÖµËùÕ¼µÄ±ÈÀı
+	//ç»Ÿè®¡å›¾ç‰‡ä¸­å„ä¸ªç°åº¦å€¼æ‰€å çš„æ¯”ä¾‹
 	for (int i = 0; i < grayScale; ++i)
 	{
 		pixelPro[i] = 1.0 * pixelCount[i] / pixelSum;
 	}
 
-	//k:Ôİ¶¨ãĞÖµ(0-255)
+	//k:æš‚å®šé˜ˆå€¼(0-255)
 	for (int k = 0; k < grayScale; ++k)
 	{
 		w0 = w1 = u0 = u1 = g = 0;
 		p0 = p1 = 0;
-		//Ç°¾°£¬±³¾°Çø·Ö [0-k][k+1-255]
+		//å‰æ™¯ï¼ŒèƒŒæ™¯åŒºåˆ† [0-k][k+1-255]
 		for (int i = 0; i < grayScale; ++i)
 		{
-			//Èç¹ûµ±Ç°ÏñËØÖµĞ¡ÓÚãĞÖµkÔòÊôÓÚ±³¾°£¬·´Ö®ÊôÓÚÇ°¾°
+			//å¦‚æœå½“å‰åƒç´ å€¼å°äºé˜ˆå€¼kåˆ™å±äºèƒŒæ™¯ï¼Œåä¹‹å±äºå‰æ™¯
 			if (i <= k)
 			{
-				//¼ÆËã±³¾°ÏñËØÕ¼±È
+				//è®¡ç®—èƒŒæ™¯åƒç´ å æ¯”
 				w0 += pixelPro[i];
-				//¼ÆËãµ±Ç°»Ò¶ÈÖµ·¢ÉúµÄ¸ÅÂÊ:»Ò¶ÈÖµ*»Ò¶ÈÖµ·¢ÉúµÄ¸ÅÂÊ
+				//è®¡ç®—å½“å‰ç°åº¦å€¼å‘ç”Ÿçš„æ¦‚ç‡:ç°åº¦å€¼*ç°åº¦å€¼å‘ç”Ÿçš„æ¦‚ç‡
 				p0 += (i * pixelPro[i]);
 
 			}
 			else
 			{
-				//¼ÆËã±³¾°ÏñËØÕ¼±È
+				//è®¡ç®—èƒŒæ™¯åƒç´ å æ¯”
 				w1 += pixelPro[i];
 				p1 += (i * pixelPro[i]);
 			}
 		}
-		//¼ÆËãÆ½¾ù»Ò¶ÈÖµ£ºp0/w0
+		//è®¡ç®—å¹³å‡ç°åº¦å€¼ï¼šp0/w0
 		u0 = p0 / w0;
 		u1 = p1 / w1;
-		//¼ÆËãÀàÄÚ·½²î
+		//è®¡ç®—ç±»å†…æ–¹å·®
 		g = (float)(w0 * w1 * pow((u0 - u1), 2));
 		if (g > max_g)
 		{
@@ -96,7 +96,7 @@ void A50(Mat img)
 	}
 	printf_s("good k;%f\n", good_k);
 
-	//È¡µÃ×îºÃµÄkÖµ£¬ÒÔkÖµ×÷ÎªãĞÖµ½øĞĞ¶şÖµ»¯
+	//å–å¾—æœ€å¥½çš„kå€¼ï¼Œä»¥kå€¼ä½œä¸ºé˜ˆå€¼è¿›è¡ŒäºŒå€¼åŒ–
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWeight; ++x)
@@ -108,10 +108,10 @@ void A50(Mat img)
 		}
 	}
 
-	//ÅòÕÍ
+	//è†¨èƒ€
 	Mat imgDilate = imgBin.clone();
-	Mat tempImg;//×÷Îª¶Ô±ÈÍ¼
-	int time = 1;//Ö´ĞĞ´ÎÊı
+	Mat tempImg;//ä½œä¸ºå¯¹æ¯”å›¾
+	int time = 1;//æ‰§è¡Œæ¬¡æ•°
 	for (int t = 0; t < time; ++t)
 	{
 		tempImg = imgDilate.clone();
@@ -119,7 +119,7 @@ void A50(Mat img)
 		{
 			for (int x = 0; x < imgWeight; ++x)
 			{
-				//¶ÔÓÚ´ı²Ù×÷µÄÏñËØ(x,y)=0£¬(x, y-1)£¬(x-1, y)£¬(x+1, y)£¬(x, y+1)ÖĞ²»ÂÛÄÄÒ»¸öÎª255£¬Áî(x,y)=255¡£
+				//å¯¹äºå¾…æ“ä½œçš„åƒç´ (x,y)=0ï¼Œ(x, y-1)ï¼Œ(x-1, y)ï¼Œ(x+1, y)ï¼Œ(x, y+1)ä¸­ä¸è®ºå“ªä¸€ä¸ªä¸º255ï¼Œä»¤(x,y)=255ã€‚
 				if ((x > 0) && (tempImg.at<uchar>(y, x - 1) == 255))
 				{
 					imgDilate.at<uchar>(y, x) = 255;
@@ -144,7 +144,7 @@ void A50(Mat img)
 		}
 	}
 
-	//¸¯Ê´
+	//è…èš€
 	
 	Mat imgErode = imgDilate.clone();
 	time = 1;
@@ -155,7 +155,7 @@ void A50(Mat img)
 		{
 			for (int x = 0; x < imgWeight; ++x)
 			{
-				//¶ÔÓÚ´ı²Ù×÷µÄÏñËØ(x,y)=0£¬(x, y-1)£¬(x-1, y)£¬(x+1, y)£¬(x, y+1)ÖĞ²»ÂÛÄÄÒ»¸ö²»Îª255£¬Áî(x,y)=0¡£
+				//å¯¹äºå¾…æ“ä½œçš„åƒç´ (x,y)=0ï¼Œ(x, y-1)ï¼Œ(x-1, y)ï¼Œ(x+1, y)ï¼Œ(x, y+1)ä¸­ä¸è®ºå“ªä¸€ä¸ªä¸ä¸º255ï¼Œä»¤(x,y)=0ã€‚
 				if ((x > 0) && (tempImg.at<uchar>(y, x - 1) == 0))
 				{
 					imgErode.at<uchar>(y, x) = 0;

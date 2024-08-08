@@ -36,9 +36,9 @@ Mat Gaussian_Pyramid(Mat img,float n)
 			for (int c = 0; c < channel; ++c)
 			{
 				val = (1. - dx) * (1. - dy) * img.at<uchar>(yBefore, xBefore) +
-					dx * (1. - dy) * img.at<uchar>(yBefore, MIN(xBefore + 1, imgWidth - 1)) +
-					(1. - dx) * dy * img.at<uchar>(MIN(yBefore + 1, imgHeight - 1), xBefore) +
-					dx * dy * img.at<uchar>(MIN(yBefore + 1, imgHeight - 1), xBefore);
+					         dx * (1. - dy) * img.at<uchar>(yBefore, MIN(xBefore + 1, imgWidth - 1)) +
+					         (1. - dx) * dy * img.at<uchar>(MIN(yBefore + 1, imgHeight - 1), xBefore) +
+					                dx * dy * img.at<uchar>(MIN(yBefore + 1, imgHeight - 1), xBefore);
 				imgOut.at<uchar>(y, x) = (uchar)val;
 			}
 		}

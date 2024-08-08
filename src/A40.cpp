@@ -4,6 +4,7 @@
 #include "A_31_40.h"
 #include <math.h>
 
+
 using namespace cv;
 //将图像从RGB色彩空间变换到YCbCr色彩空间；
 //对YCbCr做DCT；

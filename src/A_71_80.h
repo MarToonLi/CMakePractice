@@ -7,14 +7,14 @@
 
 using namespace cv;
 
-void A71(Mat img);
-void A72(Mat img);
-void A73(Mat img);
-void A74(Mat img1);
-void A75(Mat img1);
-void A76(Mat img);
-void A77();
-void A78();
+//void A71(Mat img);
+//void A72(Mat img);
+//void A73(Mat img);
+//void A74(Mat img1);
+//void A75(Mat img1);
+//void A76(Mat img);
+//void A77();
+//void A78();
 void A79(Mat img);
-void A80(Mat img);
+//void A80(Mat img);
 #endif 
