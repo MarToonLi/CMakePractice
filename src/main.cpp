@@ -11,8 +11,8 @@
 //#include "A_41_50.h"
 //#include "A_51_60.h"
 //#include "A_61_70.h"
-#include "A_71_80.h"
-//#include "A_101_120.h"
+//#include "A_71_80.h"
+#include "A_101_120.h"
 
 using namespace std;
 using namespace cv;
@@ -118,9 +118,10 @@ int main()
 	//A76(imori);
 	//A77();
 	//A78();
-	A79(imori);
+	//A79(imori);
 	//A101();
 	//A102();
+	A103();
 	return 0;
 }
 

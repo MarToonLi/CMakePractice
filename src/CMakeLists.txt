@@ -13,7 +13,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 file(GLOB_RECURSE SOURCES "*.cpp")
 file(GLOB_RECURSE HEADERS "*.h")
 
-add_executable(My_Project "main.cpp" "A_71_80.h" "A79.cpp" )
+add_executable(My_Project "main.cpp" "A_71_80.h" "A_101_120.h"  "A103.cpp" )
 #add_executable(My_Project ${SOURCES} ${HEADERS})
 #add_executable(My_Project ${HEADERS})
 

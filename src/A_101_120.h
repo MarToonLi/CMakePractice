@@ -9,7 +9,7 @@ using namespace cv;
 
 void A101();
 void A102();
-//void A103();
+void A103();
 //void A104();
 //void A105();
 //void A106();
