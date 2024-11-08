@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_21_30.h"
@@ -11,21 +11,21 @@ void A29(Mat img)
 	int imgHeight = img.rows;
 	int imgWidth = img.cols;
 	int channel = img.channels();
-	//±ä»»²ÎÊı£º·ÂÉä±ä»»ÓĞ6¸ö×ÔÓÉ¶È
+	//å˜æ¢å‚æ•°ï¼šä»¿å°„å˜æ¢æœ‰6ä¸ªè‡ªç”±åº¦
 	/*
-	//¾ØÕó³Ë·¨
+	//çŸ©é˜µä¹˜æ³•
 	[a,b,tx][x] [_y]
 	[c,d,ty][y]=[_x]
 	[0,0,1] [1] [1]
 	*/
-	//¾ö¶¨Ğı×ª£¬ÏàËÆ±ä»»£¬¼ôÇĞ±ä»»
+	//å†³å®šæ—‹è½¬ï¼Œç›¸ä¼¼å˜æ¢ï¼Œå‰ªåˆ‡å˜æ¢
 	double a = 1.3, b = 0, c = 0, d = 0.8;
-	//¾ö¶¨Æ½ÒÆÎ»ÖÃ
+	//å†³å®šå¹³ç§»ä½ç½®
 	double tx = 30, ty = -30;
 
 	double det = a * d - b * c;
 
-	//Ëõ·ÅºóµÄ¿í¸ß
+	//ç¼©æ”¾åçš„å®½é«˜
 	int resizeHeight = (int)(imgHeight * a);
 	int resizeWidth = (int)(imgWidth * d);
 	Mat imgOut = Mat::zeros(resizeHeight, resizeWidth, CV_8UC3);

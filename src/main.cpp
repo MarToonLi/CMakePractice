@@ -4,6 +4,7 @@
 //#include "A_1_10.h"
 #include <windows.h>
 #include <stdio.h>
+#include "logger.h"
 
 //#include "A_11_20.h"
 //#include "A_21_30.h"
@@ -36,7 +37,7 @@ int main()
 	//Mat img_gamma = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\gamma.png");
 	//Mat img_canny = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\canny2.png");
 
-	Mat imori = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\imori.png");
+	Mat imori = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\A104.png");
 	//Mat imori_part = imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\imori_part.png");
 
 
@@ -121,7 +122,11 @@ int main()
 	//A79(imori);
 	//A101();
 	//A102();
-	A103();
+	//A103();
+	LOGD("sssssssssssssss");
+
+	A104();
+
 	return 0;
 }
 

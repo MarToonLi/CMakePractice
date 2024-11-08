@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_31_40.h"
@@ -13,7 +13,7 @@ void A36(Mat img)
 	const int height = 128, width = 128, channel = 3;
 	double coef[height][width][channel];
 
-	//ÀëÉ¢ÓàÏÒ±ä»»
+	//ç¦»æ•£ä½™å¼¦å˜æ¢
 	double I;
 	double F;
 	double Cu, Cv;
@@ -56,7 +56,7 @@ void A36(Mat img)
 			}
 		}
 	}
-	//ÀëÉ¢ÓàÏÒÄæ±ä»»
+	//ç¦»æ•£ä½™å¼¦é€†å˜æ¢
 	double f;
 	for (int ys = 0; ys < height; ys += T)
 	{

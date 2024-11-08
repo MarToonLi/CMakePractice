@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_1_10.h"
@@ -7,39 +7,39 @@ using namespace cv;
 
 void A9(void)
 {
-	printf_s("¸ßË¹ÂË²¨\n");
+	printf_s("é«˜æ–¯æ»¤æ³¢\n");
 	Mat imgSrc = imread("C:\\Users\\Administrator\\Desktop\\OpencvTestImg\\img512.png");
 	int imgHeight = imgSrc.rows;
 	int imgWidth = imgSrc.cols;
 	int channel = imgSrc.channels();
 	Mat imgOut = Mat::zeros(imgHeight, imgWidth, CV_8UC3);
 
-	/*¸ßË¹ÂË²¨Æ÷½«ÖĞĞÄÏñËØÖÜÎ§µÄÏñËØ°´ÕÕ¸ßË¹·Ö²¼¼ÓÈ¨Æ½¾ù½øĞĞÆ½»¬»¯¡£ÕâÑùµÄ£¨¶şÎ¬£©È¨ÖµÍ¨³£±»³ÆÎª¾í»ıºË£¨kernel£©»òÕßÂË²¨Æ÷£¨filter£©¡£*/
-	//µ±Í¼Æ¬´óĞ¡²»ÊÇÂË²¨Æ÷µÄÕûÊı±¶Ê±ºò£¬ĞèÒªÔÚÖÜÎ§²¹0
+	/*é«˜æ–¯æ»¤æ³¢å™¨å°†ä¸­å¿ƒåƒç´ å‘¨å›´çš„åƒç´ æŒ‰ç…§é«˜æ–¯åˆ†å¸ƒåŠ æƒå¹³å‡è¿›è¡Œå¹³æ»‘åŒ–ã€‚è¿™æ ·çš„ï¼ˆäºŒç»´ï¼‰æƒå€¼é€šå¸¸è¢«ç§°ä¸ºå·ç§¯æ ¸ï¼ˆkernelï¼‰æˆ–è€…æ»¤æ³¢å™¨ï¼ˆfilterï¼‰ã€‚*/
+	//å½“å›¾ç‰‡å¤§å°ä¸æ˜¯æ»¤æ³¢å™¨çš„æ•´æ•°å€æ—¶å€™ï¼Œéœ€è¦åœ¨å‘¨å›´è¡¥0
 
-	int sigma = 1.3;//·½²î
-	const int kernelSize = 3;//¾í»ıºË´óĞ¡
-	int kernelRadius = floor(kernelSize / 2);//¾í»ıºË°ë¾¶
-	float kernel[kernelSize][kernelSize];//¾í»ıºË¾ØÕó
+	int sigma = 1.3;//æ–¹å·®
+	const int kernelSize = 3;//å·ç§¯æ ¸å¤§å°
+	int kernelRadius = floor(kernelSize / 2);//å·ç§¯æ ¸åŠå¾„
+	float kernel[kernelSize][kernelSize];//å·ç§¯æ ¸çŸ©é˜µ
 	double kernelSum = 0;
-	int x_ = 0, y_ = 0;//°ë¾¶ÄÚµÄ×ø±ê
+	int x_ = 0, y_ = 0;//åŠå¾„å†…çš„åæ ‡
 	double PI = atan(1) * 4;
 
-	//¼ÆËã¾í»ıºËÈ¨Öµ
+	//è®¡ç®—å·ç§¯æ ¸æƒå€¼
 	for (int y = 0; y < kernelSize; ++y)
 	{
 		for (int x = 0; x < kernelSize; ++x)
 		{
 			x_ = x - kernelRadius;
 			y_ = y - kernelRadius;
-			//¶şÎ¬¸ßË¹·Ö²¼º¯Êı
+			//äºŒç»´é«˜æ–¯åˆ†å¸ƒå‡½æ•°
 			kernel[y][x] = 1 / (2 * PI * sigma * sigma) * exp(-(x_ * x_ + y_ * y_) / (2 * sigma * sigma));
 			kernelSum += kernel[y][x];
 		}
 	}
-	//------------´òÓ¡¾í»ıºË------------
+	//------------æ‰“å°å·ç§¯æ ¸------------
 	printf_s("kernel-sum:%f\n", kernelSum);
-	printf_s("Î´¹éÒ»»¯µÄ¾í»ıºË\n");
+	printf_s("æœªå½’ä¸€åŒ–çš„å·ç§¯æ ¸\n");
 	for (int i = 0; i < kernelSize; ++i)
 	{
 		for (int j = 0; j < kernelSize; ++j)
@@ -50,7 +50,7 @@ void A9(void)
 	}
 
 	double sum = 0;
-	//¹éÒ»»¯¾í»ıºË£¬Ê¹µÃËùÓĞÈ¨ÖµÖ®ºÍÎª1
+	//å½’ä¸€åŒ–å·ç§¯æ ¸ï¼Œä½¿å¾—æ‰€æœ‰æƒå€¼ä¹‹å’Œä¸º1
 	for (int y = 0; y < kernelSize; y++) {
 		for (int x = 0; x < kernelSize; x++) {
 			kernel[y][x] = kernel[y][x] / kernelSum;
@@ -58,9 +58,9 @@ void A9(void)
 		}
 	}
 
-	//------------´òÓ¡¾í»ıºË------------
+	//------------æ‰“å°å·ç§¯æ ¸------------
 	printf_s("kernel-sum:%f\n", sum);
-	printf_s("¹éÒ»»¯ÒÔºóµÄ¾í»ıºË\n");
+	printf_s("å½’ä¸€åŒ–ä»¥åçš„å·ç§¯æ ¸\n");
 	for (int i = 0; i < kernelSize; ++i)
 	{
 		for (int j = 0; j < kernelSize; ++j)
@@ -71,13 +71,13 @@ void A9(void)
 	}
 
 	Mat imgtemp = Mat::zeros(imgHeight + 2 * kernelRadius, imgWidth + 2 * kernelRadius, CV_8UC3);
-	//¸´ÖÆÒ»ÕÅÔ­Í¼£¬²¢ÇÒÌí¼Ó±ß¿ò
+	//å¤åˆ¶ä¸€å¼ åŸå›¾ï¼Œå¹¶ä¸”æ·»åŠ è¾¹æ¡†
 	for (int y = 0; y < imgHeight; y++)
 		for (int x = 0; x < imgWidth; x++)
 			for (int c = 0; c < channel; c++)
 				imgtemp.at<Vec3b>(y + kernelRadius, x + kernelRadius)[c] = imgSrc.at<Vec3b>(y, x)[c];
 
-	//Ê¹ÓÃ¾í»ıºË¶ÔÔ´Í¼Ïñ½øĞĞ¸ßË¹ÂË²¨
+	//ä½¿ç”¨å·ç§¯æ ¸å¯¹æºå›¾åƒè¿›è¡Œé«˜æ–¯æ»¤æ³¢
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWidth; ++x)
@@ -87,7 +87,7 @@ void A9(void)
 				double val = 0;
 				for (int dy = -kernelRadius; dy < kernelRadius + 1; dy++)
 					for (int dx = -kernelRadius; dx < kernelRadius + 1; dx++)
-						//·ÀÖ¹Ô½½ç
+						//é˜²æ­¢è¶Šç•Œ
 						if (((y + dy) >= 0) && ((x + dx) >= 0))
 							val += (double)imgtemp.at<Vec3b>(y + dy, x + dx)[c] * kernel[dy + kernelRadius][dx + kernelRadius];
 				imgOut.at<Vec3b>(y, x)[c] = val;

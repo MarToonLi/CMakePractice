@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_21_30.h"
@@ -6,7 +6,7 @@
 
 using namespace cv;
 
-//¼ÆËãÈ¨ÖØ£ºBicubic function
+//è®¡ç®—æƒé‡ï¼šBicubic function
 double Bicubic(double x)
 {
 	double a = -1;
@@ -33,11 +33,11 @@ void A27(Mat img)
 	int imgWidth = img.cols;
 	int channel = img.channels();
 
-	//Ëõ·Å±ÈÀı
+	//ç¼©æ”¾æ¯”ä¾‹
 	double rx = 1.2;
 	double ry = 1.2;
 
-	//Ëõ·ÅºóµÄ¿í¸ß
+	//ç¼©æ”¾åçš„å®½é«˜
 	int resizeHeight = (int)(imgHeight * ry);
 	int resizeWidth = (int)(imgWidth * rx);
 	Mat imgOut = Mat::zeros(resizeHeight, resizeWidth, CV_8UC3);
@@ -61,7 +61,7 @@ void A27(Mat img)
 			{
 				weightSum = 0;
 				val = 0;
-				//Çó³öÄ¿±êÄ¿±êÏñËØÖÜÎ§16¸öÏñËØµÄÈ¨ÖØ
+				//æ±‚å‡ºç›®æ ‡ç›®æ ‡åƒç´ å‘¨å›´16ä¸ªåƒç´ çš„æƒé‡
 				for (int j = -1; j < 3; j++)
 				{
 					_y = ValueClip(yBefore+j, 0, imgHeight - 1);

@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_71_80.h"
@@ -7,13 +7,13 @@ using namespace cv;
 
 Mat Gobar(float Angle)
 {
-	int sigma = 10;//·½²î
-	int gamma = 1.2;//Ù¤Âí
-	const int kSize = 111;//¾í»ıºË´óĞ¡
-	int kRadius = floor(kSize / 2);//¾í»ıºË°ë¾¶
-	float kernel[kSize][kSize];//¾í»ıºË¾ØÕó
+	int sigma = 10;//æ–¹å·®
+	int gamma = 1.2;//ä¼½é©¬
+	const int kSize = 111;//å·ç§¯æ ¸å¤§å°
+	int kRadius = floor(kSize / 2);//å·ç§¯æ ¸åŠå¾„
+	float kernel[kSize][kSize];//å·ç§¯æ ¸çŸ©é˜µ
 	float kSum = 0;
-	int px = 0, py = 0;//°ë¾¶ÄÚµÄ×ø±ê
+	int px = 0, py = 0;//åŠå¾„å†…çš„åæ ‡
 	float theta = 0;
 	float angle = Angle;
 	float Lambda = 10;
@@ -21,7 +21,7 @@ Mat Gobar(float Angle)
 	float max = 0;
 	float min = 999;
 	Mat gabor = Mat::zeros(kSize, kSize, CV_8UC1);
-	//¼ÆËã¾í»ıºËÈ¨Öµ
+	//è®¡ç®—å·ç§¯æ ¸æƒå€¼
 	for (int y = 0; y < kSize; ++y)
 	{
 		for (int x = 0; x < kSize; ++x)

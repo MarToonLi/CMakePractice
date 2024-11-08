@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include<math.h>
@@ -17,7 +17,7 @@ void A19(Mat img)
 	Mat imgGaussianOut = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 	Mat imgLoGOut = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 
-	//ÏÈ»Ò¶È»¯
+	//å…ˆç°åº¦åŒ–
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWidth; ++x)
@@ -28,15 +28,15 @@ void A19(Mat img)
 		}
 	}
 	const int kSize = 3;
-	//¾í»ı°ë¾¶
-	int kRadius = floor((double)kSize / 2);//¾í»ı°ë¾¶
+	//å·ç§¯åŠå¾„
+	int kRadius = floor((double)kSize / 2);//å·ç§¯åŠå¾„
 	double kernel[kSize][kSize];
 	double kernel_sum = 0;
 	double _x, _y;
 	double sigma = 3;
 	double PI = atan(1) * 4;
 
-	//¸ßË¹ÂË²¨,¼ÆËãËã×Ó
+	//é«˜æ–¯æ»¤æ³¢,è®¡ç®—ç®—å­
 	for (int y = 0; y < kSize; y++)
 	{
 		for (int x = 0; x < kSize; x++)
@@ -75,7 +75,7 @@ void A19(Mat img)
 
 		}
 	}
-	//À­ÆÕÀ­Ë¹Ëã×Ó
+	//æ‹‰æ™®æ‹‰æ–¯ç®—å­
 	double kLaplacian[kSize][kSize] = { {0, 1, 0}, {1, -4, 1}, {0, 1, 0} };
 	for (int y = 0; y < imgHeight; ++y)
 	{

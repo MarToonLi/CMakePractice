@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_31_40.h"
@@ -10,23 +10,23 @@ using namespace cv;
 
 void A34(Mat img)
 {
-	//¼ÆÊ±
+	//è®¡æ—¶
 	clock_t start, stop;
 	double duration;
 
 	const int height = 128, width = 128;
-	//ĞéÊı¾ØÕó
+	//è™šæ•°çŸ©é˜µ
 	std::complex<double> coef[height][width];
 
 	int imgHeight = img.rows;
 	int imgWidth = img.cols;
 	int channel = img.channels();
 
-	//»Ò¶È»¯
-	start = clock();//¿ªÊ¼¼ÆÊ±
+	//ç°åº¦åŒ–
+	start = clock();//å¼€å§‹è®¡æ—¶
 	Mat imgGray = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 
-	//»Ò¶È»¯
+	//ç°åº¦åŒ–
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWidth; ++x)
@@ -38,14 +38,14 @@ void A34(Mat img)
 	}
 	Mat imgOut = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 
-	//DFT:ÀëÉ¢¸µÀïÒ¶±ä»»
-	std::complex<double> i;//ĞéÊı:a+bi
-	double val;//ÏñËØÖµ
+	//DFT:ç¦»æ•£å‚…é‡Œå¶å˜æ¢
+	std::complex<double> i;//è™šæ•°:a+bi
+	double val;//åƒç´ å€¼
 	double theta;
-	//ÔÚ¶ÔÓÚ¶şÎ¬Í¼Æ¬£¬ĞèÒª½øĞĞÁ½¸ö·½ÏòÉÏµÄ¸µÀïÒ¶±ä»»
+	//åœ¨å¯¹äºäºŒç»´å›¾ç‰‡ï¼Œéœ€è¦è¿›è¡Œä¸¤ä¸ªæ–¹å‘ä¸Šçš„å‚…é‡Œå¶å˜æ¢
 	for (int y = 0; y < imgHeight; ++y)
 	{
-		printf_s("¸µÀïÒ¶±ä»»µÚy:%dĞĞ\n", y);
+		printf_s("å‚…é‡Œå¶å˜æ¢ç¬¬y:%dè¡Œ\n", y);
 		for (int x = 0; x < imgWidth; ++x)
 		{
 			i.real(0);
@@ -55,11 +55,11 @@ void A34(Mat img)
 			{
 				for (int _x = 0; _x < imgWidth; ++_x)
 				{
-					//»ñÈ¡Í¼ÏñµÄÖµ(²ÉÑùĞÅºÅ):x(n)
+					//è·å–å›¾åƒçš„å€¼(é‡‡æ ·ä¿¡å·):x(n)
 					val = (double)imgGray.at<uchar>(_y, _x);
-					//¦È=(2¦Ğkn)/N
+					//Î¸=(2Ï€kn)/N
 					theta = -2 * PI * ((double)x * (double)_x / (double)imgWidth + (double)y * (double)_y / (double)imgHeight);
-					//±ä»»ºóµÄÊı¾İ£ºX(k)=¦²(N-1)(n=0)[x(n)cos(¦È)+jsin(¦È)];
+					//å˜æ¢åçš„æ•°æ®ï¼šX(k)=Î£(N-1)(n=0)[x(n)cos(Î¸)+jsin(Î¸)];
 					i += std::complex<double>(cos(theta), sin(theta)) * val;
 				}
 			}
@@ -68,9 +68,9 @@ void A34(Mat img)
 		}
 	}
 
-	printf_s("¸µÀïÒ¶±ä»»¼ÆËãÍê³É\n");
+	printf_s("å‚…é‡Œå¶å˜æ¢è®¡ç®—å®Œæˆ\n");
 
-	//¸ßÍ¨ÂË²¨
+	//é«˜é€šæ»¤æ³¢
 	int r = imgHeight / 2;
 	double pass_r = 0.5;
 	int filter_d = (int)((double)r * pass_r);
@@ -91,10 +91,10 @@ void A34(Mat img)
 	double g;
 	std::complex<double> G;
 
-	//IDFT ÀëÉ¢¸µÀïÒ¶Äæ±ä»»
+	//IDFT ç¦»æ•£å‚…é‡Œå¶é€†å˜æ¢
 	for (int y = 0; y < imgHeight; ++y)
 	{
-		printf_s("¸µÀïÒ¶Äæ±ä»»µÚy:%dĞĞ\n", y);
+		printf_s("å‚…é‡Œå¶é€†å˜æ¢ç¬¬y:%dè¡Œ\n", y);
 		for (int x = 0; x < imgWidth; ++x)
 		{
 			i.real(0);
@@ -104,11 +104,11 @@ void A34(Mat img)
 			{
 				for (int _x = 0; _x < imgWidth; ++_x)
 				{
-					//»ñÈ¡¸µÀïÒ¶±ä»»¹ıºóµÄÊı¾İ
+					//è·å–å‚…é‡Œå¶å˜æ¢è¿‡åçš„æ•°æ®
 					G = coef[_y][_x];
-					//¦È=(2¦Ğkn)/N
+					//Î¸=(2Ï€kn)/N
 					theta = 2 * PI * ((double)_x * (double)x / (double)imgWidth + (double)_y * (double)y / (double)imgHeight);
-					//±ä»»ºóµÄÊı¾İ£ºX(k)=¦²(N-1)(n=0)[x(n)cos(¦È)+jsin(¦È)];
+					//å˜æ¢åçš„æ•°æ®ï¼šX(k)=Î£(N-1)(n=0)[x(n)cos(Î¸)+jsin(Î¸)];
 					i += std::complex<double>(cos(theta), sin(theta)) * G;
 				}
 			}
@@ -116,11 +116,11 @@ void A34(Mat img)
 			imgOut.at<uchar>(y, x) = (uchar)g;
 		}
 	}
-	/* ½áÊø¼ÆÊ± */
+	/* ç»“æŸè®¡æ—¶ */
 	stop = clock();
 	duration = ((double)(stop - start)) / CLK_TCK;
-	printf("ÔËĞĞÊ±¼ä£º%f\n", duration);
-	printf_s("¸µÀïÒ¶Äæ±ä»»¼ÆËãÍê³É\n");
+	printf("è¿è¡Œæ—¶é—´ï¼š%f\n", duration);
+	printf_s("å‚…é‡Œå¶é€†å˜æ¢è®¡ç®—å®Œæˆ\n");
 	imshow("imgSrc", img);
 	imshow("imgOut", imgOut);
 	waitKey(0);

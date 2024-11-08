@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_71_80.h"
@@ -22,7 +22,7 @@ void A71(Mat img)
 	{
 		for (int x = 0; x < imgWeight; ++x)
 		{
-			//»ñÈ¡RGB
+			//è·å–RGB
 			R = (float)img.at<Vec3b>(y, x)[2] / 255;
 			G = (float)img.at<Vec3b>(y, x)[1] / 255;
 			B = (float)img.at<Vec3b>(y, x)[0] / 255;
@@ -40,14 +40,14 @@ void A71(Mat img)
 			else if (Cmin == G)
 				H = 60 * (R - B) / delta + 300;
 
-			//¼ÆËãS(0-1)
+			//è®¡ç®—S(0-1)
 			if (Cmax == 0)
 				S = 0;
 			else
 				S = delta;
-			//S = delta/Cmax;Ğ§¹û²»ºÃ
+			//S = delta/Cmax;æ•ˆæœä¸å¥½
 
-		//¼ÆËãV(0-1)
+		//è®¡ç®—V(0-1)
 			V = Cmax;
 
 			imgHSV.at<Vec3f>(y, x)[0] = H;
@@ -57,7 +57,7 @@ void A71(Mat img)
 	}
 
 	Mat bin = Mat::zeros(imgHeight, imgWeight, CV_8UC1);
-	//À¶É«·¶Î§180 - 260
+	//è“è‰²èŒƒå›´180 - 260
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWeight; ++x)

@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_71_80.h"
@@ -9,15 +9,15 @@ Mat Gaussian_Pyramid(Mat img,float n)
 	int imgHeight = img.rows;
 	int imgWidth = img.cols;
 	int channel = img.channels();
-	//Ëõ·Å±ÈÀı
+	//ç¼©æ”¾æ¯”ä¾‹
 	double rx;
 	double ry;
 	rx = ry = n;
-	//Ëõ·ÅºóµÄ¿í¸ß
+	//ç¼©æ”¾åçš„å®½é«˜
 	int resizeHeight = (int)(imgHeight * ry);
 	int resizeWidth = (int)(imgWidth * rx);
 	Mat imgOut = Mat::zeros(resizeHeight, resizeWidth, CV_8UC1);
-	//¼ÆËãÖµ
+	//è®¡ç®—å€¼
 	int xBefore, yBefore;
 	double dy, dx;
 	double val;
@@ -52,7 +52,7 @@ void A75(Mat img)
 	int imgWidth = img.cols;
 	int channel = img.channels();
 	Mat imgGray = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
-	//»Ò¶È»¯
+	//ç°åº¦åŒ–
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWidth; ++x)

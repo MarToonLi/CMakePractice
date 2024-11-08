@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_21_30.h"
@@ -12,12 +12,12 @@ void A26(Mat img)
 	int imgWidth = imgSrc.cols;
 	int channel = imgSrc.channels();
 
-	//Ëõ·Å±ÈÀı
+	//ç¼©æ”¾æ¯”ä¾‹
 	double rx;
 	double ry;
 	rx = ry =2;
 
-	//Ëõ·ÅºóµÄ¿í¸ß
+	//ç¼©æ”¾åçš„å®½é«˜
 	int resizeHeight = (int)(imgHeight * ry);
 	int resizeWidth = (int)(imgWidth * rx);
 	Mat imgOut = Mat::zeros(resizeHeight, resizeWidth, CV_8UC3);
@@ -25,7 +25,7 @@ void A26(Mat img)
 	printf_s("h:%d,w:%d\n", imgHeight, imgWidth);
 	printf_s("rh:%d,rw:%d\n", resizeHeight, resizeWidth);
 
-	//¼ÆËãÖµ
+	//è®¡ç®—å€¼
 	int xBefore, yBefore;
 	double dy, dx;
 	double val;

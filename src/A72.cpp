@@ -1,9 +1,9 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_71_80.h"
 using namespace cv;
-//ÅòÕÍ
+//è†¨èƒ€
 Mat Dilate(Mat img, int n)
 {
 	int imgHeight = img.rows;
@@ -11,7 +11,7 @@ Mat Dilate(Mat img, int n)
 	int channel = img.channels();
 
 	Mat imgDilate = img.clone();
-	Mat tempImg;//×÷Îª¶Ô±ÈÍ¼
+	Mat tempImg;//ä½œä¸ºå¯¹æ¯”å›¾
 	for (int t = 0; t < n; ++t)
 	{
 		tempImg = imgDilate.clone();
@@ -19,7 +19,7 @@ Mat Dilate(Mat img, int n)
 		{
 			for (int x = 0; x < imgWidth; ++x)
 			{
-				//¶ÔÓÚ´ı²Ù×÷µÄÏñËØ(x,y)=0£¬(x, y-1)£¬(x-1, y)£¬(x+1, y)£¬(x, y+1)ÖĞ²»ÂÛÄÄÒ»¸öÎª255£¬Áî(x,y)=255¡£
+				//å¯¹äºå¾…æ“ä½œçš„åƒç´ (x,y)=0ï¼Œ(x, y-1)ï¼Œ(x-1, y)ï¼Œ(x+1, y)ï¼Œ(x, y+1)ä¸­ä¸è®ºå“ªä¸€ä¸ªä¸º255ï¼Œä»¤(x,y)=255ã€‚
 				if ((x > 0) && (tempImg.at<uchar>(y, x - 1) == 255))
 				{
 					imgDilate.at<uchar>(y, x) = 255;
@@ -48,7 +48,7 @@ Mat Dilate(Mat img, int n)
 
 }
 
-//¸¯Ê´
+//è…èš€
 Mat Erode(Mat img, int n)
 {
 	int imgHeight = img.rows;
@@ -56,7 +56,7 @@ Mat Erode(Mat img, int n)
 	int channel = img.channels();
 
 	Mat imgErode = img.clone();
-	Mat tempImg;//×÷Îª¶Ô±ÈÍ¼
+	Mat tempImg;//ä½œä¸ºå¯¹æ¯”å›¾
 
 	for (int t = 0; t < n; ++t)
 	{
@@ -65,7 +65,7 @@ Mat Erode(Mat img, int n)
 		{
 			for (int x = 0; x < imgWidth; ++x)
 			{
-				//¶ÔÓÚ´ı²Ù×÷µÄÏñËØ(x,y)=0£¬(x, y-1)£¬(x-1, y)£¬(x+1, y)£¬(x, y+1)ÖĞ²»ÂÛÄÄÒ»¸ö²»Îª255£¬Áî(x,y)=0¡£
+				//å¯¹äºå¾…æ“ä½œçš„åƒç´ (x,y)=0ï¼Œ(x, y-1)ï¼Œ(x-1, y)ï¼Œ(x+1, y)ï¼Œ(x, y+1)ä¸­ä¸è®ºå“ªä¸€ä¸ªä¸ä¸º255ï¼Œä»¤(x,y)=0ã€‚
 				if ((x > 0) && (tempImg.at<uchar>(y, x - 1) == 0))
 				{
 					imgErode.at<uchar>(y, x) = 0;
@@ -93,7 +93,7 @@ Mat Erode(Mat img, int n)
 	return imgErode;
 }
 
-//¿ªÔËËã
+//å¼€è¿ç®—
 Mat Morphology_Opening(Mat img,int n)
 {
 	Mat out = Erode(img, n);
@@ -101,7 +101,7 @@ Mat Morphology_Opening(Mat img,int n)
 	return out;
 }
 
-//±ÕÔËËã
+//é—­è¿ç®—
 Mat Morphology_Closing(Mat img, int n)
 {
 	Mat out = Dilate(img, n);
@@ -127,7 +127,7 @@ void A72(Mat img)
 	{
 		for (int x = 0; x < imgWeight; ++x)
 		{
-			//»ñÈ¡RGB
+			//è·å–RGB
 			R = (float)img.at<Vec3b>(y, x)[2] / 255;
 			G = (float)img.at<Vec3b>(y, x)[1] / 255;
 			B = (float)img.at<Vec3b>(y, x)[0] / 255;
@@ -145,14 +145,14 @@ void A72(Mat img)
 			else if (Cmin == G)
 				H = 60 * (R - B) / delta + 300;
 
-			//¼ÆËãS(0-1)
+			//è®¡ç®—S(0-1)
 			if (Cmax == 0)
 				S = 0;
 			else
 				S = delta;
-			//S = delta/Cmax;Ğ§¹û²»ºÃ
+			//S = delta/Cmax;æ•ˆæœä¸å¥½
 
-		//¼ÆËãV(0-1)
+		//è®¡ç®—V(0-1)
 			V = Cmax;
 
 			imgHSV.at<Vec3f>(y, x)[0] = H;
@@ -163,7 +163,7 @@ void A72(Mat img)
 
 	Mat bin = Mat::zeros(imgHeight, imgWeight, CV_8UC1);
 
-	//À¶É«·¶Î§180 - 260
+	//è“è‰²èŒƒå›´180 - 260
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWeight; ++x)

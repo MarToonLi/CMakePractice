@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_51_60.h"
@@ -20,13 +20,13 @@ void A55(Mat img1,Mat img2)
 
 	int val1 = 0, val2 = 0;
 	int SAD = LONG_MAX;
-	int _x = 0, _y = 0;//Æ¥ÅäÍ¼Æ¬×ø±ê
-	int X = 0, Y = 0;//Ô­Í¼Æ¥Åä×ø±ê
+	int _x = 0, _y = 0;//åŒ¹é…å›¾ç‰‡åæ ‡
+	int X = 0, Y = 0;//åŸå›¾åŒ¹é…åæ ‡
 	int diff = 0;
 	bool flag = false;
 
-	//¾ø¶ÔÖµ²îºÍ:Ô´Í¼Æ¬ºÍÆ¥ÅäÍ¼Æ¬¸÷¸öÏñËØÖ®²î£¬È»ºóÈ¡¾ø¶ÔÖµ
-	//Ã¿´Î»¬¶¯Ò»¸öÏñËØ
+	//ç»å¯¹å€¼å·®å’Œ:æºå›¾ç‰‡å’ŒåŒ¹é…å›¾ç‰‡å„ä¸ªåƒç´ ä¹‹å·®ï¼Œç„¶åå–ç»å¯¹å€¼
+	//æ¯æ¬¡æ»‘åŠ¨ä¸€ä¸ªåƒç´ 
 
 	for (int y = 0; y < imgHeight - imgh; ++y)
 	{
@@ -35,12 +35,12 @@ void A55(Mat img1,Mat img2)
 			int sad = 0;
 			Mat temp = img1.clone();
 
-			Rect rect(x, y, imgw, imgh);//×óÉÏ×ø±ê£¨x,y£©ºÍ¾ØĞÎµÄ³¤(x)¿í(y)
+			Rect rect(x, y, imgw, imgh);//å·¦ä¸Šåæ ‡ï¼ˆx,yï¼‰å’ŒçŸ©å½¢çš„é•¿(x)å®½(y)
 			cv::rectangle(temp, rect, Scalar(0, 0, 255), 1, LINE_AA, 0);
 			cv::imshow("imgGray1", temp);
 			cv::waitKey(5);
 
-			//ÔÚÆ¥ÅäÍ¼Æ¬·¶Î§ÄÚÇóSAD
+			//åœ¨åŒ¹é…å›¾ç‰‡èŒƒå›´å†…æ±‚SAD
 			for (int _y = 0; _y < imgh; ++_y)
 			{
 				for (int _x = 0; _x < imgw; ++_x)
@@ -54,7 +54,7 @@ void A55(Mat img1,Mat img2)
 					}
 				}
 			}
-			printf_s("Æ¥Åä×ø±ê£ºy:%d,x:%d SSD:%d\n", Y, X, sad);
+			printf_s("åŒ¹é…åæ ‡ï¼šy:%d,x:%d SSD:%d\n", Y, X, sad);
 			if (sad < SAD)
 			{
 				SAD = sad;
@@ -72,10 +72,10 @@ void A55(Mat img1,Mat img2)
 			break;
 	}
 
-	Rect rect(X, Y, imgw, imgh);//×óÉÏ×ø±ê£¨x,y£©ºÍ¾ØĞÎµÄ³¤(x)¿í(y)
+	Rect rect(X, Y, imgw, imgh);//å·¦ä¸Šåæ ‡ï¼ˆx,yï¼‰å’ŒçŸ©å½¢çš„é•¿(x)å®½(y)
 	cv::rectangle(img1, rect, Scalar(0, 0, 255), 1, LINE_8, 0);
 
-	printf_s("Æ¥Åä×ø±ê£ºy:%d,x:%d\nSSD:%d\n", Y, X, SAD);
+	printf_s("åŒ¹é…åæ ‡ï¼šy:%d,x:%d\nSSD:%d\n", Y, X, SAD);
 
 	cv::imshow("img1", img1);
 	cv::imshow("img2", img2);

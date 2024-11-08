@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_21_30.h"
@@ -12,25 +12,25 @@ void A25(Mat img)
 	int imgWidth = imgSrc.cols;
 	int channel = imgSrc.channels();
 	double val;
-	//Ëõ·Å±ÈÀı
+	//ç¼©æ”¾æ¯”ä¾‹
 	double rx = 1.5;
 	double ry = 1.5;
-	//Ëõ·ÅºóµÄ¿í¸ß
+	//ç¼©æ”¾åçš„å®½é«˜
 	int resizeHeight = (int)(imgHeight * ry);
 	int resizeWidth = (int)(imgWidth * rx);
 
 	printf_s("h:%d,w:%d\n",imgHeight,imgWidth);
 	printf_s("rh:%d,rw:%d\n",resizeHeight,resizeWidth);
 	Mat imgOut = Mat::zeros(resizeHeight, resizeWidth, CV_8UC3);
-	//¼ÆËãÖµ
+	//è®¡ç®—å€¼
 	int xBefore;
 	int yBefore;
 
-	//round(x)·µ»ØxµÄËÄÉáÎåÈëÕûÊıÖµ¡£
+	//round(x)è¿”å›xçš„å››èˆäº”å…¥æ•´æ•°å€¼ã€‚
 
 	for (int y = 0; y < resizeHeight; ++y)
 	{
-		yBefore = (int)round(y / ry);//»ñµÃyÖáËõ·Å±ÈÀı
+		yBefore = (int)round(y / ry);//è·å¾—yè½´ç¼©æ”¾æ¯”ä¾‹
 		yBefore = fmin(yBefore, imgHeight - 1);
 
 		for (int x = 0; x < resizeWidth; ++x)

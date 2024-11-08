@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_71_80.h"
@@ -9,15 +9,15 @@ Mat GaussianPyramid(Mat img, float n)
 	int imgHeight = img.rows;
 	int imgWidth = img.cols;
 	int channel = img.channels();
-	//ËõĞ¡
+	//ç¼©å°
 	double rx;
 	double ry;
 	rx = ry = n;
-	//Ëõ·ÅºóµÄ¿í¸ß
+	//ç¼©æ”¾åçš„å®½é«˜
 	int resizeHeight = (int)(imgHeight * ry);
 	int resizeWidth = (int)(imgWidth * rx);
 	Mat imgOut = Mat::zeros(resizeHeight, resizeWidth, CV_8UC1);
-	//¼ÆËãÖµ
+	//è®¡ç®—å€¼
 	int xBefore, yBefore;
 	double dy, dx;
 	double val;
@@ -43,7 +43,7 @@ Mat GaussianPyramid(Mat img, float n)
 			}
 		}
 	}
-	//·Å´ó
+	//æ”¾å¤§
 	return imgOut;
 }
 
@@ -148,7 +148,7 @@ void A76(Mat img)
 	//int imgWidth = img.cols;
 	//int channel = img.channels();
 	//Mat imgGray = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
-	////»Ò¶È»¯
+	////ç°åº¦åŒ–
 	//for (int y = 0; y < imgHeight; ++y)
 	//{
 	//	for (int x = 0; x < imgWidth; ++x)
@@ -159,7 +159,7 @@ void A76(Mat img)
 	//	}
 	//}
 
-	////Ê¹ÓÃvecto½øĞĞÍ¼Æ¬´æ´¢
+	////ä½¿ç”¨vectoè¿›è¡Œå›¾ç‰‡å­˜å‚¨
 	//int n = 6;
 	//Mat imgOut[6];
 	//char name[6][5] = { "out1","out2","out3","out4","out5","out6" };
@@ -175,7 +175,7 @@ void A76(Mat img)
 	//imgWidth = imgOut[0].cols;
 	//Mat res = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 	////imshow(name[i], imgOut[i]);
-	////(0, 1)¡¢(0, 3)¡¢(0, 5)¡¢(1, 4)¡¢(2, 3)¡¢(3, 5)
+	////(0, 1)ã€(0, 3)ã€(0, 5)ã€(1, 4)ã€(2, 3)ã€(3, 5)
 
 	//for (int y = 0; y < imgHeight; ++y)
 	//{

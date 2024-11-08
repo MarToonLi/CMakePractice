@@ -1,4 +1,4 @@
-#include <iostream>
+Ôªø#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_31_40.h"
@@ -32,11 +32,11 @@ void A39(Mat img)
 		}
 	}
 	
-	//ºı¡¡∂»
+	//Âáè‰∫ÆÂ∫¶
 	for (int y = 0; y < height; y++) 
 		for (int x = 0; x < width; x++) 
 			YCbCr.at<Vec3f>(y, x)[0] *= 0.7;
-	printf_s("ºı¡¡∂»\n");
+	printf_s("Âáè‰∫ÆÂ∫¶\n");
 	
 	//YCrCb->RGB
 	for (int y = 0; y < height; y++) 

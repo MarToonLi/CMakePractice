@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_61_70.h"
@@ -10,7 +10,7 @@ void A62(Mat img)
 	int W = img.cols;
 	int channel = img.channels();
 	int val = 0;
-	//»Ò¶È¶şÖµ»¯
+	//ç°åº¦äºŒå€¼åŒ–
 	Mat imgGray = Mat::zeros(H, W, CV_8UC1);
 	Mat imgBin = Mat::zeros(H, W, CV_8UC1);
 
@@ -24,21 +24,21 @@ void A62(Mat img)
 		}
 	}
 
-	const int grayScale = 256;//»Ò¶ÈÖµ
+	const int grayScale = 256;//ç°åº¦å€¼
 
-	int pixelCount[grayScale] = { 0 };//»Ò¶ÈÖ±·½Í¼
-	float pixelPro[grayScale] = { 0 };//¸÷¸ö»Ò¶ÈÖµÕ¼×ÜÌåµÄ±ÈÀı
+	int pixelCount[grayScale] = { 0 };//ç°åº¦ç›´æ–¹å›¾
+	float pixelPro[grayScale] = { 0 };//å„ä¸ªç°åº¦å€¼å æ€»ä½“çš„æ¯”ä¾‹
 
-	double w0, w1;//±³¾°/Ç°¾°ÏñËØÕ¼±È
-	double u0, u1;//Ç°¾°/±³¾°Æ½¾ù»Ò¶ÈÖµ
+	double w0, w1;//èƒŒæ™¯/å‰æ™¯åƒç´ å æ¯”
+	double u0, u1;//å‰æ™¯/èƒŒæ™¯å¹³å‡ç°åº¦å€¼
 	double p0, p1;
-	double g = 0;//Àà¼ä·½²î
+	double g = 0;//ç±»é—´æ–¹å·®
 
-	double max_g = 0;//×î´óÀà¼ä·½²î
-	double good_k = 0;//×îÓÅãĞÖµ
-	int pixelSum = H * W;//×ÜÏñËØÖµ
+	double max_g = 0;//æœ€å¤§ç±»é—´æ–¹å·®
+	double good_k = 0;//æœ€ä¼˜é˜ˆå€¼
+	int pixelSum = H * W;//æ€»åƒç´ å€¼
 
-	//Í³¼ÆÍ¼Æ¬ÖĞ¸÷¸ö»Ò¶ÈÖµµÄ¸öÊı
+	//ç»Ÿè®¡å›¾ç‰‡ä¸­å„ä¸ªç°åº¦å€¼çš„ä¸ªæ•°
 	for (int y = 0; y < H; ++y)
 	{
 		for (int x = 0; x < W; ++x)
@@ -48,40 +48,40 @@ void A62(Mat img)
 		}
 	}
 
-	//Í³¼ÆÍ¼Æ¬ÖĞ¸÷¸ö»Ò¶ÈÖµËùÕ¼µÄ±ÈÀı
+	//ç»Ÿè®¡å›¾ç‰‡ä¸­å„ä¸ªç°åº¦å€¼æ‰€å çš„æ¯”ä¾‹
 	for (int i = 0; i < grayScale; ++i)
 	{
 		pixelPro[i] = 1.0 * pixelCount[i] / pixelSum;
 	}
 
-	//k:Ôİ¶¨ãĞÖµ(0-255)
+	//k:æš‚å®šé˜ˆå€¼(0-255)
 	for (int k = 0; k < grayScale; ++k)
 	{
 		w0 = w1 = u0 = u1 = g = 0;
 		p0 = p1 = 0;
-		//Ç°¾°£¬±³¾°Çø·Ö [0-k][k+1-255]
+		//å‰æ™¯ï¼ŒèƒŒæ™¯åŒºåˆ† [0-k][k+1-255]
 		for (int i = 0; i < grayScale; ++i)
 		{
-			//Èç¹ûµ±Ç°ÏñËØÖµĞ¡ÓÚãĞÖµkÔòÊôÓÚ±³¾°£¬·´Ö®ÊôÓÚÇ°¾°
+			//å¦‚æœå½“å‰åƒç´ å€¼å°äºé˜ˆå€¼kåˆ™å±äºèƒŒæ™¯ï¼Œåä¹‹å±äºå‰æ™¯
 			if (i <= k)
 			{
-				//¼ÆËã±³¾°ÏñËØÕ¼±È
+				//è®¡ç®—èƒŒæ™¯åƒç´ å æ¯”
 				w0 += pixelPro[i];
-				//¼ÆËãµ±Ç°»Ò¶ÈÖµ·¢ÉúµÄ¸ÅÂÊ:»Ò¶ÈÖµ*»Ò¶ÈÖµ·¢ÉúµÄ¸ÅÂÊ
+				//è®¡ç®—å½“å‰ç°åº¦å€¼å‘ç”Ÿçš„æ¦‚ç‡:ç°åº¦å€¼*ç°åº¦å€¼å‘ç”Ÿçš„æ¦‚ç‡
 				p0 += (i * pixelPro[i]);
 
 			}
 			else
 			{
-				//¼ÆËã±³¾°ÏñËØÕ¼±È
+				//è®¡ç®—èƒŒæ™¯åƒç´ å æ¯”
 				w1 += pixelPro[i];
 				p1 += (i * pixelPro[i]);
 			}
 		}
-		//¼ÆËãÆ½¾ù»Ò¶ÈÖµ£ºp0/w0
+		//è®¡ç®—å¹³å‡ç°åº¦å€¼ï¼šp0/w0
 		u0 = p0 / w0;
 		u1 = p1 / w1;
-		//¼ÆËãÀàÄÚ·½²î
+		//è®¡ç®—ç±»å†…æ–¹å·®
 		g = (float)(w0 * w1 * pow((u0 - u1), 2));
 		if (g > max_g)
 		{
@@ -93,12 +93,12 @@ void A62(Mat img)
 
 	printf_s("good k;%f\n", good_k);
 	Mat img8 = Mat::zeros(H, W, CV_8UC1);
-	//È¡µÃ×îºÃµÄkÖµ£¬ÒÔkÖµ×÷ÎªãĞÖµ½øĞĞ¶şÖµ»¯
+	//å–å¾—æœ€å¥½çš„kå€¼ï¼Œä»¥kå€¼ä½œä¸ºé˜ˆå€¼è¿›è¡ŒäºŒå€¼åŒ–
 	for (int y = 0; y < H; ++y)
 	{
 		for (int x = 0; x < W; ++x)
 		{
-			//ÔÚÕâÀï½øĞĞ·­×ª0-255
+			//åœ¨è¿™é‡Œè¿›è¡Œç¿»è½¬0-255
 			if (imgGray.at<uchar>(y, x) > good_k)
 				img8.at<uchar>(y, x) = 0;
 			else
@@ -117,11 +117,11 @@ void A62(Mat img)
 		for (int x = 0; x < W; ++x)
 		{
 			//printf_s("y:%d x:%d\n",y,x);
-			//Èç¹ûÊÇºÚÉ«ÔòÌø¹ı
+			//å¦‚æœæ˜¯é»‘è‰²åˆ™è·³è¿‡
 			if (imgBin.at<uchar>(y, x) == 0)
 				continue;
 			int s = 0;
-			//ÓÒÉÏ
+			//å³ä¸Š
 			s += (img8.at<uchar>(y, MIN(x + 1, W - 1)) - img8.at<uchar>(y, MIN(x + 1, W - 1)) * img8.at<uchar>(MAX(y - 1, 0), MIN(x + 1, W - 1)) * img8.at<uchar>(MAX(y - 1, 0), x));
 			s += (img8.at<uchar>(MAX(y - 1, 0), x) - img8.at<uchar>(MAX(y - 1, 0), x) * img8.at<uchar>(MAX(y - 1, 0), MAX(x - 1, 0)) * img8.at<uchar>(y, MAX(x - 1, 0)));
 			s += (img8.at<uchar>(y, MAX(x - 1, 0)) - img8.at<uchar>(y, MAX(x - 1, 0)) * img8.at<uchar>(MIN(y + 1, H - 1), MAX(x - 1, 0)) * img8.at<uchar>(MIN(y + 1, H - 1), x));

@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_51_60.h"
@@ -20,7 +20,7 @@ void A56(Mat img1, Mat img2)
 	Mat imgGray1 = Mat::zeros(imgHeight, imgWeight, CV_8UC1);
 	Mat imgGray2 = Mat::zeros(imgh, imgw, CV_8UC1);
 
-	//»Ò¶È»¯
+	//ç°åº¦åŒ–
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWeight; ++x)
@@ -43,7 +43,7 @@ void A56(Mat img1, Mat img2)
 	float avgGray1 = 0;
 	float avgGray2 = 0;
 
-	//×ÓÍ¼Æ½¾ù»Ò¶È
+	//å­å›¾å¹³å‡ç°åº¦
 	for (int y = 0; y < imgh; ++y)
 		for (int x = 0; x < imgw; ++x)
 			avgGray2 += imgGray2.at<uchar>(y, x);
@@ -52,14 +52,14 @@ void A56(Mat img1, Mat img2)
 	printf_s("avgGray2:%f\n", avgGray2);
 	int val1 = 0, val2 = 0;
 	float NCC = -2;
-	int _x = 0, _y = 0;//Æ¥ÅäÍ¼Æ¬×ø±ê
-	int X = 0, Y = 0;//Ô­Í¼Æ¥Åä×ø±ê
+	int _x = 0, _y = 0;//åŒ¹é…å›¾ç‰‡åæ ‡
+	int X = 0, Y = 0;//åŸå›¾åŒ¹é…åæ ‡
 	float val = 0;
 	bool flag = false;
 	int S = 0, T = 0;
 
-	//¹éÒ»»¯»ıÏà¹Ø
-	//Ã¿´Î»¬¶¯Ò»¸öÏñËØ
+	//å½’ä¸€åŒ–ç§¯ç›¸å…³
+	//æ¯æ¬¡æ»‘åŠ¨ä¸€ä¸ªåƒç´ 
 	for (int y = 0; y < imgHeight - imgh; ++y)
 	{
 		for (int x = 0; x < imgWeight - imgw; ++x)
@@ -70,19 +70,19 @@ void A56(Mat img1, Mat img2)
 			float ncc = 0;
 			avgGray1 = 0;
 			Mat temp = img1.clone();
-			Rect rect(x, y, imgw, imgh);//×óÉÏ×ø±ê£¨x,y£©ºÍ¾ØĞÎµÄ³¤(x)¿í(y)
+			Rect rect(x, y, imgw, imgh);//å·¦ä¸Šåæ ‡ï¼ˆx,yï¼‰å’ŒçŸ©å½¢çš„é•¿(x)å®½(y)
 			cv::rectangle(temp, rect, Scalar(0, 0, 255), 1, LINE_AA, 0);
 			cv::imshow("imgGray1", temp);
 			cv::waitKey(5);
 
-			//¶ÔÓ¦ÇøÓòÆ½¾ù»Ò¶È
+			//å¯¹åº”åŒºåŸŸå¹³å‡ç°åº¦
 			for (int _y = 0; _y < imgh; ++_y)
 				for (int _x = 0; _x < imgw; ++_x)
 					avgGray1 += imgGray1.at<uchar>(y + _y, x + _x);
 			avgGray1 /= (imgh * imgw);
 			//printf_s("avgGray1:%f\n", avgGray1);
 
-			//ÔÚÆ¥ÅäÍ¼Æ¬·¶Î§ÄÚÇóNCC
+			//åœ¨åŒ¹é…å›¾ç‰‡èŒƒå›´å†…æ±‚NCC
 			for (int _y = 0; _y < imgh; ++_y)
 			{
 				for (int _x = 0; _x < imgw; ++_x)
@@ -114,10 +114,10 @@ void A56(Mat img1, Mat img2)
 			break;
 	}
 
-	Rect rect(X, Y, imgw, imgh);//×óÉÏ×ø±ê£¨x,y£©ºÍ¾ØĞÎµÄ³¤(x)¿í(y)
+	Rect rect(X, Y, imgw, imgh);//å·¦ä¸Šåæ ‡ï¼ˆx,yï¼‰å’ŒçŸ©å½¢çš„é•¿(x)å®½(y)
 	cv::rectangle(img1, rect, Scalar(0, 0, 255), 1, LINE_8, 0);
 
-	printf_s("Æ¥Åä×ø±ê£ºy:%d,x:%d\n NCC:%f\n", Y, X, NCC);
+	printf_s("åŒ¹é…åæ ‡ï¼šy:%d,x:%d\n NCC:%f\n", Y, X, NCC);
 
 	cv::imshow("img1", img1);
 	cv::imshow("img2", img2);

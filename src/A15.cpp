@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include<math.h>
@@ -17,7 +17,7 @@ void A15(Mat img)
 	Mat imgOutH = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 	Mat imgOutV = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 
-	//ÏÈ»Ò¶È»¯
+	//å…ˆç°åº¦åŒ–
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWidth; ++x)
@@ -29,15 +29,15 @@ void A15(Mat img)
 	}
 
 	const int kSize = 3;
-	//¾í»ı°ë¾¶
-	int kRadius = floor((double)kSize / 2);//¾í»ı°ë¾¶
-	//¾í»ıºË
-	//ÉèÖÃ¾í»ıºË:Ë®Æ½
+	//å·ç§¯åŠå¾„
+	int kRadius = floor((double)kSize / 2);//å·ç§¯åŠå¾„
+	//å·ç§¯æ ¸
+	//è®¾ç½®å·ç§¯æ ¸:æ°´å¹³
 	double kSobelHorizontal[kSize][kSize] = { {-1, 0, 1}, 
 											{-2, 0, 2}, 
 											{-1, 0, 1} };
 
-	////ÉèÖÃ¾í»ıºË:´¹Ö±
+	////è®¾ç½®å·ç§¯æ ¸:å‚ç›´
 	//double kSobelVertical[kSize][kSize] = { {1, 2, 1}, 
 	//										{0, 0, 0}, 
 	//										{-1, -2, -1} };

@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_21_30.h"
@@ -6,36 +6,36 @@
 using namespace cv;
 using namespace std;
 
-// ¶¨ÒåÍ¼Ïñ³ß´ç³£Á¿
+// å®šä¹‰å›¾åƒå°ºå¯¸å¸¸é‡
 const int IMAGE_HEIGHT = 256;
 const int IMAGE_WIDTH = 256;
 
-// Í¼Ïñ¾ùºâ»¯º¯Êı
+// å›¾åƒå‡è¡¡åŒ–å‡½æ•°
 void histogramEqualization(vector<vector<int>>& image) {
 	int totalPixels = IMAGE_HEIGHT * IMAGE_WIDTH;
 	vector<int> histogram(256, 0);
 
-	// Step 1: ¼ÆËãÖ±·½Í¼
+	// Step 1: è®¡ç®—ç›´æ–¹å›¾
 	for (int i = 0; i < IMAGE_HEIGHT; ++i) {
 		for (int j = 0; j < IMAGE_WIDTH; ++j) {
 			histogram[image[i][j]]++;
 		}
 	}
 
-	// Step 2: ¼ÆËãÀÛ»ı·Ö²¼º¯Êı£¨CDF£©
+	// Step 2: è®¡ç®—ç´¯ç§¯åˆ†å¸ƒå‡½æ•°ï¼ˆCDFï¼‰
 	vector<int> cdf(256, 0);
 	cdf[0] = histogram[0];
 	for (int i = 1; i < 256; ++i) {
 		cdf[i] = cdf[i - 1] + histogram[i];
 	}
 
-	// Step 3: Ó¦ÓÃ¾ùºâ»¯Ó³Éä
+	// Step 3: åº”ç”¨å‡è¡¡åŒ–æ˜ å°„
 	vector<int> mapping(256, 0);
 	for (int i = 0; i < 256; ++i) {
 		mapping[i] = (int)((double)cdf[i] / totalPixels * 255);
 	}
 
-	// Step 4: Éú³ÉÊä³öÍ¼Ïñ
+	// Step 4: ç”Ÿæˆè¾“å‡ºå›¾åƒ
 	for (int i = 0; i < IMAGE_HEIGHT; ++i) {
 		for (int j = 0; j < IMAGE_WIDTH; ++j) {
 			image[i][j] = mapping[image[i][j]];
@@ -58,11 +58,11 @@ void A23(Mat img)
 	int val;
 	double histSum = 0;
 
-	//³õÊ¼»¯
+	//åˆå§‹åŒ–
 	for (int i = 0; i < 255; ++i)
 		hist[i] = 0;
 
-	//Í³¼ÆÏñËØ·Ö²¼
+	//ç»Ÿè®¡åƒç´ åˆ†å¸ƒ
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWidth; ++x)
@@ -74,7 +74,7 @@ void A23(Mat img)
 			}
 		}
 	}
-	//Ö±·½Í¼¾ùºâ
+	//ç›´æ–¹å›¾å‡è¡¡
 
 	for (int y = 0; y < imgHeight; ++y)
 	{
@@ -84,7 +84,7 @@ void A23(Mat img)
 			{
 				val = imgSrc.at<Vec3b>(y, x)[c];
 				histSum = 0;
-				//¸ù¾İ0-valµÄËùÓĞÏñËØ¸öÊıµÄ¹¹½¨sum
+				//æ ¹æ®0-valçš„æ‰€æœ‰åƒç´ ä¸ªæ•°çš„æ„å»ºsum
 				for (int l = 0; l < val; l++)
 				{
 					histSum += hist[l];

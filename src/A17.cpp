@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include<math.h>
@@ -16,7 +16,7 @@ void A17(Mat img)
 	Mat imgGray = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 	Mat imgOut = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 
-	//ÏÈ»Ò¶È»¯
+	//å…ˆç°åº¦åŒ–
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWidth; ++x)
@@ -28,9 +28,9 @@ void A17(Mat img)
 	}
 
 	const int kSize = 3;
-	//¾í»ı°ë¾¶
-	int kRadius = floor((double)kSize / 2);//¾í»ı°ë¾¶
-	//¾í»ıºË
+	//å·ç§¯åŠå¾„
+	int kRadius = floor((double)kSize / 2);//å·ç§¯åŠå¾„
+	//å·ç§¯æ ¸
 	double kLaplacian[kSize][kSize] = { {0, 1, 0}, {1, -4, 1}, {0, 1, 0} };
 
 	for (int y = 0; y < imgHeight; ++y)

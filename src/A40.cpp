@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_31_40.h"
@@ -6,16 +6,16 @@
 
 
 using namespace cv;
-//½«Í¼Ïñ´ÓRGBÉ«²Ê¿Õ¼ä±ä»»µ½YCbCrÉ«²Ê¿Õ¼ä£»
-//¶ÔYCbCr×öDCT£»
-//DCTÖ®ºó×öÁ¿»¯£»
-//Á¿»¯Ö®ºóÓ¦ÓÃIDCT£»
-//IDCTÖ®ºó´ÓYCbCrÉ«²Ê¿Õ¼ä±ä»»µ½RGBÉ«²Ê¿Õ¼ä¡£
+//å°†å›¾åƒä»RGBè‰²å½©ç©ºé—´å˜æ¢åˆ°YCbCrè‰²å½©ç©ºé—´ï¼›
+//å¯¹YCbCråšDCTï¼›
+//DCTä¹‹ååšé‡åŒ–ï¼›
+//é‡åŒ–ä¹‹ååº”ç”¨IDCTï¼›
+//IDCTä¹‹åä»YCbCrè‰²å½©ç©ºé—´å˜æ¢åˆ°RGBè‰²å½©ç©ºé—´ã€‚
 void A40(Mat img)
 {
 	if (img.rows != 128 || img.cols != 128)
 	{
-		printf_s("Í¼Æ¬²»·ûºÏ¹æ¸ñ");
+		printf_s("å›¾ç‰‡ä¸ç¬¦åˆè§„æ ¼");
 		return;
 	}
 	const int height = 128;
@@ -45,7 +45,7 @@ void A40(Mat img)
 	const int channel = 3;
 	double coef[height][width][channel];
 
-	//ÀëÉ¢ÓàÏÒ±ä»»
+	//ç¦»æ•£ä½™å¼¦å˜æ¢
 	double I;
 	double F;
 	double Cu, Cv;
@@ -86,7 +86,7 @@ void A40(Mat img)
 			}
 		}
 	}
-	//Á¿»¯
+	//é‡åŒ–
 	double Q[T][T] = { {16, 11, 10, 16, 24, 40, 51, 61},
 				  {12, 12, 14, 19, 26, 58, 60, 55},
 				  {12, 12, 14, 19, 26, 58, 60, 55},

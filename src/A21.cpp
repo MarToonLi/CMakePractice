@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_21_30.h"
@@ -13,7 +13,7 @@ void A21(Mat img)
 	int channel = imgSrc.channels();
 	Mat imgOut = Mat::zeros(imgHeight, imgWidth, CV_8UC3);
 	int val = 0;
-	//³õÊ¼ÏñËØµãÈ¡Öµ·¶Î§(start,end)
+	//åˆå§‹åƒç´ ç‚¹å–å€¼èŒƒå›´(start,end)
 	int start = 999;
 	int end = 0;
 	for (int y = 0; y < imgHeight; ++y)
@@ -22,7 +22,7 @@ void A21(Mat img)
 		{
 			for (int c = 0; c < channel; ++c)
 			{
-				//±éÀúÈ¡ËùÓĞÏñËØ£¬È¡×î´ó×îĞ¡Öµ
+				//éå†å–æ‰€æœ‰åƒç´ ï¼Œå–æœ€å¤§æœ€å°å€¼
 				val = (float)imgSrc.at<Vec3b>(y, x)[c];
 				start = fmin(start, val);
 				end = fmax(end, val);
@@ -31,12 +31,12 @@ void A21(Mat img)
 	}
 
 
-	//ĞÂµÄÏñËØ·¶Î§(0-255)
+	//æ–°çš„åƒç´ èŒƒå›´(0-255)
 	int newStart = 0;
 	int newEnd = 255;
 
 
-	//ÅĞ¶¨¸³Öµ
+	//åˆ¤å®šèµ‹å€¼
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWidth; ++x)

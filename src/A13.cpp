@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include<math.h>
@@ -15,7 +15,7 @@ void A13(Mat img)
 	Mat imgGray = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 	Mat imgOut = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 
-	//ÏÈ»Ò¶È»¯
+	//å…ˆç°åº¦åŒ–
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWidth; ++x)
@@ -25,10 +25,10 @@ void A13(Mat img)
 				+ 0.0722 * (float)img.at<cv::Vec3b>(y, x)[0];
 		}
 	}
-	int kSize = 3;//¾í»ıºË´óĞ¡
-	int kRadius = floor((double)kSize / 2);//¾í»ı°ë¾¶
+	int kSize = 3;//å·ç§¯æ ¸å¤§å°
+	int kRadius = floor((double)kSize / 2);//å·ç§¯åŠå¾„
 	
-	//max-min:¶ÔÃ¿Ò»¸ö¾í»ı°ë¾¶ÄÚµÄÔªËØÈ¡×î´ó×îĞ¡Öµ£¬È¡²îÖµ×öÄ¿±êÖµ
+	//max-min:å¯¹æ¯ä¸€ä¸ªå·ç§¯åŠå¾„å†…çš„å…ƒç´ å–æœ€å¤§æœ€å°å€¼ï¼Œå–å·®å€¼åšç›®æ ‡å€¼
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWidth; ++x)

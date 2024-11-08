@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_51_60.h"
@@ -14,7 +14,7 @@ void A58(Mat img)
 	int imgWeight = img.cols;
 	int channel = img.channels();
 	int val = 0;
-	//»Ò¶È¶şÖµ»¯
+	//ç°åº¦äºŒå€¼åŒ–
 	Mat imgGray = Mat::zeros(imgHeight, imgWeight, CV_8UC1);
 	Mat imgBin = Mat::zeros(imgHeight, imgWeight, CV_8UC1);
 
@@ -28,21 +28,21 @@ void A58(Mat img)
 		}
 	}
 
-	const int grayScale = 256;//»Ò¶ÈÖµ
+	const int grayScale = 256;//ç°åº¦å€¼
 
-	int pixelCount[grayScale] = { 0 };//»Ò¶ÈÖ±·½Í¼
-	float pixelPro[grayScale] = { 0 };//¸÷¸ö»Ò¶ÈÖµÕ¼×ÜÌåµÄ±ÈÀı
+	int pixelCount[grayScale] = { 0 };//ç°åº¦ç›´æ–¹å›¾
+	float pixelPro[grayScale] = { 0 };//å„ä¸ªç°åº¦å€¼å æ€»ä½“çš„æ¯”ä¾‹
 
-	double w0, w1;//±³¾°/Ç°¾°ÏñËØÕ¼±È
-	double u0, u1;//Ç°¾°/±³¾°Æ½¾ù»Ò¶ÈÖµ
+	double w0, w1;//èƒŒæ™¯/å‰æ™¯åƒç´ å æ¯”
+	double u0, u1;//å‰æ™¯/èƒŒæ™¯å¹³å‡ç°åº¦å€¼
 	double p0, p1;
-	double g = 0;//Àà¼ä·½²î
+	double g = 0;//ç±»é—´æ–¹å·®
 
-	double max_g = 0;//×î´óÀà¼ä·½²î
-	double good_k = 0;//×îÓÅãĞÖµ
-	int pixelSum = imgHeight * imgWeight;//×ÜÏñËØÖµ
+	double max_g = 0;//æœ€å¤§ç±»é—´æ–¹å·®
+	double good_k = 0;//æœ€ä¼˜é˜ˆå€¼
+	int pixelSum = imgHeight * imgWeight;//æ€»åƒç´ å€¼
 
-	//Í³¼ÆÍ¼Æ¬ÖĞ¸÷¸ö»Ò¶ÈÖµµÄ¸öÊı
+	//ç»Ÿè®¡å›¾ç‰‡ä¸­å„ä¸ªç°åº¦å€¼çš„ä¸ªæ•°
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWeight; ++x)
@@ -52,40 +52,40 @@ void A58(Mat img)
 		}
 	}
 
-	//Í³¼ÆÍ¼Æ¬ÖĞ¸÷¸ö»Ò¶ÈÖµËùÕ¼µÄ±ÈÀı
+	//ç»Ÿè®¡å›¾ç‰‡ä¸­å„ä¸ªç°åº¦å€¼æ‰€å çš„æ¯”ä¾‹
 	for (int i = 0; i < grayScale; ++i)
 	{
 		pixelPro[i] = 1.0 * pixelCount[i] / pixelSum;
 	}
 
-	//k:Ôİ¶¨ãĞÖµ(0-255)
+	//k:æš‚å®šé˜ˆå€¼(0-255)
 	for (int k = 0; k < grayScale; ++k)
 	{
 		w0 = w1 = u0 = u1 = g = 0;
 		p0 = p1 = 0;
-		//Ç°¾°£¬±³¾°Çø·Ö [0-k][k+1-255]
+		//å‰æ™¯ï¼ŒèƒŒæ™¯åŒºåˆ† [0-k][k+1-255]
 		for (int i = 0; i < grayScale; ++i)
 		{
-			//Èç¹ûµ±Ç°ÏñËØÖµĞ¡ÓÚãĞÖµkÔòÊôÓÚ±³¾°£¬·´Ö®ÊôÓÚÇ°¾°
+			//å¦‚æœå½“å‰åƒç´ å€¼å°äºé˜ˆå€¼kåˆ™å±äºèƒŒæ™¯ï¼Œåä¹‹å±äºå‰æ™¯
 			if (i <= k)
 			{
-				//¼ÆËã±³¾°ÏñËØÕ¼±È
+				//è®¡ç®—èƒŒæ™¯åƒç´ å æ¯”
 				w0 += pixelPro[i];
-				//¼ÆËãµ±Ç°»Ò¶ÈÖµ·¢ÉúµÄ¸ÅÂÊ:»Ò¶ÈÖµ*»Ò¶ÈÖµ·¢ÉúµÄ¸ÅÂÊ
+				//è®¡ç®—å½“å‰ç°åº¦å€¼å‘ç”Ÿçš„æ¦‚ç‡:ç°åº¦å€¼*ç°åº¦å€¼å‘ç”Ÿçš„æ¦‚ç‡
 				p0 += (i * pixelPro[i]);
 
 			}
 			else
 			{
-				//¼ÆËã±³¾°ÏñËØÕ¼±È
+				//è®¡ç®—èƒŒæ™¯åƒç´ å æ¯”
 				w1 += pixelPro[i];
 				p1 += (i * pixelPro[i]);
 			}
 		}
-		//¼ÆËãÆ½¾ù»Ò¶ÈÖµ£ºp0/w0
+		//è®¡ç®—å¹³å‡ç°åº¦å€¼ï¼šp0/w0
 		u0 = p0 / w0;
 		u1 = p1 / w1;
-		//¼ÆËãÀàÄÚ·½²î
+		//è®¡ç®—ç±»å†…æ–¹å·®
 		g = (float)(w0 * w1 * pow((u0 - u1), 2));
 		if (g > max_g)
 		{
@@ -97,7 +97,7 @@ void A58(Mat img)
 
 	printf_s("good k;%f\n", good_k);
 
-	//È¡µÃ×îºÃµÄkÖµ£¬ÒÔkÖµ×÷ÎªãĞÖµ½øĞĞ¶şÖµ»¯
+	//å–å¾—æœ€å¥½çš„kå€¼ï¼Œä»¥kå€¼ä½œä¸ºé˜ˆå€¼è¿›è¡ŒäºŒå€¼åŒ–
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWeight; ++x)
@@ -114,10 +114,10 @@ void A58(Mat img)
 
 	int** labelSet;
 
-	//¿ª±Ù¿Õ¼ä:ĞĞ=y
+	//å¼€è¾Ÿç©ºé—´:è¡Œ=y
 	labelSet = new int* [imgHeight];
 
-	//¿ª±Ù¿Õ¼ä£ºÁĞ=x
+	//å¼€è¾Ÿç©ºé—´ï¼šåˆ—=x
 	for (int i = 0; i < imgHeight; ++i)
 		labelSet[i] = new int[imgWeight];
 
@@ -147,7 +147,7 @@ void A58(Mat img)
 		for (int x = 0; x < imgWeight; ++x)
 		{
 			val = (int)imgBin.at<uchar>(y, x);
-			//Èç¹ûÊÇ°×É«£º255
+			//å¦‚æœæ˜¯ç™½è‰²ï¼š255
 			if (val == 255)
 			{
 
@@ -178,20 +178,20 @@ void A58(Mat img)
 				}
 
 				//printf_s("y:%d,x:%d up:%d,left:%d ", y, x, up, left);
-				//ÁÚÓòÄÚÏñËØÖµÎª0£¬Ìí¼ÓĞÂlable
+				//é‚»åŸŸå†…åƒç´ å€¼ä¸º0ï¼Œæ·»åŠ æ–°lable
 				if (up == 0 && left == 0)
 				{
 					label++;
 					imgBin.at<uchar>(y, x) = label;
 					printf_s("label:%d\n", label);
 					drawColor = colorSet[label];
-					//»­µã
+					//ç”»ç‚¹
 					Point p(x, y);
 					circle(temp, p, 0, drawColor);
 					cv::imshow("temp", temp);
 					cv::waitKey(5);
 				}
-				//Èç¹ûÆäÖĞÒ»¸ö²»Îª0(ºÚ)£¬Ñ¡Ôñ×îĞ¡µÄlabelÎªĞÂÏñËØlabel
+				//å¦‚æœå…¶ä¸­ä¸€ä¸ªä¸ä¸º0(é»‘)ï¼Œé€‰æ‹©æœ€å°çš„labelä¸ºæ–°åƒç´ label
 				
 				else if (up > 0 || left > 0)
 				{
@@ -213,17 +213,17 @@ void A58(Mat img)
 					cv::waitKey(5);
 				}
 			}
-			//Èç¹ûÊÇ·Ç°×É«Ôò±éÀúÏÂÒ»¸öÏñËØ
+			//å¦‚æœæ˜¯éç™½è‰²åˆ™éå†ä¸‹ä¸€ä¸ªåƒç´ 
 			else
 				continue;
 
 		}
 	}
-	printf_s("É¨ÃèÍê³É,label:%d\n", label);
+	printf_s("æ‰«æå®Œæˆ,label:%d\n", label);
 
 	int* labelSet2 = new int[label];
 	bool flag = false;
-	//¶ş´Î±éÀú£ºÃ»É¶ÓÃ
+	//äºŒæ¬¡éå†ï¼šæ²¡å•¥ç”¨
 	int t = 0;
 	label = LONG_MAX;
 	Mat temp1 = img.clone();

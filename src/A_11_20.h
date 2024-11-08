@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <opencv2/opencv.hpp>
 #ifndef _Q_11_20_
 #define _Q_11_20_

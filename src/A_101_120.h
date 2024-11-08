@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <opencv2/opencv.hpp>
 #ifndef _A_101_120_
 #define _A_101_120_
@@ -10,7 +10,7 @@ using namespace cv;
 void A101();
 void A102();
 void A103();
-//void A104();
+void A104();
 //void A105();
 //void A106();
 //void A107();

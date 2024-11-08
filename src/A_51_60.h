@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <opencv2/opencv.hpp>
 #ifndef _A_51_60_
 #define _A_51_60_

@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_31_40.h"
@@ -10,7 +10,7 @@ void A38(Mat img)
 {
 	if (img.rows != 128 || img.cols != 128)
 	{
-		printf_s("Í¼Æ¬²»·ûºÏ¹æ¸ñ");
+		printf_s("å›¾ç‰‡ä¸ç¬¦åˆè§„æ ¼");
 		return;
 	}
 
@@ -19,7 +19,7 @@ void A38(Mat img)
 	const int height = 128, width = 128, channel = 3;
 	double coef[height][width][channel];
 
-	//ÀëÉ¢ÓàÏÒ±ä»»
+	//ç¦»æ•£ä½™å¼¦å˜æ¢
 	double I;
 	double F;
 	double Cu, Cv;
@@ -81,7 +81,7 @@ void A38(Mat img)
 						coef[ys + y][xs + x][c] = round(coef[ys + y][xs + x][c] / Q[y][x]) * Q[y][x];
 
 
-	//ÀëÉ¢ÓàÏÒÄæ±ä»»
+	//ç¦»æ•£ä½™å¼¦é€†å˜æ¢
 	double f;
 	for (int ys = 0; ys < height; ys += T)
 	{
@@ -125,7 +125,7 @@ void A38(Mat img)
 		}
 	}
 
-	//¾ù·½Îó²î
+	//å‡æ–¹è¯¯å·®
 	double MSE = 0;
 	for (int y = 0; y < height; y++)
 	{
@@ -139,7 +139,7 @@ void A38(Mat img)
 		}
 	}
 
-	//·åÖµĞÅÔë±È
+	//å³°å€¼ä¿¡å™ªæ¯”
 	double v_max = 255;
 	double PSNR = 10 * log10(v_max * v_max / MSE);
 

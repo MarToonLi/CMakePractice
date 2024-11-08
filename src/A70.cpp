@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_1_10.h"
@@ -18,7 +18,7 @@ Mat RGB_HSV(Mat rgb)
 	{
 		for (int x = 0; x < imgWeight; ++x)
 		{
-			//»ñÈ¡RGB
+			//è·å–RGB
 			R = (float)rgb.at<Vec3b>(y, x)[2] / 255;
 			G = (float)rgb.at<Vec3b>(y, x)[1] / 255;
 			B = (float)rgb.at<Vec3b>(y, x)[0] / 255;
@@ -36,14 +36,14 @@ Mat RGB_HSV(Mat rgb)
 			else if (Cmin == G)
 				H = 60 * (R - B) / delta + 300;
 
-			//¼ÆËãS(0-1)
+			//è®¡ç®—S(0-1)
 			if (Cmax == 0)
 				S = 0;
 			else
 				S = delta;
-			//S = delta/Cmax;Ğ§¹û²»ºÃ
+			//S = delta/Cmax;æ•ˆæœä¸å¥½
 
-		//¼ÆËãV(0-1)
+		//è®¡ç®—V(0-1)
 			V = Cmax;
 
 			imgHSV.at<Vec3f>(y, x)[0] = H;
@@ -116,13 +116,13 @@ Mat HSV_RGB(Mat hsv)
 	return imgRGB;
 }
 
-//ÑÕÉ«×·×Ù
+//é¢œè‰²è¿½è¸ª
 Mat ColorTracking(Mat hsv)
 {
 	int imgHeight = hsv.rows;
 	int imgWeight = hsv.cols;
 	Mat out = Mat::zeros(imgHeight, imgWeight, CV_8UC1);
-	//À¶É«·¶Î§180 - 260
+	//è“è‰²èŒƒå›´180 - 260
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWeight; ++x)

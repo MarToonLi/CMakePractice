@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include<math.h>
@@ -10,9 +10,9 @@ using namespace cv;
 void A11(Mat img)
 {
 	/*
-	Ô­Àí£º
-	Çó¾í»ıºË·¶Î§ÄÚËùÓĞÏñËØµÄ¾ùÖµ£¬
-	Í¼Æ¬´óĞ¡Ó¦¸ÃÂú×ã²½³¤µÄÕû±¶Êı
+	åŸç†ï¼š
+	æ±‚å·ç§¯æ ¸èŒƒå›´å†…æ‰€æœ‰åƒç´ çš„å‡å€¼ï¼Œ
+	å›¾ç‰‡å¤§å°åº”è¯¥æ»¡è¶³æ­¥é•¿çš„æ•´å€æ•°
 	*/
 
 	Mat imgSrc = img;
@@ -23,21 +23,21 @@ void A11(Mat img)
 	Mat imgOut = Mat::zeros(imgHeight, imgWidth, CV_8UC3);
 
 
-	//¾í»ıºË´óĞ¡
+	//å·ç§¯æ ¸å¤§å°
 	const int kSize = 3;
-	//¾í»ıºË°ë¾¶
+	//å·ç§¯æ ¸åŠå¾„
 	int kRadius = floor((double)kSize / 2);
 	Mat imgtemp = Mat::zeros(imgHeight + 2 * kRadius, imgWidth + 2 * kRadius, CV_8UC3);
 	printf("kRadius:%d\n", kRadius);
-	//¾í»ıºË¾ØÕó
+	//å·ç§¯æ ¸çŸ©é˜µ
 	int kArray[kSize * kSize];
 	int count = 0;
-	/*¾ùÖµÂË²¨¾í»ıºË
+	/*å‡å€¼æ»¤æ³¢å·ç§¯æ ¸
 	[1,1,1]
 	[1,1,1]
 	[1,1,1]
 	*/
-	//ÉèÖÃ¾í»ıºË,µ«ÊÇÔÚÏÂÃæ¼ÆËãÖĞÃ»ÓĞÓÃµ½£¬ÎªÁË¿ìËÙ¼ÆËã£¬Ö±½ÓÇósum/n;
+	//è®¾ç½®å·ç§¯æ ¸,ä½†æ˜¯åœ¨ä¸‹é¢è®¡ç®—ä¸­æ²¡æœ‰ç”¨åˆ°ï¼Œä¸ºäº†å¿«é€Ÿè®¡ç®—ï¼Œç›´æ¥æ±‚sum/n;
 	for (int i = 0; i < kSize * kSize; ++i)
 	{
 		kArray[i] = 1;
@@ -45,7 +45,7 @@ void A11(Mat img)
 
 
 
-	//¸´ÖÆÒ»ÕÅÔ­Í¼£¬²¢ÇÒÌí¼Ó±ß¿ò: ÇÒÊÇÔÚ×ó²àÌí¼Ó±ß¿ò
+	//å¤åˆ¶ä¸€å¼ åŸå›¾ï¼Œå¹¶ä¸”æ·»åŠ è¾¹æ¡†: ä¸”æ˜¯åœ¨å·¦ä¾§æ·»åŠ è¾¹æ¡†
 	for (int y = 0; y < imgHeight; y++)
 		for (int x = 0; x < imgWidth; x++)
 			for (int c = 0; c < channel; c++)
@@ -61,7 +61,7 @@ void A11(Mat img)
 			for (int c = 0; c < channel; c++)
 			{
 				count = 0;
-				double val = 0;//´æ´¢¾í»ıºË°ë¾¶ÄÚËùÓĞÏñËØºÍ
+				double val = 0;//å­˜å‚¨å·ç§¯æ ¸åŠå¾„å†…æ‰€æœ‰åƒç´ å’Œ
 				for (int dy = -kRadius; dy < kRadius + 1; dy++) {
 					for (int dx = -kRadius; dx < kRadius + 1; dx++) {
 						if (((y + dy) >= 0) && ((x + dx) >= 0)) {
@@ -71,7 +71,7 @@ void A11(Mat img)
 						}
 					}
 				}
-				//Çó¾ùÖµ
+				//æ±‚å‡å€¼
 				val = val / (kSize * kSize);
 				imgOut.at<Vec3b>(y, x)[c] = (uchar)val;
 			}

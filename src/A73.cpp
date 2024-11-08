@@ -1,4 +1,4 @@
-#include <iostream>
+Ôªø#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_71_80.h"
@@ -10,7 +10,7 @@ void A73(Mat img)
 	int imgWidth = img.cols;
 	int channel = img.channels();
 	Mat imgGray = Mat::zeros(imgHeight, imgWidth, CV_8UC1);
-	//ª“∂»ªØ
+	//ÁÅ∞Â∫¶Âåñ
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWidth; ++x)
@@ -21,15 +21,15 @@ void A73(Mat img)
 		}
 	}
 
-	//Àı∑≈±»¿˝
+	//Áº©ÊîæÊØî‰æã
 	double rx;
 	double ry;
 	rx = ry = 0.5;
-	//Àı∑≈∫ÛµƒøÌ∏ﬂ
+	//Áº©ÊîæÂêéÁöÑÂÆΩÈ´ò
 	int resizeHeight = (int)(imgHeight * ry);
 	int resizeWidth = (int)(imgWidth * rx);
 	Mat imgOut1 = Mat::zeros(resizeHeight, resizeWidth, CV_8UC1);
-	//º∆À„÷µ
+	//ËÆ°ÁÆóÂÄº
 	int xBefore, yBefore;
 	double dy, dx;
 	double val;
@@ -55,7 +55,7 @@ void A73(Mat img)
 
 	imshow("imgOut1", imgOut1);
 
-	//∑≈¥Û¡Ω±∂
+	//ÊîæÂ§ß‰∏§ÂÄç
 	imgHeight = imgOut1.rows;
 	imgWidth = imgOut1.cols;
 	rx = ry = 2;

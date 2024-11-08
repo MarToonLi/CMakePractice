@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include<math.h>
@@ -15,18 +15,18 @@ void A12(Mat img)
 	int imgWidth = imgSrc.cols;
 	int channel = imgSrc.channels();
 	Mat imgOut = Mat::zeros(imgHeight, imgWidth, CV_8UC3);
-	//¾í»ıºË´óĞ¡
+	//å·ç§¯æ ¸å¤§å°
 	const int kSize = 3;
-	//¾í»ıºË°ë¾¶
+	//å·ç§¯æ ¸åŠå¾„
 	int kRadius = floor((double)kSize / 2);
 	double kArray[kSize][kSize];
-	//ÉèÖÃ¾í»ıºË
+	//è®¾ç½®å·ç§¯æ ¸
 	/*
 	[1/3,0,0]
 	[0,1/3,0]
 	[0,0,1/3]
 	*/
-	printf_s("¾í»ıºË\n");
+	printf_s("å·ç§¯æ ¸\n");
 	for (int i = 0; i < kSize; ++i)
 	{
 		for (int j = 0; j < kSize; ++j)
@@ -43,7 +43,7 @@ void A12(Mat img)
 		}
 		printf_s("\n");
 	}
-	//Ìí¼Ó±ß¿ò,Èç¹û½øĞĞÍ¼Æ¬¿í¸ßÅĞ¶ÏÔò²»ĞèÒªÊ¹ÓÃ±ß¿ò£¬·´Ö®ĞèÒªÎªÍ¼Æ¬Ìí¼Ó±ß¿ò
+	//æ·»åŠ è¾¹æ¡†,å¦‚æœè¿›è¡Œå›¾ç‰‡å®½é«˜åˆ¤æ–­åˆ™ä¸éœ€è¦ä½¿ç”¨è¾¹æ¡†ï¼Œåä¹‹éœ€è¦ä¸ºå›¾ç‰‡æ·»åŠ è¾¹æ¡†
 	Mat imgtemp = Mat::zeros(imgHeight + 2 * kRadius, imgWidth + 2 * kRadius, CV_8UC3);
 	for (int y = 0; y < imgHeight; y++)
 		for (int x = 0; x < imgWidth; x++)

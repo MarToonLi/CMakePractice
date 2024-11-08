@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_21_30.h"
@@ -6,28 +6,28 @@
 
 using namespace cv;
 
-#define PI acos(-1)//Ô²ÖÜÂÊ
+#define PI acos(-1)//åœ†å‘¨ç‡
 
 void A30(Mat img)
 {
 	int imgHeight = img.rows;
 	int imgWidth = img.cols;
 	int channel = img.channels();
-	//±ä»»²ÎÊı£º·ÂÉä±ä»»ÓĞ6¸ö×ÔÓÉ¶È
+	//å˜æ¢å‚æ•°ï¼šä»¿å°„å˜æ¢æœ‰6ä¸ªè‡ªç”±åº¦
 	/*
-	//¾ØÕó³Ë·¨(theta=0)
+	//çŸ©é˜µä¹˜æ³•(theta=0)
 	[a,b,tx][x] [_y]
 	[c,d,ty][y]=[_x]
 	[0,0,1] [1] [1]
 	*/
-	//¾ö¶¨Ğı×ª£¬ÏàËÆ±ä»»£¬¼ôÇĞ±ä»»
+	//å†³å®šæ—‹è½¬ï¼Œç›¸ä¼¼å˜æ¢ï¼Œå‰ªåˆ‡å˜æ¢
 	double a = 1, b = 0, c = 0, d = 1;
-	//¾ö¶¨Æ½ÒÆÎ»ÖÃ
+	//å†³å®šå¹³ç§»ä½ç½®
 	double tx = 0, ty = 0;
-	double theta = -30;//Ğı×ª½Ç¶È(Ä¬ÈÏÄæÊ±Õë)
+	double theta = -30;//æ—‹è½¬è§’åº¦(é»˜è®¤é€†æ—¶é’ˆ)
 	double det = a * d - b * c;
 
-	//¼ÆËãĞı×ª²ÎÊı
+	//è®¡ç®—æ—‹è½¬å‚æ•°
 	if (theta != 0)
 	{
 		double rad = theta / 180.0 * PI;
@@ -40,8 +40,8 @@ void A30(Mat img)
 
 		double det = a * d - b * c;
 
-		//¼ÆËãÆ½ÒÆ²ÎÊı£ºtx,ty
-		//ÒòÎªĞı×ªÊÇÈÆ×óÏÂ½ÇĞı×ª£¬Èç¹ûĞèÒª¶ÔÍ¼Æ¬ÖĞĞÄĞı×ªĞèÒªÍ¼Æ¬½øĞĞÒÆ¶¯
+		//è®¡ç®—å¹³ç§»å‚æ•°ï¼štx,ty
+		//å› ä¸ºæ—‹è½¬æ˜¯ç»•å·¦ä¸‹è§’æ—‹è½¬ï¼Œå¦‚æœéœ€è¦å¯¹å›¾ç‰‡ä¸­å¿ƒæ—‹è½¬éœ€è¦å›¾ç‰‡è¿›è¡Œç§»åŠ¨
 		double cx = imgWidth / 2;
 		double cy = imgHeight / 2;
 		double cxNew = (d * cx - b * cy) / det;
@@ -53,7 +53,7 @@ void A30(Mat img)
 	int resizeHeight = (int)(imgHeight * d);
 	int resizeWidth = (int)(imgWidth * a);
 
-	//ÖØĞÂÉè¶¨Êä³öÍ¼Æ¬³ß´ç
+	//é‡æ–°è®¾å®šè¾“å‡ºå›¾ç‰‡å°ºå¯¸
 	if (theta!=0)
 	{
 		resizeHeight = (int)(imgHeight);

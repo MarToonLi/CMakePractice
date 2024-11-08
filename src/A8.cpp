@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include<math.h>
@@ -8,21 +8,21 @@ using namespace cv;
 
 void A8(void)
 {
-	printf_s("½«Í¼Æ¬°´ÕÕ¹Ì¶¨´óĞ¡Íø¸ñ·Ö¸î£¬Íø¸ñÄÚµÄÏñËØÖµÈ¡Íø¸ñÄÚËùÓĞÏñËØµÄ×î´óÖµ");
+	printf_s("å°†å›¾ç‰‡æŒ‰ç…§å›ºå®šå¤§å°ç½‘æ ¼åˆ†å‰²ï¼Œç½‘æ ¼å†…çš„åƒç´ å€¼å–ç½‘æ ¼å†…æ‰€æœ‰åƒç´ çš„æœ€å¤§å€¼");
 	Mat imgSrc = imread("C:\\Users\\Administrator\\Desktop\\img3.jpg");
 	int imgHeight = imgSrc.rows;
 	int imgWidth = imgSrc.cols;
 	int channel = imgSrc.channels();
 	Mat imgOut = Mat::zeros(imgHeight, imgWidth, CV_8UC3);
-	int step = 8;//²½Êı
-	int r = 8;//³Ø»¯·¶Î§
+	int step = 8;//æ­¥æ•°
+	int r = 8;//æ± åŒ–èŒƒå›´
 	for (int y = 0; y < imgHeight; y += step)
 	{
 		for (int x = 0; x < imgWidth; x += step)
 		{
 			for (int c = 0; c < channel; c++)
 			{
-				//Í³¼ÆÔÚr·¶Î§ÄÚµÄËùÓĞÏñËØ×î´óÖµ
+				//ç»Ÿè®¡åœ¨rèŒƒå›´å†…çš„æ‰€æœ‰åƒç´ æœ€å¤§å€¼
 				int val = 0;
 				for (int dy = 0; dy < r; dy++)
 				{
@@ -32,7 +32,7 @@ void A8(void)
 					}
 				}
 				printf_s("%d", val);
-				//ÔÚr·¶Î§ÄÚËùÍ³Ò»¸³Öµ
+				//åœ¨rèŒƒå›´å†…æ‰€ç»Ÿä¸€èµ‹å€¼
 				for (int dy = 0; dy < r; dy++)
 				{
 					for (int dx = 0; dx < r; ++dx)

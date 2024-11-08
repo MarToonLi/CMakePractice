@@ -1,11 +1,11 @@
-#pragma once
+ï»¿#pragma once
 #include <opencv2/opencv.hpp>
 #ifndef _A_31_40_
 #define _A_31_40_
 
 using namespace cv;
 
-#define PI acos(-1)//Ô²ÖÜÂÊ
+#define PI acos(-1)//åœ†å‘¨ç‡
 
 void A31(Mat img);
 void A32(Mat img);

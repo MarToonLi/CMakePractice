@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_1_10.h"
@@ -7,19 +7,19 @@ using namespace cv;
 
 void A10()
 {
-	printf_s("ÖĞÖµÂË²¨\n");
+	printf_s("ä¸­å€¼æ»¤æ³¢\n");
 	Mat imgSrc = imread("C:\\Users\\Administrator\\Desktop\\OpencvTestImg\\img512.png");
 	int imgHeight = imgSrc.rows;
 	int imgWidth = imgSrc.cols;
 	int channel = imgSrc.channels();
 	Mat imgOut = Mat::zeros(imgHeight, imgWidth, CV_8UC3);
 
-	const int kernelSize = 3;//¾í»ıºË´óĞ¡
-	int kernelRadius = floor(kernelSize / 2);//¾í»ıºË°ë¾¶
-	float kernelArray[kernelSize * kernelSize];//¾í»ıºË¾ØÕó,ÅÅĞò¾ØÕó
+	const int kernelSize = 3;//å·ç§¯æ ¸å¤§å°
+	int kernelRadius = floor(kernelSize / 2);//å·ç§¯æ ¸åŠå¾„
+	float kernelArray[kernelSize * kernelSize];//å·ç§¯æ ¸çŸ©é˜µ,æ’åºçŸ©é˜µ
 
 	Mat imgtemp = Mat::zeros(imgHeight + 2 * kernelRadius, imgWidth + 2 * kernelRadius, CV_8UC3);
-	//¸´ÖÆÒ»ÕÅÔ­Í¼£¬²¢ÇÒÌí¼Ó±ß¿ò
+	//å¤åˆ¶ä¸€å¼ åŸå›¾ï¼Œå¹¶ä¸”æ·»åŠ è¾¹æ¡†
 	for (int y = 0; y < imgHeight; y++)
 		for (int x = 0; x < imgWidth; x++)
 			for (int c = 0; c < channel; c++)
@@ -33,18 +33,18 @@ void A10()
 			{
 				double val = 0;
 				int count = 0;
-				//·ÀÖ¹µ¹Ğò
+				//é˜²æ­¢å€’åº
 				for (int i = 0; i < kernelSize * kernelSize; i++)
 					kernelArray[i] = 999;
-				//ÔÚ¾í»ıºË·¶Î§ÄÚÈ¡Öµ
+				//åœ¨å·ç§¯æ ¸èŒƒå›´å†…å–å€¼
 				for (int dy = -kernelRadius; dy < kernelRadius + 1; dy++)
 					for (int dx = -kernelRadius; dx < kernelRadius + 1; dx++)
 						if (((y + dy) >= 0) && ((x + dx) >= 0))
 							kernelArray[count++] = (int)imgtemp.at<Vec3b>(y + dy, x + dx)[c];
 
-				//¶ÔÔªËØ½øĞĞÅÅĞò
+				//å¯¹å…ƒç´ è¿›è¡Œæ’åº
 				std::sort(kernelArray, kernelArray + (kernelSize * kernelSize));
-				//È¡ÖĞÖµ
+				//å–ä¸­å€¼
 				val = kernelArray[int(floor(count / 2)) + 1];
 				imgOut.at<Vec3b>(y, x)[c] = (uchar)val;
 			}

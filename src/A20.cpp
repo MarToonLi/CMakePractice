@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_11_20.h"
@@ -7,19 +7,19 @@ using namespace cv;
 
 void A20(Mat img)
 {
-	printf_s("»Ò¶ÈÖ±·½Í¼\n");
+	printf_s("ç°åº¦ç›´æ–¹å›¾\n");
 	Mat imgSrc = img;
 	int imgWeight = imgSrc.cols;
 	int imgHeight = imgSrc.rows;
 
-	const int grayScale = 256;//»Ò¶ÈÖµ
-	int pixelCount[grayScale] = { 0 };//»Ò¶ÈÖ±·½Í¼
-	float pixelPro[grayScale] = { 0 };//¸÷¸ö»Ò¶ÈÖµÕ¼×ÜÌåµÄ±ÈÀı
-	int pixelSum = imgHeight * imgWeight;//×ÜÏñËØÖµ
+	const int grayScale = 256;//ç°åº¦å€¼
+	int pixelCount[grayScale] = { 0 };//ç°åº¦ç›´æ–¹å›¾
+	float pixelPro[grayScale] = { 0 };//å„ä¸ªç°åº¦å€¼å æ€»ä½“çš„æ¯”ä¾‹
+	int pixelSum = imgHeight * imgWeight;//æ€»åƒç´ å€¼
 
 	Mat imgOut = Mat::zeros(imgHeight, imgWeight, CV_8UC1);
 	
-	//¼ÆËã»Ò¶È
+	//è®¡ç®—ç°åº¦
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWeight; x++)

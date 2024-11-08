@@ -48,7 +48,8 @@ HoughTable HoughNMS(const cv::Mat& hough_table, int RHO_MAX, int ANGLE_T, int N)
             }
 
             if (is_max) {
-                top_pixels.push({ rho, t, value });
+                HoughPixel pp = { rho, t, value };
+                top_pixels.push(pp);
                 if (top_pixels.size() > N) top_pixels.pop(); // 维护前 N 个最大像素
             }
         }

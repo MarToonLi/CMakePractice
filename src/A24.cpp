@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include "A_21_30.h"
@@ -13,8 +13,8 @@ void A24(Mat img)
 	int channel = imgSrc.channels();
 	Mat imgOut = Mat::zeros(imgHeight, imgWidth, CV_8UC3);
 	double val;
-	double gammaC= 1;//³£Êı
-	double gammaG= 2.2;//Ù¤Âí±äÁ¿
+	double gammaC= 1;//å¸¸æ•°
+	double gammaG= 2.2;//ä¼½é©¬å˜é‡
 	for (int y = 0; y < imgHeight; ++y)
 	{
 		for (int x = 0; x < imgWidth; ++x)
