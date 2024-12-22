@@ -3,29 +3,51 @@ find_package(Qt5 COMPONENTS Core REQUIRED)
 find_package(OpenCV REQUIRED)
 
 
-message(STATUS "THIRDPARTY_DIR: ${THIRDPARTY_DIR}")
-message(STATUS "OpenCV_DIR: ${OpenCV_DIR}")
-message(STATUS "spdlog_INCLUDE_DIR: ${spdlog_INCLUDE_DIR}")
-
 # 2 °üº¬Ä¿Â¼Ôö¼ÓÄÚÈÝ
-include_directories(${OpenCV_INCLUDE_DIRS} ${spdlog_INCLUDE_DIR})
+include_directories(
+PUBLIC
+    ./
+    ${spdlog_INCLUDE_DIR}
+PRIVATE
+    ./
+    ${OpenCV_INCLUDE_DIRS}                                                        # 3.1 add opencv
+    ${THIRDPARTY_DIR}/onnxruntime_1_17_cuda118/include                            # 3.2 add onnxtime
+    ${THIRDPARTY_DIR}/onnxruntime_1_17_cuda118/include/onnxruntime/core/session   
+    ${THIRDPARTY_DIR}/cuda118/include                                             # 3.3 add cuda
+)
 
 
 # ²éÕÒËùÓÐÔ´ÎÄ¼þºÍÍ·ÎÄ¼þ
 file(GLOB_RECURSE SOURCES "*.cpp")
 file(GLOB_RECURSE HEADERS "*.h")
 
-add_executable(My_Project "main.cpp" "A_71_80.h" "A_101_120.h"  "A104.cpp" "logger.h")
-#add_executable(My_Project ${SOURCES} ${HEADERS})
-#add_executable(My_Project ${HEADERS})
+add_executable(
+    My_Project 
+    main.cpp
+    "opencvSrc/src_101_120/A_101_120.h"
+    "opencvSrc/src_101_120/A108.cpp"
+
+    "onnxSrc/yolov5.cpp" 
+    "onnxSrc/yolov5.hpp" 
+    "onnxSrc/onnx_deploy.cpp"
+    "onnxSrc/onnx_deploy.h"
+
+    "utils/logger.h"
+)
 
 
 # 3 ¿âÄ¿Â¼Ôö¼ÓÄÚÈÝ
-target_link_libraries(My_Project ${OpenCV_LIBS})  
+target_link_libraries(
+    My_Project 
+    ${OpenCV_LIBS}                                                                            # 3.1 add opencv
+    ${THIRDPARTY_DIR}/onnxruntime_1_17_cuda118/build/Windows/Release/Release/onnxruntime.lib  # 3.2 add onnxtime
+    ${THIRDPARTY_DIR}/cuda118/lib//x64//nvml.lib                                              # 3.3 add cuda
+)  
 #!? 1 ¸ÃÐÐ±ØÐëÔÚadd_executableºóÃæ£¬¼´My_Project±ØÐëÉú³ÉÁËexeÎÄ¼þÖ®ºó
 #!? 2 Èç¹ûÃ»ÓÐÕâ¾ä»°£¬opencvµÄÃüÁî»áÔÚÉú³É½×¶Î£¬±¨¡°LNK2019 : ÎÞ·¨½âÎöµÄÍâ²¿·ûºÅ¡±µÄ´íÎó
 
 
+# 4 debug test for study
 message(STATUS "CMake Variables:\n")
 get_cmake_property(VAR_NAMES VARIABLES)  # »ñÈ¡ËùÓÐÒÑ¶¨ÒåµÄ CMake ±äÁ¿
 set(SEARCH_STRING "spdlog")              # ¶¨ÒåÄãÏë²éÕÒµÄ×Ö·û»ò×Ó×Ö·û´®
@@ -35,3 +57,20 @@ foreach(VAR_NAME ${VAR_NAMES})           # ±éÀúËùÓÐ±äÁ¿Ãû£¬²éÕÒÊÇ·ñ°üº¬Ö¸¶¨µÄ×Ó×
         message(STATUS "==> Found variable: ${VAR_NAME}")
     endif()
 endforeach()
+
+
+message(STATUS "lib: ${OpenCV_LIBRARY}")        # ¿Õ
+message(STATUS "inc: ${OpenCV_INCLUDE_DIR}")    # ¿Õ
+message(STATUS "inc: ${OpenCV_INCLUDE_DIRS}")   # ÓÐ
+message(STATUS "inc: ${OpenCV_LIBRARIES}")      # ÓÐ
+message(STATUS "inc: ${OpenCV_LIBRARY_DIRS}")   # ÎÞ
+message(STATUS "inc: ${OpenCV_ROOT_DIR}")       # ÎÞ
+message(STATUS "inc: ${OpenCV_FOUND}")          # 1
+
+
+
+message(STATUS "THIRDPARTY_DIR: ${THIRDPARTY_DIR}")
+message(STATUS "OpenCV_DIR: ${OpenCV_DIR}")
+message(STATUS "spdlog_INCLUDE_DIR: ${spdlog_INCLUDE_DIR}")
+
+MESSAGE(STATUS "Check opencv version: ${OpenCV_VERSION}")  # ±ØÒªºËÊµ
