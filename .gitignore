@@ -1,5 +1,4 @@
-
 /.vs
-/bin
-/out
-*.onnx
+/project*/bin
+/project*/out
+/resources
