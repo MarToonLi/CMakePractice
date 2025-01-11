@@ -5,7 +5,6 @@ project(onnx_solver_shared VERSION 0.1.0 LANGUAGES CXX)
 
 
 
-
 # 2 发现并定义第三方库相关路径变量
 set(THIRDPARTY_DIR        D:/Myself/MachineVision/third_party)                     #!? 不可以是//
 set(OpenCV_DIR            ${THIRDPARTY_DIR}/opencv455_DNN/install/x64/vc17/lib)
@@ -54,6 +53,15 @@ PUBLIC
 	cuda
 )   # 4.4 链接导入库文件和接入库
 
+set_target_properties(solver PROPERTIES
+  #!? 静态库文件输出目录
+  ARCHIVE_OUTPUT_DIRECTORY_DEBUG   ${PROJECT_SOURCE_DIR}/bin/debug
+  ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release
+
+  #!? 动态库文件输出目录
+  LIBRARY_OUTPUT_DIRECTORY_DEBUG    ${PROJECT_SOURCE_DIR}/bin/debug
+  LIBRARY_OUTPUT_DIRECTORY_RELEASE  ${PROJECT_SOURCE_DIR}/bin/release
+)
 
 
 
@@ -81,8 +89,10 @@ PRIVATE
 
 # 6 默认构建选项
 set_target_properties(onnx_solver_shared PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY_DEBUG   ${PROJECT_SOURCE_DIR}/bin/debug
+  # 可执行文件输出目录
+  RUNTIME_OUTPUT_DIRECTORY_DEBUG   ${PROJECT_SOURCE_DIR}/bin/debug   
   RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release
+
   DEBUG_POSTFIX "d"
 )
 
@@ -96,4 +106,7 @@ message("PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
 message("CMAKE_BINARY_DIR:   ${CMAKE_BINARY_DIR}")
 message("CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG:   ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}")
 message("OpenCV_INCLUDE_DIRS:   ${OpenCV_INCLUDE_DIRS}")
-message("OpenCV_LIBS:   ${OpenCV_LIBS}")
+message("OpenCV_LIBS:           ${OpenCV_LIBS}")
+message("PROJECT_BINARY_DIR:    ${PROJECT_BINARY_DIR}")
+message("onnxruntime_LIBRARY:       ${onnxruntime_LIBRARY}")
+message("ENV.onnxruntime_LIBRARY:   $ENV{onnxruntime_LIBRARY}")

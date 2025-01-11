@@ -91,6 +91,7 @@ if(onnxruntime_FOUND)
 
   add_library(onnxruntime::onnxruntime SHARED IMPORTED)
   target_include_directories(onnxruntime::onnxruntime INTERFACE ${onnxruntime_INCLUDE_DIRS})
+  message("WIN32: ${WIN32}")
   if(WIN32)
     set_target_properties(onnxruntime::onnxruntime PROPERTIES 
       IMPORTED_IMPLIB "${onnxruntime_LIBRARY}")
