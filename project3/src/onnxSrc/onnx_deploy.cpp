@@ -78,7 +78,7 @@ int yolo_min()
 {
 	SetConsoleOutputCP(CP_UTF8); // allow the chinese log to show.
 	
-	std::string onnxModelPath = "F:/Projects/Opencv-100-Questions/resources/3_2_best.onnx";
+	std::string onnxModelPath = "F:/Projects/CMakePractice/resources/3_2_best.onnx";
 
 
 	Configuration defect_config;
@@ -103,9 +103,18 @@ int yolo_min()
 	firedetmodel = new YOLOv5(defect_config);
 
 	LOGD("202412181631");
-	cv::Mat m = cv::imread("D:/1.bmp", 1);
+	cv::Mat m = cv::imread("D:/58_FGJHAT005TZ000033G-1_DA3180921.png", 1);
 	frames.push_back(m);
+	LOGD("11");
 	firedetmodel->detect(frames, output);
+	LOGD("12");
+
+	//firedetmodel->detect(frames, output);
+	//output.clear();
+	//LOGD("13");
+
+	//firedetmodel->detect(frames, output);
+	//LOGD("13");
 	frames.clear();
 	output.clear();
 	LOGW("End:  the first defect model interface.");

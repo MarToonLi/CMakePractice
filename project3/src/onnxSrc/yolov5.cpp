@@ -180,13 +180,14 @@ bool YOLOv5::detect(std::vector<cv::Mat>& frames, std::vector<std::vector<BoxInf
 	std::vector<Ort::Value> ort_outputs;
 
 
-
+	LOGD("1");
 	ort_outputs = ort_session->Run(Ort::RunOptions{ nullptr },
 			                                    &input_names[0],
 			                                    &input_tensor_, 
 			                                    1, 
 			                                    &output_names[0], 
 			                                    1);   // 开始推理
+	LOGD("2");
 
 	
 	std::vector<BoxInfo> generate_boxes;  // BoxInfo自定义的结构体
