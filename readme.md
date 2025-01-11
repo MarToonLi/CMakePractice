@@ -1,23 +1,10 @@
-# CMake Practice 使用说明
+# 一 CMake Practice 项目使用说明
 
 本项目旨在构建基于opencv传统算子和ONNX模型部署的静态库和动态库的CMake项目。
 
 注：本项目虽然名为Opencv-100-Questions，但项目结构为多Cmake项目，前两个项目是将Opencv-100-Questions的源文件整理成了Cmake项目，方便新算子的探索和编写。
 
 
-
-## VisualStudio配置待运行项目
-
-1. VisualStudio打开该项目，在项目-->CMake工作区设置中设置项目名称
-
-   .vs/CMakeWorkspaceSettings.json中
-
-   ```json
-   {
-     "enableCMake": true,
-     "sourceDirectory": "project2"
-   }
-   ```
 
 
 
@@ -31,30 +18,142 @@
 
 
 
+## VisualStudio配置与执行
 
-
-## 第三方库和必要dll文件
+### Step1: 下载和配置第三方库和必要dll文件
 
 通过网盘分享的文件：Opencv-100-Questions.rar
 链接: https://pan.baidu.com/s/1YlP07xg0EfWiWI2pT3exlw?pwd=gbnj 提取码: gbnj 
 --来自百度网盘超级会员v7的分享
 
+该压缩文件中包含以下两个文件夹third_party和resources。
 
-
-- third_party放置到任意文件夹，对应地需要修改cmakelist中对应变量的路径
+- third_party放置到任意文件夹；
 - resources与各项目同目录；
 
-**注：因为项目编写过程存在变动，有些资源的路径存在变动，因此项目运行可能存在问题；**
+
+
+### Step2: 修改源文件中相关路径
+
+- THIRDPARTY_DIR的路径：修改cmakelist中对应变量THIRDPARTY_DIR的路径；
+- 模型路径：如果运行project3和project4这两类使用了onnx的项目，需要在onnx_deploy.cpp中修改onnxModelPath的路径，模型文件在resources中；—— 如果不配置，可能会报Ort:Exception的错误。
+
+注：resources中包含了opencv和onnx的相关dll文件，最终项目执行的时候需要将相关dll文件放置到与可执行文件同目录下；
+
+
+
+### Step3: VisualStudio配置选择待运行项目
+
+1. VisualStudio打开该项目，在项目-->CMake工作区设置中设置项目名称
+
+   （或者在.vs/CMakeWorkspaceSettings.json中修改，内容如下）
+
+   ```json
+   {
+     "enableCMake": true,
+     "sourceDirectory": "project3"  // 指定待运行的项目
+   }
+   ```
+
+2. 对应项目配置
+
+   以project3为例；
+
+   - 选择x64_Debug或者x64_Release；
+
+   - 选择启动项为onnx_solver_sharedd.exe；
+
+   - 打开projects3/Cmakelist.txt文件，并在对应编辑界面执行ctrl+s，VS会自动对当前项目进行cmake编译。
+
+   - 编译结束后，将相关dll文件放置到可执行文件所在目录中；
+
+     以project3为例，需要将opencv_world和onnxruntimed.dll文件放置到对应目录中；
+
+   - 点击启动项onnx_solver_sharedd.exe，项目启动运行；
+
+   
+
+   
+
+
+
+# 二 Cmake项目构建相关知识整理
+
+
+
+## ProjectX项目设计流程
+
+1 前期设计
+
+1.1 模块设计
+
+项目目标：快速地对opencv相关问题进行单元研发和测试。为此，项目需要定义两个构建目标：可执行文件目标opencv_solver和静态库目标solver。
+
+1.2 项目目录结构
+
+```shell
+project1
+#!! 编写项目的Cmakelist.txt文件
+----Cmakelist.txt         
+#!! 源文件存储的位置
+----opencvSrc
+----|----src_101_120
+----|----|----A_101_120.h
+----|----|----A108.cpp
+#!! 第三方库的cmake文件所在目录
+# xxx.cmake文件用于从系统环境变量等路径中寻找到系统中安装的第三方库的安装路径，并发现对应的include、lib路径
+# 1. 将include、lib路径配置成Cmake环境变量，供全局使用；2. 将相关的include、lib路径配置用于生成接口库，供全局使用；
+----cmake/fetch
+----|----spdlog.cmake
+# resource资源
+----images
+----|----1.png ....
+# 头文件目录
+----cli
+----|----main.cpp
+----|----main.h
+# utils：第三方库相关接口文件等任意内容
+----utils
+----|----logger.h
+----|----Cmakelist.txt
+```
+
+1.3 接口设计
+
+```c++
+int main();
+// ---------------
+int A108_solver();
+```
+
+2 第三方库
+
+2.1 安装库
+
+2.2 库的查找模块
+
+3 CMake目录程序
+
+3.1 查找软件包
+
+3.2 动态库目标
+
+3.3 可执行文件目标
+
+4 代码实现
 
 
 
 
 
-# 构建目标调用静态库和动态库一般流程
 
-1. 声明静态库和动态库名称，及对应源文件
-2. 添加头文件搜索目录
-3. 链接动态库/动态库/导入库文件所在目录
+
+## 构建目标调用静态库和动态库一般流程
+
+1. 声明静态库和动态库名称，及对应源文件；
+2. 添加头文件搜索目录；
+3. 链接动态库/动态库/导入库文件所在目录；
+4. (opt)将动态库文件拷贝到可执行文件所在目录；
 
 示例代码如下：
 
@@ -113,9 +212,9 @@ PUBLIC
 
 
 
+## 静态库/动态库相关文件存储位置
 
-
-# 静态库/动态库相关文件存储位置
+以project3和project4项目为例
 
 ```cmake
 # 静态库--------------------------------------------
@@ -127,91 +226,6 @@ F:\Projects\Opencv-100-Questions\project4\out\build\x64-Debug\Debug\solver.lib  
 F:\Projects\Opencv-100-Questions\project4\out\build\x64-Debug\Debug\solver.dll   # 动态库文件
 F:\Projects\Opencv-100-Questions\project4\out\build\x64-Debug\solver_export.h    # 导入库头文件
 F:\Projects\Opencv-100-Questions\project4\include\onnx_deploy.h                  # 动态库头文件
-```
-
-
-
-
-
-
-
-# ProjectX项目设计流程
-
-## 1 前期设计
-
-### 1.1 模块设计
-
-项目目标：快速地对opencv相关问题进行单元研发和测试。为此，项目需要定义两个构建目标：可执行文件目标opencv_solver和静态库目标solver。
-
-### 1.2 项目目录结构
-
-```cmake
-project1
-----Cmakelist.txt
-----opencvSrc
-----|----src_101_120
-----|----|----A_101_120.h
-----|----|----A108.cpp
-----cmake/fetch
-----|----spdlog.cmake
-----images
-----|----1.png ....
-----cli
-----|----main.cpp
-----|----main.h
-----utils
-----|----logger.h
-----|----Cmakelist.txt
-```
-
-### 1.3 接口设计
-
-```c++
-int main();
-// ---------------
-int A108_solver();
-```
-
-
-
-
-
-## 2 第三方库
-
-### 2.1 安装库
-
-### 2.2 库的查找模块
-
-
-
-## 3 CMake目录程序
-
-### 3.1 查找软件包
-
-### 3.2 动态库目标
-
-### 3.3 可执行文件目标
-
-
-
-## 4 代码实现
-
-
-
-
-
-# 额外小技巧
-
-## 设置Debug和Release目标生成时的bin输出目录
-
-[CMake生成Debug和Release目标程序时的一些配置_cmake debug-CSDN博客](https://blog.csdn.net/new9232/article/details/140567742)
-
-```cmake
-set_target_properties(opencv_solver PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY_DEBUG   ${PROJECT_SOURCE_DIR}/bin/debug
-  RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release
-  DEBUG_POSTFIX "d"
-)
 ```
 
 
@@ -254,7 +268,33 @@ set_target_properties(opencv_solver PROPERTIES
 
 
 
-# 参考
+
+
+
+
+
+
+# 三 Cmakelist构建小技巧
+
+## 设置Debug和Release目标生成时的bin输出目录
+
+[CMake生成Debug和Release目标程序时的一些配置_cmake debug-CSDN博客](https://blog.csdn.net/new9232/article/details/140567742)
+
+```cmake
+set_target_properties(opencv_solver PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY_DEBUG   ${PROJECT_SOURCE_DIR}/bin/debug
+  RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release
+  DEBUG_POSTFIX "d"
+)
+```
+
+
+
+
+
+
+
+# 四 参考
 
 - 《CMake构建实战：项目开发卷》
 
