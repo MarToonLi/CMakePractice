@@ -23,10 +23,13 @@ namespace NA109 {
 
 			src_data = src.ptr<uchar>(0);       // 数据起始指针
 			step = src.step;                             //获取每一行的元素总个数（相当于cols*channels，等同于step1)
+			result_data = _result.data;
+
 		}
 
 		void operator()(const Range& range) const //重载操作符（）
 		{
+
 			int step = (int)(result.step / result.elemSize1());
 			// 遍历图像中心区域（排除边缘）
 			for (int x = range.start; x < range.end - pad; ++x) {
@@ -45,6 +48,8 @@ namespace NA109 {
 					// 快速获取中值
 					auto mid = window.begin() + window.size() / 2;
 					std::nth_element(window.begin(), mid, window.end());
+
+					result_data[y * result.step + x] = *mid;
 				}
 			}
 		}
@@ -57,6 +62,7 @@ namespace NA109 {
 		const int pad = kernelSize / 2;
 
 		const uchar* src_data;
+		uchar* result_data;
 		int step;
 	};
 
@@ -96,13 +102,11 @@ namespace NA109 {
 	{
 		imgErode = src.clone();
 
-
 		int kernelSize = 10;
 		const int pad = kernelSize / 2;
 
 		int numThreads = omp_get_max_threads();
 
-#pragma omp parallel for num_threads(10)
 		for (int y = pad; y < src.rows - pad; ++y) {
 			for (int x = pad; x < src.cols - pad; ++x) {
 				// 收集邻域像素
@@ -164,14 +168,14 @@ namespace NA109 {
 
 	void test_parallelfor(Mat& _src1)
 	{
-		cv::Mat imgErode;
+		cv::Mat imgErode = _src1.clone();
 		int totalCols = _src1.cols;
 		int total_pics_num = 50;
 
 		auto start = std::chrono::high_resolution_clock::now();
 		for (int i = 0; i < total_pics_num; i++)
 		{
-			parallel_for_(Range(0, totalCols), ParallelAdd(_src1, imgErode), 50);  //隐式调用，并发
+			parallel_for_(Range(0, totalCols), ParallelAdd(_src1, imgErode), 100);  //隐式调用，并发
 		}
 		auto end = std::chrono::high_resolution_clock::now();
 
@@ -183,18 +187,22 @@ namespace NA109 {
     void A109_solver()
     {
 
-		cv::Mat imgSrc(720, 228, CV_8UC1); // 双精度浮点型
-		cv::randu(imgSrc, cv::Scalar(0), cv::Scalar(256)); // 上限不包含
+		//cv::Mat imgSrc(720, 228, CV_8UC1); // 双精度浮点型
+		//cv::randu(imgSrc, cv::Scalar(0), cv::Scalar(256)); // 上限不包含
 
-        //cv::Mat imgSrc = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\test_1562__ORI_DA2710107.jpg");
-		LOGD("imgSrc.width: {}; imgSrc.height: {}; imgSrc.type: {}ss;", imgSrc.cols, imgSrc.rows, imgSrc.type());
+        cv::Mat imgSrc = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\test_1562__ORI_DA2710107.jpg");
+
+		cv::Mat gray;
+		cv::cvtColor(imgSrc, gray, cv::COLOR_BGR2GRAY);
+
+		//LOGD("imgSrc.width: {}; imgSrc.height: {}; imgSrc.type: {}ss;", imgSrc.cols, imgSrc.rows, imgSrc.type());
 
 
 		//test(imgSrc);
 		int numThreads = omp_get_max_threads();
 		LOGD("numThreadsss: {};", numThreads);
-		//test_omp(imgSrc);
-		test_parallelfor(imgSrc);
+		test_omp(imgSrc);
+		//test_parallelfor(gray);
 
         return;
     }
