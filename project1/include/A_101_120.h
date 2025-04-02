@@ -27,4 +27,8 @@ namespace NA108 {
 }
 
 
+namespace NA109 {
+	void A109_solver();
+}
+
 #endif 

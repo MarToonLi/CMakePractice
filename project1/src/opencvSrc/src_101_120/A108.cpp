@@ -23,7 +23,7 @@ namespace NA108 {
 
         cv::Mat imgSrc = cv::imread("F:\\Projects\\Opencv-100-Questions\\project1\\OpencvTestImg\\A104.png");
 
-        LOGD("imgSrc.width: {}; imgSrc.height: {}; imgSrc.type: {};", imgSrc.cols, imgSrc.rows, imgSrc.type());
+        LOGD("imgSrc.width: {}; imgSrc.height: {}; imgSrc.type: {}ss;", imgSrc.cols, imgSrc.rows, imgSrc.type());
 
         return;
     }

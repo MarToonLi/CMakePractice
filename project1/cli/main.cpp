@@ -9,7 +9,8 @@ int main()
 
 	//NA106::A106();
 	//NA107::A107();
-	NA108::A108_solver();
+	//NA108::A108_solver();
+	NA109::A109_solver();
 
 
 	return 1;

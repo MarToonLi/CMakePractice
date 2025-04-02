@@ -21,15 +21,16 @@ add_subdirectory(utils)  # 构建了logging接口库
 set(THIRDPARTY_DIR     "D://Myself//MachineVision//third_party")
 set(OpenCV_DIR         ${THIRDPARTY_DIR}/opencv455_DNN/install/x64/vc17/lib)
 find_package(OpenCV    REQUIRED)   # 发现并定义opencv相关的路径变量
+find_package(OpenMP    REQUIRED)   # 发现并定义opencv相关的路径变量
 
 
 
 
 
 # 4 构建静态库
-add_library(solver                STATIC  src/opencvSrc/src_101_120/A108.cpp)
+add_library(solver                STATIC  src/opencvSrc/src_101_120/A109.cpp)
 target_include_directories(solver PUBLIC  include ${CMAKE_BINARY_DIR} ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(solver      PRIVATE  logging ${OpenCV_LIBS} )
+target_link_libraries(solver      PRIVATE  logging ${OpenCV_LIBS} OpenMP::OpenMP_CXX)
 
 
 
@@ -38,7 +39,7 @@ target_link_libraries(solver      PRIVATE  logging ${OpenCV_LIBS} )
 # 5 构建可执行文件
 add_executable(opencv_solver             cli/main.cpp)
 target_include_directories(opencv_solver PUBLIC  include ${CMAKE_BINARY_DIR} ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(opencv_solver      PRIVATE  logging ${OpenCV_LIBS} solver )
+target_link_libraries(opencv_solver      PRIVATE  logging ${OpenCV_LIBS} solver OpenMP::OpenMP_CXX )
 #!? OpenCV_LIBS是不含路径的库文件名，链接器会自行在系统库目录等默认搜索目录中查找其所在位置(find_package(opencv)给到的路径)！
 
 

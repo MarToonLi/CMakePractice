@@ -748,3 +748,42 @@ set_target_properties(名称 PROPERTIES
 
 - [全网最细的CMake教程！(强烈建议收藏) - 知乎](https://zhuanlan.zhihu.com/p/534439206)
 
+
+
+
+
+# 五 新算法整理
+
+## A109 parallel_for和omp加速
+
+1. Cmakelist.txt中要为 **待使用两者代码的文件所属的target中，添加 OpenMP::OpenMP_CXX**
+
+   ```cmake
+   find_package(OpenCV    REQUIRED)   # 发现并定义opencv相关的路径变量
+   find_package(OpenMP    REQUIRED)   # 发现并定义opencv相关的路径变量
+   ......
+   target_link_libraries(solver      PRIVATE  logging ${OpenCV_LIBS} OpenMP::OpenMP_CXX)
+   ```
+
+2. 代码中，导入
+
+   ```cmake
+   #include <omp.h>
+   ```
+
+3. parallel_for写法
+
+   ```cmake
+   # https://blog.csdn.net/qq_28087491/article/details/118992396 作为参考
+   
+   #1. 构建class ParallelAdd : public ParallelLoopBody；
+   #2. 执行 parallel_for_(Range(0, totalCols), ParallelAdd(_src1,_src2,result));
+   ```
+
+4. OMP写法
+
+   ```cmake
+   #pragma omp parallel for num_threads(10)
+   ```
+
+   
