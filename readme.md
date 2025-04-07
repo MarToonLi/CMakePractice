@@ -786,4 +786,59 @@ set_target_properties(名称 PROPERTIES
    #pragma omp parallel for num_threads(10)
    ```
 
+
+
+
+
+
+
+
+## A110 SSE
+
+1. blur、减法、picshadowx三部分循环执行1000次，时间是80ms、3ms、40ms；
+
+   ![image-20250403160111817](readme.assets/image-20250403160111817.png)
+
+2. picshadowx中的四个部分的用时分别是：duration1: 48ms; duration2: 0ms; duration3: 8ms; duration4: 3ms;
+
+3. `show->at<cv::Vec3b>(show->rows - 1 - j, i) = pixel;`有效果；
+
+   10000次循环下，最快提升10ms，最慢2ms；原始算法为35ms左右；
+
+   改变omp线程数目，对原始算法block4影响较大，对block4_2影响较小；
+
+   4路循环计算并没有提升作用！
+
    
+
+
+
+2. 高斯模糊SSE的参考文献：
+
+   [数字图像处理之高斯滤波加速优化 - 知乎](https://zhuanlan.zhihu.com/p/355265007)
+
+   不是特别靠谱，代码量少，而且不是常见的代码结构
+
+   [SSE图像算法优化系列二：高斯模糊算法的全面优化过程分享（二）。 - Imageshop - 博客园](https://www.cnblogs.com/Imageshop/p/6440132.html)
+
+   [SSE图像算法优化系列二：高斯模糊算法的全面优化过程分享（一）。 - Imageshop - 博客园](https://www.cnblogs.com/Imageshop/p/6376028.html)
+
+   可以考虑试试，没有提供源码
+
+   [SSE图像算法优化系列2-高斯滤波_牛客博客](https://blog.nowcoder.net/n/5f7c87c1d8da40f2aa4ca62cd9173c9e)
+
+   [再谈快速的高斯模糊算法（使用多次均值滤波逼近和扩展的二项式滤波滤波器）及其优化。 - Imageshop - 博客园](https://www.cnblogs.com/Imageshop/p/16572163.html)
+
+   [SSE图像算法优化系列十三：超高速BoxBlur算法的实现和优化（Opencv的速度的五倍） - Imageshop - 博客园](https://www.cnblogs.com/Imageshop/p/8302990.html)
+
+   这个速度确实快；但是效果并不是高斯模糊；效果有待验证
+
+   [SSE图像算法优化系列2-高斯滤波_高斯平滑sse-CSDN博客](https://blog.csdn.net/just_sort/article/details/95212099)
+
+   [BBuf/Image-processing-algorithm-Speed: opencv](https://github.com/BBuf/Image-processing-algorithm-Speed/tree/master)
+
+   这个能用，但是代码存在问题，自己解决不了！
+
+   [SSE图像算法优化系列1-RGB转灰度图_图像彩色转换为灰度 sse加速-CSDN博客](https://blog.csdn.net/just_sort/article/details/94456945)
+
+   这个博主就是上述github库的作者

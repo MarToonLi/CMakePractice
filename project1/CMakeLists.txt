@@ -28,7 +28,7 @@ find_package(OpenMP    REQUIRED)   # 发现并定义opencv相关的路径变量
 
 
 # 4 构建静态库
-add_library(solver                STATIC  src/opencvSrc/src_101_120/A109.cpp)
+add_library(solver                STATIC  src/opencvSrc/src_101_120/A111.cpp)
 target_include_directories(solver PUBLIC  include ${CMAKE_BINARY_DIR} ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(solver      PRIVATE  logging ${OpenCV_LIBS} OpenMP::OpenMP_CXX)
 

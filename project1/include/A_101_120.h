@@ -31,4 +31,18 @@ namespace NA109 {
 	void A109_solver();
 }
 
+
+namespace NA110 {
+	void A110_solver();
+}
+
+namespace NA111 {
+
+
+	int picshadowx(cv::Mat binary, cv::Mat* show);
+	void doing(cv::Mat imgori);
+	void A111_solver();
+
+}
+
 #endif 
