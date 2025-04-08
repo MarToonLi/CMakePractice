@@ -45,4 +45,9 @@ namespace NA111 {
 
 }
 
+
+namespace NA112 {
+	void A112_solver();
+}
+
 #endif 

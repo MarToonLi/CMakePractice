@@ -27,11 +27,24 @@ find_package(OpenMP    REQUIRED)   # 发现并定义opencv相关的路径变量
 
 
 
-# 4 构建静态库
-add_library(solver                STATIC  src/opencvSrc/src_101_120/A111.cpp)
-target_include_directories(solver PUBLIC  include ${CMAKE_BINARY_DIR} ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(solver      PRIVATE  logging ${OpenCV_LIBS} OpenMP::OpenMP_CXX)
+# 4 构建静态库(多个！)
+add_library(solver110                STATIC  src/opencvSrc/src_101_120/A110.cpp)
+target_include_directories(solver110 PUBLIC  include ${CMAKE_BINARY_DIR} ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(solver110      PRIVATE  logging ${OpenCV_LIBS} OpenMP::OpenMP_CXX)
 
+
+add_library(solver111                STATIC  src/opencvSrc/src_101_120/A111.cpp)
+target_include_directories(solver111 PUBLIC  include ${CMAKE_BINARY_DIR} ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(solver111      PRIVATE  logging ${OpenCV_LIBS} OpenMP::OpenMP_CXX)
+
+
+add_library(solver112                STATIC  src/opencvSrc/src_101_120/A112.cpp)
+target_include_directories(solver112 PUBLIC  include ${CMAKE_BINARY_DIR} ${OpenCV_INCLUDE_DIRS} 
+    ${THIRDPARTY_DIR}/eigen3/install
+    ${THIRDPARTY_DIR}/eigen3/install/include
+    ${THIRDPARTY_DIR}/eigen3/install/include/eigen3
+    ${THIRDPARTY_DIR}/eigen3/install/include/eigen3/Eigen/src)
+target_link_libraries(solver112      PRIVATE  logging ${OpenCV_LIBS} OpenMP::OpenMP_CXX)
 
 
 
@@ -39,7 +52,15 @@ target_link_libraries(solver      PRIVATE  logging ${OpenCV_LIBS} OpenMP::OpenMP
 # 5 构建可执行文件
 add_executable(opencv_solver             cli/main.cpp)
 target_include_directories(opencv_solver PUBLIC  include ${CMAKE_BINARY_DIR} ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(opencv_solver      PRIVATE  logging ${OpenCV_LIBS} solver OpenMP::OpenMP_CXX )
+target_link_libraries(opencv_solver      
+PRIVATE  
+logging
+${OpenCV_LIBS}  
+OpenMP::OpenMP_CXX 
+solver110 
+solver111
+solver112
+)
 #!? OpenCV_LIBS是不含路径的库文件名，链接器会自行在系统库目录等默认搜索目录中查找其所在位置(find_package(opencv)给到的路径)！
 
 

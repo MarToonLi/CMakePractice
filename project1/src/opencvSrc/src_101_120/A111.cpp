@@ -470,7 +470,7 @@ namespace NA111 {
 			int* ColOffset = (int*)malloc((Height + Radius + Radius) * sizeof(int));                               // 行镜像索引表
 			if ((ColValue == NULL) || (ColOffset == NULL)) 
 			{
-				if (ColValue != NULL)    free(ColValue);
+				if (ColValue != NULL)     free(ColValue);
 				if (ColOffset != NULL)    free(ColOffset);
 				return 0;
 			}
@@ -567,7 +567,6 @@ namespace NA111 {
 
 			if (Channel == 1)
 			{
-
 				for (int Y = 0; Y < Height; Y++)
 				{
 					unsigned char* LinePD = Dest + Y * Stride;
@@ -616,8 +615,8 @@ namespace NA111 {
 							ColValue[X + Radius] -= RowMoveOut[X] - RowMoveIn[X];                                            //    更新列数据
 						}
 					}
-					FillLeftAndRight_Mirror_C(ColValue, Width, Radius);                  //    镜像填充左右数据
-					int LastSum = SumofArray_C(ColValue, Radius * 2 + 1);                //    处理每行第一个数据
+					FillLeftAndRight_Mirror_SSE(ColValue, Width, Radius);                  //    镜像填充左右数据
+					int LastSum = SumofArray_C(ColValue, Radius * 2 + 1);                  //    处理每行第一个数据
 					LinePD[0] = IM_ClampToByte(LastSum * Inv);
 
 					int BlockSize = 4, Block = (Width - 1) / BlockSize;
@@ -625,6 +624,7 @@ namespace NA111 {
 					__m128 Inv128 = _mm_set1_ps(Inv);
 
 					int X = 1;
+
 					for (; X < Width; X += BlockSize)
 					{
 						__m128i ColValueOut = _mm_loadu_si128((__m128i*)(ColValue + X - 1));
@@ -1192,6 +1192,16 @@ namespace NA111 {
 
 
 		LOGD("durations1: {}; duration2: {};", duration1, duration2);
+
+
+		int* a = new int[10];
+		int* b = new int[10];
+
+		unsigned char a1[] = { 0,1,2,3,4,5,6,7,8,9 };
+		unsigned char b1[] = { 9,10,2,3,4,5,6,7,8,9 };
+
+
+
 	}
 
 	// 测试 picshadowx_test
