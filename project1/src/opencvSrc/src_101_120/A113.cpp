@@ -858,7 +858,7 @@ namespace NA113 {
 		cv::Mat src1 = input[0];
 		cv::Mat src2 = input[1];
 
-		int total_pics_num = 10;
+		int total_pics_num = 1000;
 		cv::Mat result(input[0].rows, input[0].cols * input.size(), input[0].type());
 
 		auto start = std::chrono::high_resolution_clock::now();
@@ -999,13 +999,83 @@ namespace NA113 {
 	}
 
 	void vconcat_memcpy(cv::Mat& img1, cv::Mat& result, int i, int thread_num) {
-		const size_t row_bytes = img1.cols * img1.elemSize();
+		const size_t row_bytes = img1.cols * img1.elemSize() * img1.rows;
 
-#pragma omp parallel for num_threads(thread_num)
-		for (int r = 0; r < img1.rows; ++r) {
-			uchar* dst = result.ptr<uchar>(img1.rows * i + r);
-			const uchar* src = img1.ptr<uchar>(r);
-			memcpy(dst, src, row_bytes);
+//#pragma omp parallel for num_threads(thread_num)
+//		for (int r = 0; r < img1.rows; ++r) {
+//			uchar* dst = result.ptr<uchar>(img1.rows * i + r);
+//			const uchar* src = img1.ptr<uchar>(r);
+//			memcpy(dst, src, row_bytes);
+//		}
+
+		memcpy(result.data + i * img1.cols * img1.elemSize() * img1.rows, img1.data, row_bytes);
+
+	}
+
+	void RGB2Y_4(unsigned char* Src, unsigned char* Dest, int Width, int Height, int Stride, int threads_num = 4) {
+		const int B_WT = int(0.114 * 256 + 0.5);
+		const int G_WT = int(0.587 * 256 + 0.5);
+		const int R_WT = 256 - B_WT - G_WT; // int(0.299 * 256 + 0.5)
+
+#pragma omp parallel for num_threads(threads_num)
+		for (int Y = 0; Y < Height; Y++) {
+			unsigned char* LinePS = Src + Y * Stride;
+			unsigned char* LinePD = Dest + Y * Width;
+			int X = 0;
+
+			// 每次处理12个像素：加载数据并进行运算
+			for (; X < Width - 12; X += 12, LinePS += 36) {
+				// 每个加载操作使用_mm_loadu_si128来加载16字节的数据
+				// _mm_cvtepu8_epi16将8位无符号整数扩展为16位，以便进行乘法运算
+				// _mm_loadu_si128 用于从内存加载数据到SIMD寄存器
+				// (__m128i*)(LinePS + 0) 将指针LinePS转换为__m128i*类型。__m128i是一个128位的整数类型，可以容纳16个8位整数、8个16位整数、4个32位整数等。
+				// 这里的转换告诉编译器，将LinePS指向的内存当作128位的数据来处理。
+
+				__m128i p1aL = _mm_mullo_epi16(_mm_cvtepu8_epi16(_mm_loadu_si128((__m128i*)(LinePS + 0))), _mm_setr_epi16(B_WT, G_WT, R_WT, B_WT, G_WT, R_WT, B_WT, G_WT)); //1
+				__m128i p2aL = _mm_mullo_epi16(_mm_cvtepu8_epi16(_mm_loadu_si128((__m128i*)(LinePS + 1))), _mm_setr_epi16(G_WT, R_WT, B_WT, G_WT, R_WT, B_WT, G_WT, R_WT)); //2
+				__m128i p3aL = _mm_mullo_epi16(_mm_cvtepu8_epi16(_mm_loadu_si128((__m128i*)(LinePS + 2))), _mm_setr_epi16(R_WT, B_WT, G_WT, R_WT, B_WT, G_WT, R_WT, B_WT)); //3
+
+				__m128i p1aH = _mm_mullo_epi16(_mm_cvtepu8_epi16(_mm_loadu_si128((__m128i*)(LinePS + 8))), _mm_setr_epi16(R_WT, B_WT, G_WT, R_WT, B_WT, G_WT, R_WT, B_WT));//4
+				__m128i p2aH = _mm_mullo_epi16(_mm_cvtepu8_epi16(_mm_loadu_si128((__m128i*)(LinePS + 9))), _mm_setr_epi16(B_WT, G_WT, R_WT, B_WT, G_WT, R_WT, B_WT, G_WT));//5
+				__m128i p3aH = _mm_mullo_epi16(_mm_cvtepu8_epi16(_mm_loadu_si128((__m128i*)(LinePS + 10))), _mm_setr_epi16(G_WT, R_WT, B_WT, G_WT, R_WT, B_WT, G_WT, R_WT));//6
+
+				__m128i p1bL = _mm_mullo_epi16(_mm_cvtepu8_epi16(_mm_loadu_si128((__m128i*)(LinePS + 18))), _mm_setr_epi16(B_WT, G_WT, R_WT, B_WT, G_WT, R_WT, B_WT, G_WT));//7
+				__m128i p2bL = _mm_mullo_epi16(_mm_cvtepu8_epi16(_mm_loadu_si128((__m128i*)(LinePS + 19))), _mm_setr_epi16(G_WT, R_WT, B_WT, G_WT, R_WT, B_WT, G_WT, R_WT));//8
+				__m128i p3bL = _mm_mullo_epi16(_mm_cvtepu8_epi16(_mm_loadu_si128((__m128i*)(LinePS + 20))), _mm_setr_epi16(R_WT, B_WT, G_WT, R_WT, B_WT, G_WT, R_WT, B_WT));//9
+
+				__m128i p1bH = _mm_mullo_epi16(_mm_cvtepu8_epi16(_mm_loadu_si128((__m128i*)(LinePS + 26))), _mm_setr_epi16(R_WT, B_WT, G_WT, R_WT, B_WT, G_WT, R_WT, B_WT));//10
+				__m128i p2bH = _mm_mullo_epi16(_mm_cvtepu8_epi16(_mm_loadu_si128((__m128i*)(LinePS + 27))), _mm_setr_epi16(B_WT, G_WT, R_WT, B_WT, G_WT, R_WT, B_WT, G_WT));//11
+				__m128i p3bH = _mm_mullo_epi16(_mm_cvtepu8_epi16(_mm_loadu_si128((__m128i*)(LinePS + 28))), _mm_setr_epi16(G_WT, R_WT, B_WT, G_WT, R_WT, B_WT, G_WT, R_WT));//12
+
+				// 加法操作，将三个乘积结果相加，得到总和
+				__m128i sumaL = _mm_add_epi16(p3aL, _mm_add_epi16(p1aL, p2aL));//13
+				__m128i sumaH = _mm_add_epi16(p3aH, _mm_add_epi16(p1aH, p2aH));//14
+				__m128i sumbL = _mm_add_epi16(p3bL, _mm_add_epi16(p1bL, p2bL));//15
+				__m128i sumbH = _mm_add_epi16(p3bH, _mm_add_epi16(p1bH, p2bH));//16
+
+				// 右移8位，相当于除以256，得到最终的灰度值
+				__m128i sclaL = _mm_srli_epi16(sumaL, 8);//17
+				__m128i sclaH = _mm_srli_epi16(sumaH, 8);//18
+				__m128i sclbL = _mm_srli_epi16(sumbL, 8);//19
+				__m128i sclbH = _mm_srli_epi16(sumbH, 8);//20
+
+				// 使用_mm_shuffle_epi8进行数据的重新排列，将结果打包到正确的位置，
+				__m128i shftaL = _mm_shuffle_epi8(sclaL, _mm_setr_epi8(0, 6, 12, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1));//21   16个元素
+				__m128i shftaH = _mm_shuffle_epi8(sclaH, _mm_setr_epi8(-1, -1, -1, 18, 24, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1));//22
+				__m128i shftbL = _mm_shuffle_epi8(sclbL, _mm_setr_epi8(-1, -1, -1, -1, -1, -1, 0, 6, 12, -1, -1, -1, -1, -1, -1, -1));//23
+				__m128i shftbH = _mm_shuffle_epi8(sclbH, _mm_setr_epi8(-1, -1, -1, -1, -1, -1, -1, -1, -1, 18, 24, 30, -1, -1, -1, -1));//24
+
+				__m128i accumL = _mm_or_si128(shftaL, shftbL);//25
+				__m128i accumH = _mm_or_si128(shftaH, shftbH);//26
+
+				__m128i h3 = _mm_or_si128(accumL, accumH);//27
+
+				// 最后存储到目标内存中
+				_mm_storeu_si128((__m128i*)(LinePD + X), h3);
+			}
+			for (; X < Width; X++, LinePS += 3) {
+				LinePD[X] = (B_WT * LinePS[0] + G_WT * LinePS[1] + R_WT * LinePS[2]) >> 8;
+			}
 		}
 	}
 
@@ -1016,7 +1086,6 @@ namespace NA113 {
 		ff(input, output);
 
 		cv::Mat src1 = output[0];
-		cv::Mat src2 = output[1];
 
 		int total_pics_num = 1000;
 		cv::Mat result(output[0].rows * output.size(), output[0].cols , output[0].type());
@@ -1033,44 +1102,59 @@ namespace NA113 {
 		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
 
-		cv::Mat _gray, _gray2;
-		cv::Mat imgrst = result.clone();
-		cv::cvtColor(result, _gray, cv::COLOR_BGR2GRAY);
+		cv::Mat _gray, _gray2, _gray3;
+		cv::cvtColor(result, _gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
 		BlurVersion2 blur2 = BlurVersion2();
+
+		_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
+		int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
+		_gray = _gray2 - _gray;
+		cv::Mat imgrst = result.clone();
+
 		start = std::chrono::high_resolution_clock::now();
 		for (int i = 0; i < total_pics_num; i++) {
-			//LOGD("1");
-			_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
-			int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
-			_gray = _gray2 - _gray;
-			//LOGD("3");
 
 			int _iresult = picshadowy(_gray, &imgrst, 4);
-			LOGD("4");
 
+			//int Height = result.rows;
+			//int Width = result.cols;
+			//unsigned char* Src = result.data;
+			//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
+			//int Stride = Width * 3;
+			//RGB2Y_4(Src, Dest, Width, Height, Stride);     // sse 一次处理12个
+			//cv::Mat _gray4(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
+
+			//cv::Mat hh = _gray4 - _gray;
+
+
+			//_gray2 = cv::Mat::zeros(_gray4.size(), _gray4.type());
+			//int result2 = blur2.IM_BoxBlur_SSE(_gray4.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray4.cols, _gray4.rows, _gray4.cols, 10);
+			//_gray4 = _gray2 - _gray4;
+			//int _iresult = picshadowy(_gray4, &imgrst, 4);
+			//LOGD("s");
 		}
 		end = std::chrono::high_resolution_clock::now();
 		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
 
-		//cv::Mat _grayB, _grayB2;
-		//cv::Mat imgrstB = src1.clone();
-		//start = std::chrono::high_resolution_clock::now();
-		//for (int i = 0; i < total_pics_num; i++) {
-		//	for (int j = 0; j < output.size(); j++)
-		//	{
-		//		cv::cvtColor(input[j], _grayB, cv::COLOR_BGR2GRAY);
-		//		//cv::blur(_grayB, _grayB2, cv::Size(20, 20));
-		//		_grayB2 = cv::Mat::zeros(_grayB.size(), _grayB.type());
-		//		int result2 = blur2.IM_BoxBlur_SSE(_grayB.ptr<uchar>(0), _grayB2.ptr<uchar>(0), _grayB.cols, _grayB.rows, _grayB.cols, 10);
-		//		_grayB = _grayB2 - _grayB;
-		//		int _iresult = picshadowx(_grayB, &imgrstB, 4);
-		//	}
-		//}
-		//end = std::chrono::high_resolution_clock::now();
-		//duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		//LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+		cv::Mat _grayB, _grayB2;
+		cv::Mat imgrstB = src1.clone();
+		start = std::chrono::high_resolution_clock::now();
+		for (int i = 0; i < total_pics_num; i++) {
+			for (int j = 0; j < output.size(); j++)
+			{
+				cv::cvtColor(input[j], _grayB, cv::COLOR_BGR2GRAY);
+				//cv::blur(_grayB, _grayB2, cv::Size(20, 20));
+				_grayB2 = cv::Mat::zeros(_grayB.size(), _grayB.type());
+				int result2 = blur2.IM_BoxBlur_SSE(_grayB.ptr<uchar>(0), _grayB2.ptr<uchar>(0), _grayB.cols, _grayB.rows, _grayB.cols, 10);
+				_grayB = _grayB2 - _grayB;
+				int _iresult = picshadowy(_grayB, &imgrstB, 4);
+			}
+		}
+		end = std::chrono::high_resolution_clock::now();
+		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
 	}
 
@@ -1090,10 +1174,15 @@ namespace NA113 {
 		cv::Mat src9 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
 		cv::Mat src10 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
 
-		std::vector<cv::Mat> input = { src1, src2, src3,src4,src5,src6,src7,src8,src9, src10 };
+		std::vector<cv::Mat> input0 = { src1};
+		std::vector<cv::Mat> input1 = { src1, src2, };
+		std::vector<cv::Mat> input2 = { src1, src2,src3,src4, };
+		std::vector<cv::Mat> input3 = { src1, src2,src3,src4,src5,src6, };
+		std::vector<cv::Mat> input4 = { src1, src2,src3,src4,src5,src6, src7,src8, };
+		std::vector<cv::Mat> input5 = { src1, src2, src3,src4,src5,src6,src7,src8,src9, src10 };
 		//std::vector<cv::Mat> input = { src1, src2};
 
-		experiment5(input);
+		experiment5(input5);
 
 		return;
 	}
