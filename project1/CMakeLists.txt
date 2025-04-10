@@ -45,8 +45,15 @@ target_include_directories(solver112 PUBLIC  include ${CMAKE_BINARY_DIR} ${OpenC
     ${THIRDPARTY_DIR}/eigen3/install/include/eigen3
     ${THIRDPARTY_DIR}/eigen3/install/include/eigen3/Eigen/src)
 target_link_libraries(solver112      PRIVATE  logging ${OpenCV_LIBS} OpenMP::OpenMP_CXX)
+# 这里需要注意的是，eigen在solver112的源文件中被使用，就需要在solver112下include其库文件；在opencv_solver中包含是没有用的；
 
-
+add_library(solver113                STATIC  src/opencvSrc/src_101_120/A113.cpp)
+target_include_directories(solver113 PUBLIC  include ${CMAKE_BINARY_DIR} ${OpenCV_INCLUDE_DIRS} 
+    ${THIRDPARTY_DIR}/eigen3/install
+    ${THIRDPARTY_DIR}/eigen3/install/include
+    ${THIRDPARTY_DIR}/eigen3/install/include/eigen3
+    ${THIRDPARTY_DIR}/eigen3/install/include/eigen3/Eigen/src)
+target_link_libraries(solver113      PRIVATE  logging ${OpenCV_LIBS} OpenMP::OpenMP_CXX)
 
 
 # 5 构建可执行文件
@@ -60,6 +67,7 @@ OpenMP::OpenMP_CXX
 solver110 
 solver111
 solver112
+solver113
 )
 #!? OpenCV_LIBS是不含路径的库文件名，链接器会自行在系统库目录等默认搜索目录中查找其所在位置(find_package(opencv)给到的路径)！
 
@@ -74,6 +82,24 @@ set_target_properties(opencv_solver PROPERTIES
   DEBUG_POSTFIX "d"
 )
 
+
+
+if(OpenCV_FOUND)
+    # 查找所有可能的DLL路径
+    get_filename_component(OpenCV_BIN_DIR "${OpenCV_DIR}/../bin" ABSOLUTE)
+    
+    # OpenCV_VERSION 为4.5.5, 下述正则表达式可以将字符串中的点去除！
+    string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\1\\2\\3" OpenCV_VERSION_3DIGIT ${OpenCV_VERSION})
+
+    # 将opencv_worldxxx.dll文件拷贝到工作目录下
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+            "${OpenCV_BIN_DIR}/opencv_world${OpenCV_VERSION_3DIGIT}$<$<CONFIG:Debug>:d>.dll"
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>
+        COMMENT "Copying OpenCV DLLs"
+    )
+
+endif()
 
 
 

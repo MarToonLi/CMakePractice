@@ -97,7 +97,22 @@ set_target_properties(onnx_solver_shared PROPERTIES
 )
 
 
+if(OpenCV_FOUND)
+    # 查找所有可能的DLL路径
+    get_filename_component(OpenCV_BIN_DIR "${OpenCV_DIR}/../bin" ABSOLUTE)
+    
+    # OpenCV_VERSION 为4.5.5, 下述正则表达式可以将字符串中的点去除！
+    string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\1\\2\\3" OpenCV_VERSION_3DIGIT ${OpenCV_VERSION})
 
+    # 将opencv_worldxxx.dll文件拷贝到工作目录下
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+            "${OpenCV_BIN_DIR}/opencv_world${OpenCV_VERSION_3DIGIT}$<$<CONFIG:Debug>:d>.dll"
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>
+        COMMENT "Copying OpenCV DLLs"
+    )
+
+endif()
 
 
 

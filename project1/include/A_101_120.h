@@ -50,4 +50,8 @@ namespace NA112 {
 	void A112_solver();
 }
 
+namespace NA113 {
+	void A113_solver();
+}
+
 #endif 
