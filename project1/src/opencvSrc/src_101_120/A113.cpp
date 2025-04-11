@@ -51,6 +51,7 @@ namespace NA113 {
 				Array[X] = Array[Radius + Radius - X];
 				Array[Radius + Length + X] = Array[Radius + Length - X - 2];
 			}
+
 		}
 
 		void FillLeftAndRight_Mirror_SSE(int* Array, int Length, int Radius)
@@ -131,6 +132,7 @@ namespace NA113 {
 			//return ((Value | ((signed int)(255 - Value) >> 31)) & ~((signed int)Value >> 31));
 		}
 
+		// ori
 		int IM_BoxBlur_C(unsigned char* Src, unsigned char* Dest, int Width, int Height, int Stride, int Radius)
 		{
 			// 参数有效性检查
@@ -150,7 +152,7 @@ namespace NA113 {
 			int* ColOffset = (int*)malloc((Height + Radius + Radius) * sizeof(int));                               // 行镜像索引表
 			if ((ColValue == NULL) || (ColOffset == NULL))
 			{
-				if (ColValue != NULL)     free(ColValue);
+				if (ColValue != NULL)    free(ColValue);
 				if (ColOffset != NULL)    free(ColOffset);
 				return 0;
 			}
@@ -215,119 +217,111 @@ namespace NA113 {
 			return 1;
 		}
 
-		int IM_BoxBlur_SSE2(unsigned char* Src, unsigned char* Dest, int Width, int Height, int Stride, int Radius)
+		// comment版本
+		int IM_BoxBlur_C_Comment(unsigned char* Src, unsigned char* Dest, int Width, int Height, int Stride, int Radius)
 		{
-			int Channel = Stride / Width;
-			if ((Src == NULL) || (Dest == NULL))
-				return 0;
-			if ((Width <= 0) || (Height <= 0) || (Radius <= 0))
-				return 0;
-			if ((Channel != 1) && (Channel != 3) && (Channel != 4))
-				return 0;
+			/** 参数有效性检查 */
+			int Channel = Stride / Width;                                            // 计算通道数
+			if ((Src == NULL) || (Dest == NULL))                       return 0;     // 空指针检查
+			if ((Width <= 0) || (Height <= 0) || (Radius <= 0))        return 0;     // 尺寸有效性检查
+			if ((Channel != 1) && (Channel != 3) && (Channel != 4))    return 0;     // 通道数检查
 
 
-			Radius = (std::min)((std::min)(Radius, Width - 1), Height - 1);        //    由于镜像的需求，要求半径不能大于宽度或高度-1的数据
-			int SampleAmount = (2 * Radius + 1) * (2 * Radius + 1);
-			float Inv = 1.0 / SampleAmount;
+			Radius = (std::min)((std::min)(Radius, Width - 1), Height - 1);          // 限制最大半径
+			int SampleAmount = (2 * Radius + 1) * (2 * Radius + 1);                  // 总采样像素数
+			float Inv = 1.0 / SampleAmount;                                          // 用于求平均的倒数
 
 
-			int threads_num = omp_get_max_threads();
-			int* ColValue = (int*)calloc((Width + 2 * Radius) * threads_num, sizeof(int));
-			int* ColOffset = (int*)malloc((Height + Radius + Radius) * sizeof(int));
-
-
+			/** 内存分配 */ 
+			int* ColValue = (int*)malloc((Width + Radius + Radius) * (Channel == 1 ? Channel : 4) * sizeof(int));  // 列累加值缓存
+			int* ColOffset = (int*)malloc((Height + Radius + Radius) * sizeof(int));                               // 行镜像索引表
 			if ((ColValue == NULL) || (ColOffset == NULL))
 			{
-				if (ColValue != NULL)    free(ColValue);
+				if (ColValue != NULL)     free(ColValue);
 				if (ColOffset != NULL)    free(ColOffset);
 				return 0;
 			}
 
+			/** 创建行镜像索引表（处理图像边界），创建后不会被修改！ */ 
 			for (int Y = 0; Y < Height + Radius + Radius; Y++)
-				ColOffset[Y] = IM_GetMirrorPos(Height, Y - Radius);
+				// pos 的取值范围是 [-Radius, Height + Radius]
+				ColOffset[Y] = IM_GetMirrorPos(Height, Y - Radius);  // 生成镜像行坐标
 
+			//! comment
+			//for (int i = 0; i < Height + Radius + Radius; i++) {
+			//	LOGD("ColOffset[{}] = {};", i, ColOffset[i]);
+			//}
+			// 1 0123 2
+
+
+			// 单通道处理
 			if (Channel == 1)
 			{
-#pragma omp parallel for num_threads(threads_num)
-				for (int Y = 0; Y < Height; Y++)
+				for (int Y = 0; Y < Height; Y++)                                                  // 遍历每一行
 				{
-					int* LocalColValue = ColValue + omp_get_thread_num() * (Width + 2 * Radius);
-					unsigned char* LinePD = Dest + Y * Stride;
-					if (Y == 0)
+					/** 获取Dst的某一行的位置索引 */
+					unsigned char* LinePD = Dest + Y * Stride;                                    
+					if (Y == 0)                                                                   // 首行初始化
 					{
-						memset(LocalColValue + Radius, 0, Width * sizeof(int));
-						for (int Z = -Radius; Z <= Radius; Z++)
+						/** 初始化ColValue的值为0和-842150451 */
+						memset(ColValue + Radius, 0, Width * sizeof(int));
+						//for (int i = 0; i < Width + Radius + Radius; i++) {
+						//	LOGD("ColValue[{}] = {};", i, ColValue[i]);
+						//}
+						//  -842150451 | 0 0 0 0 0 | -842150451 
+						 
+						
+						// ColValue 空间大小为 Width + Radius + Radius， 现在从 Radius开始到Radius+width之间的位置设置成 像素0
+						// radius长度的未赋值区域 + width长度的0赋值区域 + radius长度的未赋值区域
+						for (int Z = -Radius; Z <= Radius; Z++)                                   // 累加初始列和
 						{
-							unsigned char* LinePS = Src + ColOffset[Z + Radius] * Stride;
-
-							int BlockSize = 8, Block = Width / BlockSize;
-							int X = 0;
-							for (; X < Width; X += BlockSize)
+							unsigned char* LinePS = Src + ColOffset[Z + Radius] * Stride;         //! 获取镜像行(虚的和实的)的起始位置
+							for (int X = 0; X < Width; X++)                                       // 逐列累加镜像行的元素值 赋值给
 							{
-								int* DestP = LocalColValue + X + Radius;
-								__m128i Sample = _mm_cvtepu8_epi16(_mm_loadl_epi64((__m128i*)(LinePS + X)));
-								_mm_storeu_si128((__m128i*)DestP, _mm_add_epi32(_mm_loadu_si128((__m128i*)DestP), _mm_cvtepi16_epi32(Sample)));
-								_mm_storeu_si128((__m128i*)(DestP + 4), _mm_add_epi32(_mm_loadu_si128((__m128i*)(DestP + 4)), _mm_unpackhi_epi16(Sample, _mm_setzero_si128())));
+								ColValue[X + Radius] += LinePS[X]; 
 							}
 
-							for (; X < Width; X++)
-							{
-								LocalColValue[X + Radius] += LinePS[X];                                            //    更新列数据
-							}
-						}
-					}
-					else
-					{
-						unsigned char* RowMoveOut = Src + ColOffset[Y - 1] * Stride;                //    即将减去的那一行的首地址
-						unsigned char* RowMoveIn = Src + ColOffset[Y + Radius + Radius] * Stride;    //    即将加上的那一行的首地址
+							//for (int i = 0; i < Width + Radius + Radius; i++) {
+							//	LOGD("ColValue[{}] = {};", i, ColValue[i]);
+							//}
+							// -842150451 | 6  7  8  9  10 | -842150451 
+							// -842150451 | 1  2  3  4  5 | -842150451 
+							// -842150451 | 6  7  8  9  10 | -842150451 
 
-						int BlockSize = 8, Block = Width / BlockSize;
-						__m128i Zero = _mm_setzero_si128();
-						int X = 0;
-						for (; X < Width; X += BlockSize)
+						}
+
+						//for (int i = 0; i < Width + Radius + Radius; i++) {
+						//	LOGD("ColValue[{}] = {};", i, ColValue[i]);
+						//}
+						// -842150451 | 13 16 19 22 25 | -842150451 
+
+					}
+					else                                                                            // 后续行快速更新
+					{
+						unsigned char* RowMoveOut = Src + ColOffset[Y - 1] * Stride;                // 移出行的指针
+						unsigned char* RowMoveIn = Src + ColOffset[Y + Radius + Radius] * Stride;   // 移入行的指针
+						for (int X = 0; X < Width; X++)                                             // 列和增量更新
 						{
-							int* DestP = LocalColValue + X + Radius;
-							__m128i MoveOut = _mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(RowMoveOut + X)), Zero);
-							__m128i MoveIn = _mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(RowMoveIn + X)), Zero);
-							__m128i Diff = _mm_sub_epi16(MoveIn, MoveOut);                        //    注意这个有负数也有正数的，有负数时转换为32位是不能用_mm_unpackxx_epi16体系的函数
-							_mm_storeu_si128((__m128i*)DestP, _mm_add_epi32(_mm_loadu_si128((__m128i*)DestP), _mm_cvtepi16_epi32(Diff)));
-							_mm_storeu_si128((__m128i*)(DestP + 4), _mm_add_epi32(_mm_loadu_si128((__m128i*)(DestP + 4)), _mm_cvtepi16_epi32(_mm_srli_si128(Diff, 8))));
-						}
-						for (; X < Width; X++)
-						{
-							LocalColValue[X + Radius] -= RowMoveOut[X] - RowMoveIn[X];                                            //    更新列数据
+							ColValue[X + Radius] -= RowMoveOut[X] - RowMoveIn[X];
 						}
 					}
 
+					/** 边缘镜像处理 */
 
+					FillLeftAndRight_Mirror_C(ColValue, Width, Radius);                  // 列缓存镜像填充
+					//for (int i = 0; i < Width + Radius + Radius; i++) {
+					//	LOGD("ColValue[{}] = {};", i, ColValue[i]);
+					//}
+					// 将 -842150451 | 13 16 19 22 25 | -842150451 中的 -842150451 赋值为其对应的镜像值
+					// 即 16 | 13 16 19 22 25 | 22 
 
-					FillLeftAndRight_Mirror_SSE(LocalColValue, Width, Radius);                  //    镜像填充左右数据
-					int LastSum = SumofArray_C(LocalColValue, Radius * 2 + 1);                  //    处理每行第一个数据
-					LinePD[0] = IM_ClampToByte(LastSum * Inv);
-
-					int BlockSize = 4, Block = (Width - 1) / BlockSize;
-					__m128i OldSum = _mm_set1_epi32(LastSum);
-					__m128 Inv128 = _mm_set1_ps(Inv);
-
-					int X = 1;
-
-					for (; X < Width; X += BlockSize)
+					/** 横向滑动窗口求和 */ 
+					int LastSum = SumofArray_C(ColValue, Radius * 2 + 1);                // 初始窗口和
+					LinePD[0] = IM_ClampToByte(LastSum * Inv);                           // 控制和的范围(0~255边界和整数化)并赋值给dst
+					for (int X = 1; X < Width; X++)                                                // 滑动窗口优化
 					{
-						__m128i ColValueOut = _mm_loadu_si128((__m128i*)(LocalColValue + X - 1));
-						__m128i ColValueIn = _mm_loadu_si128((__m128i*)(LocalColValue + X + Radius + Radius));
-						__m128i ColValueDiff = _mm_sub_epi32(ColValueIn, ColValueOut);                            //    P3 P2 P1 P0                                                
-						__m128i Value_Temp = _mm_add_epi32(ColValueDiff, _mm_slli_si128(ColValueDiff, 4));        //    P3+P2 P2+P1 P1+P0 P0
-						__m128i Value = _mm_add_epi32(Value_Temp, _mm_slli_si128(Value_Temp, 8));                 //    P3+P2+P1+P0 P2+P1+P0 P1+P0 P0
-						__m128i NewSum = _mm_add_epi32(OldSum, Value);
-						OldSum = _mm_shuffle_epi32(NewSum, _MM_SHUFFLE(3, 3, 3, 3));                              //    重新赋值为最新值
-						__m128 Mean = _mm_mul_ps(_mm_cvtepi32_ps(NewSum), Inv128);
-						_mm_storesi128_4char(_mm_cvtps_epi32(Mean), LinePD + X);
-					}
-
-					for (; X < Width; X++)
-					{
-						int NewSum = LastSum - LocalColValue[X - 1] + LocalColValue[X + Radius + Radius];
-						LinePD[X] = IM_ClampToByte(NewSum * Inv);
+						int NewSum = LastSum - ColValue[X - 1] + ColValue[X + Radius + Radius];    // 增量更新窗口和: 基于首个和，减去前一个，加上后一个
+						LinePD[X] = IM_ClampToByte(NewSum * Inv);                                  // 控制和的范围(0~255边界和整数化)并赋值给dst
 						LastSum = NewSum;
 					}
 				}
@@ -340,11 +334,10 @@ namespace NA113 {
 			{
 
 			}
-			free(ColValue);
+			free(ColValue);  // 释放内存
 			free(ColOffset);
 			return 1;
 		}
-
 
 		int IM_BoxBlur_SSE(unsigned char* Src, unsigned char* Dest, int Width, int Height, int Stride, int Radius)
 		{
@@ -378,7 +371,6 @@ namespace NA113 {
 
 			if (Channel == 1)
 			{
-
 				for (int Y = 0; Y < Height; Y++)
 				{
 					unsigned char* LinePD = Dest + Y * Stride;
@@ -450,8 +442,6 @@ namespace NA113 {
 						_mm_storesi128_4char(_mm_cvtps_epi32(Mean), LinePD + X);
 					}
 
-
-
 					for (; X < Width; X++)
 					{
 						int NewSum = LastSum - ColValue[X - 1] + ColValue[X + Radius + Radius];
@@ -473,12 +463,170 @@ namespace NA113 {
 			return 1;
 		}
 
+		int IM_BoxBlur_SSE_Blocks(cv::Mat& src, cv::Mat& dst, int radius, int blocks, int thread_nums)
+		{
+			if (src.rows % blocks != 0) { return -1; }
+			if (thread_nums > blocks) { return -1; }
+
+			dst = cv::Mat::zeros(src.size(), src.type());
+			int block_height = src.rows / blocks;  // 计算每块高度
+
+			// 分块处理图像
+#pragma omp parallel for num_threads(thread_nums)
+			for (int j = 0; j < blocks; ++j) {
+				// 计算当前块的起始行和高度
+				int start_row = j * block_height;
+				int actual_height = (j == blocks - 1) ? (src.rows - (blocks-1) * block_height) : block_height;
+
+				// 获取当前块的输入/输出指针
+				uchar* src_block = src.ptr<uchar>(start_row);
+				uchar* dst_block = dst.ptr<uchar>(start_row);
+
+				// 处理当前分块
+				int result2 = IM_BoxBlur_SSE(
+					src_block,
+					dst_block,
+					src.cols,    // 保持原宽度
+					actual_height,  // 当前分块高度
+					src.cols,     // 保持原步长
+					radius
+				);
+			}
+
+			return 1;
+		}
+
+		int IM_BoxBlur_SSE2(unsigned char* Src, unsigned char* Dest, int Width, int Height, int Stride, int Radius)
+		{
+			int Channel = Stride / Width;
+			if ((Src == NULL) || (Dest == NULL))
+				return 0;
+			if ((Width <= 0) || (Height <= 0) || (Radius <= 0))
+				return 0;
+			if ((Channel != 1) && (Channel != 3) && (Channel != 4))
+				return 0;
+
+
+			Radius = (std::min)((std::min)(Radius, Width - 1), Height - 1);        //    由于镜像的需求，要求半径不能大于宽度或高度-1的数据
+			int SampleAmount = (2 * Radius + 1) * (2 * Radius + 1);
+			float Inv = 1.0 / SampleAmount;
+
+			int* ColValue = (int*)malloc((Width + Radius + Radius) * (Channel == 1 ? Channel : 4) * sizeof(int));
+			int* ColOffset = (int*)malloc((Height + Radius + Radius) * sizeof(int));
+
+
+			for (int Y = 0; Y < Height + Radius + Radius; Y++)
+				ColOffset[Y] = IM_GetMirrorPos(Height, Y - Radius);
+
+			if (Channel == 1)
+			{
+				for (int Y = 0; Y < Height; Y++)
+				{
+					unsigned char* LinePD = Dest + Y * Stride;
+					if (Y == 0)
+					{
+						memset(ColValue + Radius, 0, Width * sizeof(int));
+						for (int Z = -Radius; Z <= Radius; Z++)
+						{
+							unsigned char* LinePS = Src + ColOffset[ Y + Z + Radius] * Stride;
+
+							int BlockSize = 8, Block = Width / BlockSize;
+							int X = 0;
+							for (; X < Width; X += BlockSize)
+							{
+								int* DestP = ColValue + X + Radius;
+								__m128i Sample = _mm_cvtepu8_epi16(_mm_loadl_epi64((__m128i*)(LinePS + X)));
+								_mm_storeu_si128((__m128i*)DestP, _mm_add_epi32(_mm_loadu_si128((__m128i*)DestP), _mm_cvtepi16_epi32(Sample)));
+								_mm_storeu_si128((__m128i*)(DestP + 4), _mm_add_epi32(_mm_loadu_si128((__m128i*)(DestP + 4)), _mm_unpackhi_epi16(Sample, _mm_setzero_si128())));
+							}
+
+							for (; X < Width; X++)
+							{
+								ColValue[X + Radius] += LinePS[X];                                            //    更新列数据
+							}
+						}
+					}
+					else
+					{
+						unsigned char* RowMoveOut = Src + ColOffset[Y - 1] * Stride;                //    即将减去的那一行的首地址
+						unsigned char* RowMoveIn = Src + ColOffset[Y + Radius + Radius] * Stride;    //    即将加上的那一行的首地址
+
+						int BlockSize = 8, Block = Width / BlockSize;
+						__m128i Zero = _mm_setzero_si128();
+						int X = 0;
+						for (; X < Width; X += BlockSize)
+						{
+							int* DestP = ColValue + X + Radius;
+							__m128i MoveOut = _mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(RowMoveOut + X)), Zero);
+							__m128i MoveIn = _mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(RowMoveIn + X)), Zero);
+							__m128i Diff = _mm_sub_epi16(MoveIn, MoveOut);                        //    注意这个有负数也有正数的，有负数时转换为32位是不能用_mm_unpackxx_epi16体系的函数
+							_mm_storeu_si128((__m128i*)DestP, _mm_add_epi32(_mm_loadu_si128((__m128i*)DestP), _mm_cvtepi16_epi32(Diff)));
+							_mm_storeu_si128((__m128i*)(DestP + 4), _mm_add_epi32(_mm_loadu_si128((__m128i*)(DestP + 4)), _mm_cvtepi16_epi32(_mm_srli_si128(Diff, 8))));
+						}
+						for (; X < Width; X++)
+						{
+							ColValue[X + Radius] -= RowMoveOut[X] - RowMoveIn[X];                                            //    更新列数据
+						}
+					}
+
+					//for (int i = 0; i < Width + Radius + Radius; i++) {
+					//	LOGD("ColValue[{}] = {};", i, ColValue[i]);
+					//}
+
+					//FillLeftAndRight_Mirror_SSE(ColValue, Width, Radius);                  //    镜像填充左右数据
+					//for (int i = 0; i < Width + Radius + Radius; i++) {
+					//	LOGD("ColValue[{}] = {};", i, ColValue[i]);
+					//}
+
+					int LastSum = SumofArray_C(ColValue, Radius * 2 + 1);                  //    处理每行第一个数据
+					LinePD[0] = IM_ClampToByte(LastSum * Inv);
+
+					int BlockSize = 4, Block = (Width - 1) / BlockSize;
+					__m128i OldSum = _mm_set1_epi32(LastSum);
+					__m128 Inv128 = _mm_set1_ps(Inv);
+
+					int X = 1;
+
+					for (; X < Width; X += BlockSize)
+					{
+						__m128i ColValueOut = _mm_loadu_si128((__m128i*)(ColValue + X - 1));
+						__m128i ColValueIn = _mm_loadu_si128((__m128i*)(ColValue + X + Radius + Radius));
+						__m128i ColValueDiff = _mm_sub_epi32(ColValueIn, ColValueOut);                            //    P3 P2 P1 P0                                                
+						__m128i Value_Temp = _mm_add_epi32(ColValueDiff, _mm_slli_si128(ColValueDiff, 4));        //    P3+P2 P2+P1 P1+P0 P0
+						__m128i Value = _mm_add_epi32(Value_Temp, _mm_slli_si128(Value_Temp, 8));                 //    P3+P2+P1+P0 P2+P1+P0 P1+P0 P0
+						__m128i NewSum = _mm_add_epi32(OldSum, Value);
+						OldSum = _mm_shuffle_epi32(NewSum, _MM_SHUFFLE(3, 3, 3, 3));                              //    重新赋值为最新值
+						__m128 Mean = _mm_mul_ps(_mm_cvtepi32_ps(NewSum), Inv128);
+						_mm_storesi128_4char(_mm_cvtps_epi32(Mean), LinePD + X);
+					}
+
+
+
+					for (; X < Width; X++)
+					{
+						int NewSum = LastSum - ColValue[X - 1] + ColValue[X + Radius + Radius];
+						LinePD[X] = IM_ClampToByte(NewSum * Inv);
+						LastSum = NewSum;
+					}
+
+					//free(ColValue);
+				}
+			}
+			else if (Channel == 3)
+			{
+
+			}
+			else if (Channel == 4)
+			{
+
+			}
+			free(ColOffset);
+			return 1;
+		}
 
 	};
 
 	// ===============================================================================================
-
-
 
 	// for + cv::max(p1, p2)
 	void test_doing(cv::Mat imgori1, cv::Mat imgori2) {
@@ -585,7 +733,6 @@ namespace NA113 {
 
 	}
 
-
 	/** 测试两张图合并为相同shape的一张图的合并操作的时间 */
 	void experiment1(std::vector<cv::Mat> input)
 	{
@@ -603,7 +750,6 @@ namespace NA113 {
 
 		return;
 	}
-
 
 	// 行优先遍历测试
 	void rowMajorAccess(cv::Mat& img) {
@@ -624,7 +770,6 @@ namespace NA113 {
 			}
 		}
 	}
-
 
 	/** 测试: 一张图像，先行后列遍历和先列后行遍历的差别 */
 	void experiment2(std::vector<cv::Mat> input)
@@ -655,8 +800,6 @@ namespace NA113 {
 		return;
 	}
 
-
-
 	void hconcat_memcpy(cv::Mat& img1, cv::Mat& result, int i, int thread_num) {
 #pragma omp parallel for num_threads(thread_num)
 		for (int r = 0; r < img1.rows; ++r) {
@@ -665,7 +808,6 @@ namespace NA113 {
 			memcpy(dst + i * img1.cols * img1.elemSize(), src1, img1.cols * img1.elemSize());
 		}
 	}
-
 
 	cv::Mat hconcat_roi(cv::Mat& img1, cv::Mat& img2) {
 		CV_Assert(img1.rows == img2.rows && img1.type() == img2.type());
@@ -679,7 +821,6 @@ namespace NA113 {
 
 		return result;
 	}
-
 
 	/** 测试: 两张图像横向拼接在一起 */
 	void experiment3(std::vector<cv::Mat> input)
@@ -853,7 +994,6 @@ namespace NA113 {
 		return _res;
 	}
 
-
 	void experiment4(std::vector<cv::Mat> input) {
 		cv::Mat src1 = input[0];
 		cv::Mat src2 = input[1];
@@ -918,8 +1058,9 @@ namespace NA113 {
 
 	}
 
-	int picshadowy(cv::Mat binary, cv::Mat* show, int numThreads = 4)
+	int picshadowy(cv::Mat binary, cv::Mat* show, int numThreads = 4, int single_rows = -1)
 	{
+		if (single_rows == -1) { single_rows = binary.rows; }
 		int _res = 2;
 		int* blackcout = new int[binary.rows];
 		memset(blackcout, 0, binary.rows * 4);
@@ -928,6 +1069,8 @@ namespace NA113 {
 #pragma omp parallel for num_threads(numThreads)
 		for (int i = 0; i < binary.rows; i++)
 		{
+			if (single_rows > 0 && i % single_rows < 5) { continue; }  // 避免拼接交界处出现的伪缺陷问题
+
 			auto* ptr = binary.ptr<uchar>(i);
 			for (int j = 0; j < binary.cols; j++)
 			{
@@ -945,6 +1088,8 @@ namespace NA113 {
 #pragma omp parallel for num_threads(numThreads)
 		for (int i = 0; i < binary.rows; i++)
 		{
+			if (single_rows > 0 && i % single_rows < 5) { continue; }  // 避免拼接交界处出现的伪缺陷问题
+
 			if (blackcout[i] > _avg + 5.3)
 			{
 				_res = 1;
@@ -999,16 +1144,17 @@ namespace NA113 {
 	}
 
 	void vconcat_memcpy(cv::Mat& img1, cv::Mat& result, int i, int thread_num) {
-		const size_t row_bytes = img1.cols * img1.elemSize() * img1.rows;
+		const size_t row_bytes = img1.cols * img1.elemSize();
 
-//#pragma omp parallel for num_threads(thread_num)
-//		for (int r = 0; r < img1.rows; ++r) {
-//			uchar* dst = result.ptr<uchar>(img1.rows * i + r);
-//			const uchar* src = img1.ptr<uchar>(r);
-//			memcpy(dst, src, row_bytes);
-//		}
+#pragma omp parallel for num_threads(thread_num)
+		for (int r = 0; r < img1.rows; ++r) {
+			uchar* dst = result.ptr<uchar>(img1.rows * i + r);
+			const uchar* src = img1.ptr<uchar>(r);
+			memcpy(dst, src, row_bytes);
+		}
 
-		memcpy(result.data + i * img1.cols * img1.elemSize() * img1.rows, img1.data, row_bytes);
+		//const size_t row_bytes = img1.cols * img1.elemSize() * img1.rows;
+		//memcpy(result.data + i * img1.cols * img1.elemSize() * img1.rows, img1.data, row_bytes);
 
 	}
 
@@ -1102,59 +1248,146 @@ namespace NA113 {
 		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
 
-		cv::Mat _gray, _gray2, _gray3;
-		cv::cvtColor(result, _gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
-		BlurVersion2 blur2 = BlurVersion2();
 
-		_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
-		int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
-		_gray = _gray2 - _gray;
+
+
+
+		/** standard process*/
+		cv::Mat standard_gray, standard_gray2, standard_gray3;
+		cv::Mat standard_imgrst = result.clone();
+		cv::cvtColor(result, standard_gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
+		cv::blur(standard_gray, standard_gray2, cv::Size(21, 21));
+		standard_gray3 = standard_gray2 - standard_gray;
+		int standard_iresult = picshadowy(standard_gray3, &standard_imgrst, 4);
+
+
+
+		/** experiments */
+		BlurVersion2 blur2 = BlurVersion2();
 		cv::Mat imgrst = result.clone();
+		cv::Mat _gray;
+		cv::Mat  _gray2;
+		//cv::Mat _gray = standard_gray;
+		//cv::blur(_gray, _gray2, cv::Size(21, 21));
 
 		start = std::chrono::high_resolution_clock::now();
 		for (int i = 0; i < total_pics_num; i++) {
-
-			int _iresult = picshadowy(_gray, &imgrst, 4);
+			/** 1 BGR2GRAY*/
+			cv::cvtColor(result, _gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
 
 			//int Height = result.rows;
 			//int Width = result.cols;
+			//int Stride = Width * 3;
 			//unsigned char* Src = result.data;
 			//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
-			//int Stride = Width * 3;
 			//RGB2Y_4(Src, Dest, Width, Height, Stride);     // sse 一次处理12个
-			//cv::Mat _gray4(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
-
-			//cv::Mat hh = _gray4 - _gray;
+			//_gray = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
 
 
-			//_gray2 = cv::Mat::zeros(_gray4.size(), _gray4.type());
-			//int result2 = blur2.IM_BoxBlur_SSE(_gray4.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray4.cols, _gray4.rows, _gray4.cols, 10);
-			//_gray4 = _gray2 - _gray4;
-			//int _iresult = picshadowy(_gray4, &imgrst, 4);
+			/** 2 BoxFilter */
+			//cv::blur(_gray, _gray2, cv::Size(21, 21));
+
+			//_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
+			//int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
+
+			blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 4, 2); 
+			//! 经验： 当算法中存在多个使用omp的算子时，需要合理分配omp的线程数目，不能太大，否则计算慢。
+
+
+			/** 3 subtraction */
+			_gray = _gray2 - _gray;  // 如果复用 gray 用时0.08ms, 而使用新矩阵会0.45ms;
+
+			//cv::Mat subtraction1 = standard_gray3 - _gray3;
+			//cv::Mat subtraction2 = _gray3 - standard_gray3;
+
+
+			///** 4 picshadowy */
+			int _iresult = picshadowy(_gray, &imgrst, 2, src1.rows);
+
+
+
 			//LOGD("s");
+
 		}
 		end = std::chrono::high_resolution_clock::now();
 		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
 
-		cv::Mat _grayB, _grayB2;
 		cv::Mat imgrstB = src1.clone();
 		start = std::chrono::high_resolution_clock::now();
 		for (int i = 0; i < total_pics_num; i++) {
 			for (int j = 0; j < output.size(); j++)
 			{
-				cv::cvtColor(input[j], _grayB, cv::COLOR_BGR2GRAY);
-				//cv::blur(_grayB, _grayB2, cv::Size(20, 20));
-				_grayB2 = cv::Mat::zeros(_grayB.size(), _grayB.type());
-				int result2 = blur2.IM_BoxBlur_SSE(_grayB.ptr<uchar>(0), _grayB2.ptr<uchar>(0), _grayB.cols, _grayB.rows, _grayB.cols, 10);
+				/** 初始化 */
+				cv::Mat _grayB, _grayB2;
+
+
+				/** BGR2GRAY */
+				cv::cvtColor(output[j], _grayB, cv::COLOR_BGR2GRAY);
+
+				//int Height = output[j].rows;
+				//int Width = output[j].cols;
+				//int Stride = Width * 3;
+				//unsigned char* Src = output[j].data;
+				//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
+				//RGB2Y_4(Src, Dest, Width, Height, Stride, 2);       // sse 一次处理12个
+				//_grayB = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
+
+
+				/** BoxFilter */
+				//cv::blur(_grayB, _grayB2, cv::Size(21, 21));
+				//_grayB2 = cv::Mat::zeros(_grayB.size(), _grayB.type());
+				//int result2 = blur2.IM_BoxBlur_SSE(_grayB.ptr<uchar>(0), _grayB2.ptr<uchar>(0), _grayB.cols, _grayB.rows, _grayB.cols, 10);
+				blur2.IM_BoxBlur_SSE_Blocks(_grayB, _grayB2, 10, 2, 2);
+
+
+
+				/** subtraction */
 				_grayB = _grayB2 - _grayB;
-				int _iresult = picshadowy(_grayB, &imgrstB, 4);
+
+
+				/** picshadowy */
+				int _iresult = picshadowy(_grayB, &imgrstB, 2);
 			}
 		}
 		end = std::chrono::high_resolution_clock::now();
 		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+	}
+
+
+	/** 学习boxfilter:  */
+	void studyBoxFilter() {
+		cv::Mat src(4, 5, CV_8UC1); // 创建 10x10 单通道矩阵
+		//cv::randu(src, cv::Scalar(0), cv::Scalar(11)); // [0,11) 区间'
+		for (int i = 0; i < src.rows; i++) {
+			for (int j = 0; j < src.cols; j++) {
+				src.at<char>(i, j) = i * src.cols + j + 1; // 计算连续值
+			}
+		}
+		/** 
+		1  2  3  4  5
+		6  7  8  9  10
+		11 12 13 14 15
+		16 17 18 19 20
+		*/
+
+
+		cv::Mat dst = cv::Mat::zeros(src.size(), src.type());
+		BlurVersion2 blur2 = BlurVersion2();
+		int result2 = blur2.IM_BoxBlur_SSE2(src.ptr<uchar>(0), dst.ptr<uchar>(0), src.cols, src.rows, src.cols, 1);
+		/**
+		5  5  6  7  7
+		6  7  8  9  9
+		11   12  13  14  14
+		13   13   14   15   16
+		*/
+		cv::Mat dst2;
+		cv::blur(src, dst2, cv::Size(3, 3));
+		
+		LOGD("--");
 
 	}
 
@@ -1183,6 +1416,8 @@ namespace NA113 {
 		//std::vector<cv::Mat> input = { src1, src2};
 
 		experiment5(input5);
+
+		//studyBoxFilter();
 
 		return;
 	}
