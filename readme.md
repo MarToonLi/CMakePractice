@@ -813,32 +813,139 @@ set_target_properties(名称 PROPERTIES
 
 
 
-2. 高斯模糊SSE的参考文献：
+4. 高斯模糊SSE的参考文献：
 
-   [数字图像处理之高斯滤波加速优化 - 知乎](https://zhuanlan.zhihu.com/p/355265007)
+[数字图像处理之高斯滤波加速优化 - 知乎](https://zhuanlan.zhihu.com/p/355265007)
 
-   不是特别靠谱，代码量少，而且不是常见的代码结构
+不是特别靠谱，代码量少，而且不是常见的代码结构
 
-   [SSE图像算法优化系列二：高斯模糊算法的全面优化过程分享（二）。 - Imageshop - 博客园](https://www.cnblogs.com/Imageshop/p/6440132.html)
+[SSE图像算法优化系列二：高斯模糊算法的全面优化过程分享（二）。 - Imageshop - 博客园](https://www.cnblogs.com/Imageshop/p/6440132.html)
 
-   [SSE图像算法优化系列二：高斯模糊算法的全面优化过程分享（一）。 - Imageshop - 博客园](https://www.cnblogs.com/Imageshop/p/6376028.html)
+[SSE图像算法优化系列二：高斯模糊算法的全面优化过程分享（一）。 - Imageshop - 博客园](https://www.cnblogs.com/Imageshop/p/6376028.html)
 
-   可以考虑试试，没有提供源码
+可以考虑试试，没有提供源码
 
-   [SSE图像算法优化系列2-高斯滤波_牛客博客](https://blog.nowcoder.net/n/5f7c87c1d8da40f2aa4ca62cd9173c9e)
+[SSE图像算法优化系列2-高斯滤波_牛客博客](https://blog.nowcoder.net/n/5f7c87c1d8da40f2aa4ca62cd9173c9e)
 
-   [再谈快速的高斯模糊算法（使用多次均值滤波逼近和扩展的二项式滤波滤波器）及其优化。 - Imageshop - 博客园](https://www.cnblogs.com/Imageshop/p/16572163.html)
+[再谈快速的高斯模糊算法（使用多次均值滤波逼近和扩展的二项式滤波滤波器）及其优化。 - Imageshop - 博客园](https://www.cnblogs.com/Imageshop/p/16572163.html)
 
-   [SSE图像算法优化系列十三：超高速BoxBlur算法的实现和优化（Opencv的速度的五倍） - Imageshop - 博客园](https://www.cnblogs.com/Imageshop/p/8302990.html)
+[SSE图像算法优化系列十三：超高速BoxBlur算法的实现和优化（Opencv的速度的五倍） - Imageshop - 博客园](https://www.cnblogs.com/Imageshop/p/8302990.html)
 
-   这个速度确实快；但是效果并不是高斯模糊；效果有待验证
+这个速度确实快；但是效果并不是高斯模糊；效果有待验证
 
-   [SSE图像算法优化系列2-高斯滤波_高斯平滑sse-CSDN博客](https://blog.csdn.net/just_sort/article/details/95212099)
+[SSE图像算法优化系列2-高斯滤波_高斯平滑sse-CSDN博客](https://blog.csdn.net/just_sort/article/details/95212099)
 
-   [BBuf/Image-processing-algorithm-Speed: opencv](https://github.com/BBuf/Image-processing-algorithm-Speed/tree/master)
+[BBuf/Image-processing-algorithm-Speed: opencv](https://github.com/BBuf/Image-processing-algorithm-Speed/tree/master)
 
-   这个能用，但是代码存在问题，自己解决不了！
+这个能用，但是代码存在问题，自己解决不了！
 
-   [SSE图像算法优化系列1-RGB转灰度图_图像彩色转换为灰度 sse加速-CSDN博客](https://blog.csdn.net/just_sort/article/details/94456945)
+[SSE图像算法优化系列1-RGB转灰度图_图像彩色转换为灰度 sse加速-CSDN博客](https://blog.csdn.net/just_sort/article/details/94456945)
 
-   这个博主就是上述github库的作者
+这个博主就是上述github库的作者
+
+
+
+> Q：SSE为什么能够并行加速？
+
+SSE是Intel推出的一种SIMD指令集，**SIMD代表单指令多数据**，这意味着一条指令可以同时对多个数据进行相同的操作。这种并行处理能力是加速计算的关键。
+
+首先想到的是数据并行性，SSE寄存器通常是128位的，可以同时容纳多个短数据类型，比如四个32位浮点数或16个8位整数。这样，**一条加法指令就能同时处理四个浮点数的加法，理论上速度提升四倍**。
+
+然后是减少指令开销。**传统的标量运算每个操作都需要单独的指令，而SIMD一条指令处理多个数据，减少了循环次数和指令解码的次数**，从而降低了分支预测错误和流水线停滞的风险。
+
+内存带宽优化也是一个因素。**SIMD指令可以一次性加载更大的数据块到寄存器，提高了内存访问效率**，尤其是对齐加载操作比非对齐加载更快，减少了内存访问的延迟。
+
+硬件层面的优化也不可忽视。**现代CPU有专门的向量处理单元，能够并行执行SIMD指令**，这些单元设计上更高效，可能比标量运算更快完成操作。
+
+另外，指令流水线和并行执行的结合。**SSE指令可以被流水线化，同时多个SIMD操作可以在不同的执行单元上并行处理**，提高了吞吐量。
+
+
+
+> Q： 数据依赖性强的算法可能无法使用SSE实现有效并行化？
+
+数据依赖性强是指计算过程中存在严格的执行顺序要求，**后续计算必须等待前序计算结果才能继续（本质）**。这种特性与SIMD的并行计算模式存在根本性冲突，具体可分为以下三种类型：顺序依赖模式（每个计算结果都是下一个计算的输入）、条件依赖模式（计算路径由运行时的数据决定！）、读写冲突模式（内存访问模式不可预测）
+
+
+
+> Q：数据类型的位数
+
+float 32位;
+
+int/char：8位；
+
+double：64位；
+
+int: 32
+
+short: 16
+
+char: 8
+
+
+
+> Q: _128i
+
+```c++
+typedef union __declspec(intrin_type)_CRT_ALIGN(16)__m128i {
+	__int8                m128i_i8[16];  //char
+	__int16               m128i_i16[8];  //short
+	__int32               m128i_i32[4];  //int
+	__int64               m128i_i64[2];  //long long
+	unsigned __int8       m128i_u8[16];  //uchar
+	unsigned __int16      m128i_u16[8];  //ushort
+	unsigned __int32      m128i_u32[4];  //uint
+	unsigned __int64      m128i_u64[2];  //ulonglong
+}__m128i;
+```
+
+
+
+Q: load
+
+```c++
+__m128  _mm_load_ss(float *p) 
+//将一个单精度浮点数加载到寄存器的第一个字节，其它三个字节清零（r0 := *p, r1 := r2 := r3 := 0.0）
+ 
+__m128  _mm_load_ps(float *p) 
+//将四个单精度浮点数加载到寄存器（r0 := p[0], r1 := p[1], r2 := p[2], r3 := p[3]）
+ 
+__m128  _mm_load1_ps(float *p)
+//将p地址的值加载到暂存器的四个字节，需要多条指令完成。从性能考虑，在内层循环不要使用这类指令（r0 := r1 := r2 := r3 := *p）
+ 
+__m128  _mm_loadh_pi(__m128 a, __m64 *p)//
+__m128  _mm_loadl_pi(__m128 a, __m64 *p)//
+ 
+__m128  _mm_loadr_ps(float *p)
+//以_mm_load_ps反向的顺序加载，需要多条指令完成。（r0 := p[3], r1 := p[2], r2 := p[1], r3 := p[0]）
+ 
+__m128  _mm_loadu_ps(float *p)
+//_mm_load_ps一样的加载，但是不要求地址是16字节对齐
+```
+
+
+
+> Q: 我还是对_mm_unpacklo_epi8输出是8个16位整数存在疑问，我依旧认为是16个8位整数，我的理由是，RowMoveOut中的元素是8位整数，同时_mm_unpacklo_epi8本来就是对8位进行处理，因此我并不明白为什么_mm_unpacklo_epi8输出是8个16位整数
+
+嗯，用户对_mm_unpacklo_epi8的输出结果存在疑问，认为应该是16个8位整数，而不是我之前说的8个16位整数。我需要仔细解释这个问题，确保用户理解正确。
+
+首先，用户提到RowMoveOut中的元素是8位整数，这是正确的。他们使用_mm_loadl_epi64加载了8个8位整数到寄存器的低64位。然后，使用_mm_unpacklo_epi8将这两个8位整数与零寄存器解包。这里的关键是理解解包操作如何工作。
+
+_mm_unpacklo_epi8接受两个128位寄存器，每个寄存器包含16个8位整数。解包操作的低部分（low half）指的是每个寄存器的低64位，即前8个8位元素。当用户将RowMoveOut的数据与零寄存器解包时，每个8位元素会被解包成16位，其中高8位来自零寄存器，也就是0，低8位是原始数据。因此，**结果中的每个元素都是16位的，由原来的8位数据加上8位零扩展组成**。
+
+举个例子，**如果RowMoveOut的第一个字节是0xFF，解包后变成0x00FF，即16位的255**。这样，每个8位元素被扩展为16位，所以最终得到的是8个16位整数，而不是16个8位。
+
+可能需要用更直观的图示来说明这个过程，比如展示解包前后的数据排列。同时，指出寄存器的大小是128位，当处理8位数据时，最多可以容纳16个元素，但解包操作会改变数据的排列和位宽。
+
+另外，用户可能混淆了unpack指令的数据处理方式。unpacklo_epi8会交替取出两个寄存器的低8位元素，每个元素被放入16位的位置。例如，a和b的低8个8位元素解包后，会形成交替排列的16位元素，每个16位的高8位来自第二个寄存器的对应元素，低8位来自第一个寄存器。
+
+在用户的代码中，第二个寄存器是Zero，所以高8位都是0，低8位是原始数据。因此，每个解包后的元素都是0x00XX，其中XX是原来的8位数据，从而形成8个16位整数。
+
+总结来说，解包操作改变了数据的位宽，从8位扩展到16位，因此结果必然是8个16位整数。需要明确这一点，并通过示例和图示帮助用户理解。
+
+> _mm_setzero_si128如何制定生成的0是8位还是16位？
+
+`_mm_setzero_si128` 生成的零值**没有固有位宽**，其位宽由后续操作指令决定。这是SIMD编程的重要特性
+
+1. 寄存器本质是128位二进制零：`00000000 00000000 ... 00000000`
+2. 位宽由操作指令的**后缀决定**（epi8/epi16/epi32/epi64）
+3. 零值可以安全参与任何位宽的整数运算

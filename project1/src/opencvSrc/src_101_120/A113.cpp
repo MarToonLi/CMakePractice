@@ -58,7 +58,7 @@ namespace NA113 {
 		{
 			int BlockSize = 4, Block = Radius / BlockSize;
 			int X = 0;
-			for (; X < Block * BlockSize; X += BlockSize)
+			for (; X + BlockSize < Radius; X += BlockSize)
 			{
 				__m128i SrcV1 = _mm_loadu_si128((__m128i*)(Array + Radius + Radius - X - 3));
 				__m128i SrcV2 = _mm_loadu_si128((__m128i*)(Array + Radius + Length - X - 5));
@@ -97,20 +97,24 @@ namespace NA113 {
 			__m128i Sum2 = _mm_setzero_si128();
 
 			int X = 0;
-			for (; X < Length; X += BlockSize)
+			for (; X + BlockSize < Length; X += BlockSize)
 			{
 				Sum1 = _mm_add_epi32(Sum1, _mm_loadu_si128((__m128i*)(Array + X + 0)));
 				Sum2 = _mm_add_epi32(Sum2, _mm_loadu_si128((__m128i*)(Array + X + 4)));
 			}
 			// 水平相加Sum1和Sum2的32位整型
-			__m128i SumTotal = _mm_add_epi32(Sum1, Sum2);
+			__m128i SumTotal = _mm_add_epi32(Sum1, Sum2);   // d c b a
 
 			// 将128位寄存器拆分为高位和低位相加
-			SumTotal = _mm_add_epi32(SumTotal, _mm_srli_si128(SumTotal, 8));
-			SumTotal = _mm_add_epi32(SumTotal, _mm_srli_si128(SumTotal, 4));
-
-			// 获取最终标量结果
-			int Sum = _mm_extract_epi32(SumTotal, 0);
+			__m128i shuf = _mm_shuffle_epi32(SumTotal, _MM_SHUFFLE(2, 3, 0, 1)); // [b,a,d,c]
+			__m128i sums = _mm_add_epi32(SumTotal, shuf);                        // [d+b, c+a, b+d, a+c] 
+			__m128i sumt = _mm_shuffle_epi32(sums, _MM_SHUFFLE(1, 0, 3, 2));     // [c+a, d+b, a+c, b+d]  
+			int Sum = _mm_cvtsi128_si32(_mm_add_epi32(sums, sumt));              // 
+			/**
+			* SumTotal: | v3 | v2 | v1 | v0 |  // v0在内存低地址，v3在高地址
+			* __m128i shuf = _mm_shuffle_epi32(SumTotal, _MM_SHUFFLE(2, 3, 0, 1): shuf: | v1 | v0 | v3 | v2 | 
+			* _mm_cvtsi128_si32 提取这个 128 位向量的低 32 位，并将其作为一个 int 返回
+			*/
 
 
 			//　　处理剩余不能被SSE优化的数据
@@ -453,6 +457,174 @@ namespace NA113 {
 						LinePD[X] = IM_ClampToByte(NewSum * Inv);
 						LastSum = NewSum;
 					}
+				}
+			}
+			else if (Channel == 3)
+			{
+
+			}
+			else if (Channel == 4)
+			{
+
+			}
+			free(ColValue);
+			free(ColOffset);
+			return 1;
+		}
+
+		int IM_BoxBlur_SSE_Comment(unsigned char* Src, unsigned char* Dest, int Width, int Height, int Stride, int Radius)
+		{
+			int Channel = Stride / Width;
+			if ((Src == NULL) || (Dest == NULL))
+				return 0;
+			if ((Width <= 0) || (Height <= 0) || (Radius <= 0))
+				return 0;
+			if ((Channel != 1) && (Channel != 3) && (Channel != 4))
+				return 0;
+
+
+			Radius = (std::min)((std::min)(Radius, Width - 1), Height - 1);        //    由于镜像的需求，要求半径不能大于宽度或高度-1的数据
+			int SampleAmount = (2 * Radius + 1) * (2 * Radius + 1);
+			float Inv = 1.0 / SampleAmount;
+
+
+			int* ColValue = (int*)malloc((Width + Radius + Radius) * (Channel == 1 ? Channel : 4) * sizeof(int));
+			int* ColOffset = (int*)malloc((Height + Radius + Radius) * sizeof(int));
+
+
+			if ((ColValue == NULL) || (ColOffset == NULL))
+			{
+				if (ColValue != NULL)    free(ColValue);
+				if (ColOffset != NULL)    free(ColOffset);
+				return 0;
+			}
+
+			for (int Y = 0; Y < Height + Radius + Radius; Y++)
+				ColOffset[Y] = IM_GetMirrorPos(Height, Y - Radius);
+
+			if (Channel == 1)
+			{
+				for (int Y = 0; Y < Height; Y++)
+				{
+					unsigned char* LinePD = Dest + Y * Stride;
+					if (Y == 0)
+					{
+						memset(ColValue + Radius, 0, Width * sizeof(int));
+						for (int Z = -Radius; Z <= Radius; Z++)
+						{
+							unsigned char* LinePS = Src + ColOffset[Z + Radius] * Stride;
+
+							int BlockSize = 8, Block = Width / BlockSize;
+							int X = 0;
+							for (; X + BlockSize < Width; X += BlockSize)
+							{
+								int* DestP = ColValue + X + Radius;
+								__m128i Sample = _mm_cvtepu8_epi16(_mm_loadl_epi64((__m128i*)(LinePS + X)));
+								_mm_storeu_si128((__m128i*)DestP, _mm_add_epi32(_mm_loadu_si128((__m128i*)DestP), _mm_cvtepi16_epi32(Sample)));
+								_mm_storeu_si128((__m128i*)(DestP + 4), _mm_add_epi32(_mm_loadu_si128((__m128i*)(DestP + 4)), _mm_unpackhi_epi16(Sample, _mm_setzero_si128())));
+								/**
+								* _mm_cvtepu8_epi16: 指令会将这16个8位数中的低8个零扩展到16位，成为8个16位整数，填充到输出寄存器中。因为128位除以16位是8个元素，所以高8个8位可能被忽略。
+								* _mm_unpackhi_epi16: 将高64位数据移动到低64位位置
+								* _mm_unpackhi_epi16(a, b): 
+								**** a = [a7, a6, a5, a4, a3, a2, a1, a0]  // 高64位：a7, a6, a5, a4
+								**** b = [b7, b6, b5, b4, b3, b2, b1, b0]  // 高64位：b7, b6, b5, b4
+								**** 结果 = [b7, a7, b6, a6, b5, a5, b4, a4] 
+								* _mm_loadu_si128((__m128i*)(DestP + 4)) 得到4个32位整数；_mm_unpackhi_epi16(Sample, _mm_setzero_si128()) 得到8个16位整数，而当_mm_add_epi32处理时会将后者视为四个32位整数进行分段处理，而分段使得b7a7成为一个整体。以达到Sample高4位的计算。
+								*/
+							}
+
+							for (; X < Width; X++)
+							{
+								ColValue[X + Radius] += LinePS[X];                                            //    更新列数据
+							}
+						}
+					}
+					else
+					{
+						unsigned char* RowMoveOut = Src + ColOffset[Y - 1] * Stride;                //    即将减去的那一行的首地址
+						unsigned char* RowMoveIn = Src + ColOffset[Y + Radius + Radius] * Stride;    //    即将加上的那一行的首地址
+
+						int BlockSize = 8, Block = Width / BlockSize;
+						__m128i Zero = _mm_setzero_si128(); 
+						int X = 0;
+						for (; X + BlockSize < Width; X += BlockSize)
+						{
+							int* DestP = ColValue + X + Radius;
+							__m128i MoveOut = _mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(RowMoveOut + X)), Zero);
+							__m128i MoveIn = _mm_unpacklo_epi8(_mm_loadl_epi64((__m128i*)(RowMoveIn + X)), Zero);
+							__m128i Diff = _mm_sub_epi16(MoveIn, MoveOut);   
+							// 注意这个有负数也有正数的，有负数时转换为32位是不能用_mm_unpackxx_epi16体系的函数
+							_mm_storeu_si128((__m128i*)DestP, _mm_add_epi32(_mm_loadu_si128((__m128i*)DestP), _mm_cvtepi16_epi32(Diff)));
+							_mm_storeu_si128((__m128i*)(DestP + 4), _mm_add_epi32(_mm_loadu_si128((__m128i*)(DestP + 4)), _mm_cvtepi16_epi32(_mm_srli_si128(Diff, 8))));
+							/**
+							* _mm_setzero_si128: si128表示scalar操作 + 有符号128位整数。
+							* _mm_loadl_epi64: 从内存加载64位整数到寄存器的低64位（高64位清零） 使用场景：加载8个8位整数或4个16位整数时使用
+							* (__m128i*)(RowMoveOut + X): 将 RowMoveOut + X 的地址转换为一个指向 __m128i 类型的指针
+							* __m128i 是 SSE 指令集中的数据类型，它表示一个 128 位的整数向量，可以包含 16 个字节的数据
+							* _mm_unpacklo_epi8 是SSE2指令集中的数据重组指令，用于将两个128位寄存器的低64位数据（前8个8位整数）进行交错排列
+							**** __m128i _mm_unpacklo_epi8(__m128i a, __m128i b):
+							**** b = [b15,b14,...,b1,b0]        // 寄存器b的低64位：b7,b6...b0
+							**** a = [a15,a14,...,a1,a0]        // 寄存器a的低64位：a7,a6...a0
+							**** 结果 = [b7a7,b6a6,...,b0a0] // 交错排列后的128位数据
+							* epi8，即8位有/无符号整数
+							**** // 操作示意图（每个短整型为16位）：
+							**** a = [a7, a6, a5, a4, a3, a2, a1, a0]
+							**** b = [b7, b6, b5, b4, b3, b2, b1, b0]
+							**** 结果 = [a7-b7, a6-b6, ..., a0-b0]
+							* ——————————————————————————————————
+							* _mm_loadu_si128: u表示不需要对齐加载，si表示signed integer
+							* _mm_cvtepi16_epi32：只处理输入寄存器的低64位（前4个16位元素）
+							* _mm_srli_si128：逻辑右移（shift right logical，从高地址向低地址的方向！） 移动8个字节，也就是64位；
+							
+							*/
+						}
+						for (; X < Width; X++)
+						{
+							ColValue[X + Radius] -= RowMoveOut[X] - RowMoveIn[X];                                            //    更新列数据
+						}
+					}
+					FillLeftAndRight_Mirror_SSE(ColValue, Width, Radius);                  //    镜像填充左右数据
+					int LastSum2 = SumofArray_C(ColValue, Radius * 2 + 1);                  //    处理每行第一个数据
+					int LastSum = SumofArray_C(ColValue, Radius * 2 + 1);                  //    处理每行第一个数据
+					if (LastSum != LastSum2) {
+						LOGD("ss");
+					}
+					LinePD[0] = IM_ClampToByte(LastSum * Inv);
+
+					int BlockSize = 4, Block = (Width - 1) / BlockSize;
+					__m128i OldSum = _mm_set1_epi32(LastSum);
+					__m128 Inv128 = _mm_set1_ps(Inv);
+
+					int X = 1;
+
+					for (; X + BlockSize <= Width; X += BlockSize)
+					{
+						__m128i ColValueOut = _mm_loadu_si128((__m128i*)(ColValue + X - 1));                      
+						__m128i ColValueIn = _mm_loadu_si128((__m128i*)(ColValue + X + Radius + Radius));         
+						__m128i ColValueDiff = _mm_sub_epi32(ColValueIn, ColValueOut);                            // [P3          P2       P1        P0]     
+						__m128i Value_Temp = _mm_add_epi32(ColValueDiff, _mm_slli_si128(ColValueDiff, 4));        // [P3+P2       P2+P1    P1+P0     P0]
+						__m128i Value = _mm_add_epi32(Value_Temp, _mm_slli_si128(Value_Temp, 8));                 // [P3+P2+P1+P0 P2+P1+P0 P1+P0     P0]
+						__m128i NewSum = _mm_add_epi32(OldSum, Value);                                            // [总和,       后三项和, 后两项和, 末项]
+						OldSum = _mm_shuffle_epi32(NewSum, _MM_SHUFFLE(3, 3, 3, 3));                              // _MM_SHUFFLE 将NewSum的最高位元素复制到所有通道
+						__m128 Mean = _mm_mul_ps(_mm_cvtepi32_ps(NewSum), Inv128);
+						_mm_storesi128_4char(_mm_cvtps_epi32(Mean), LinePD + X);
+						/**
+						* _mm_slli_si128(ColValueDiff, 4): 从低地址向高地址移动4个字节，也就是32位（ColValueDiff中的一个元素）；
+						* _mm_set1_epi32(LastSum): 将整型LastSum复制到128位寄存器的全部4个32位通道
+						* _mm_set1_ps(Inv): 将浮点型Inv复制到128位寄存器的全部4个32位浮点通道
+						* _mm_storesi128_4char: 将浮点结果转换为8位像素值并存储
+						*/
+					}
+
+					for (; X < Width; X++)
+					{
+						int NewSum = LastSum - ColValue[X - 1] + ColValue[X + Radius + Radius];
+						LinePD[X] = IM_ClampToByte(NewSum * Inv);
+						LastSum = NewSum;
+					}
+
+					//? 1 上面的for循环和下面的for循环计算处的结果并不一样；
+					//? 2 第一列与原生算子有差异！
 				}
 			}
 			else if (Channel == 3)
@@ -1070,7 +1242,7 @@ namespace NA113 {
 		cv::Mat src1 = input[0];
 		cv::Mat src2 = input[1];
 
-		int total_pics_num = 1000;
+		int total_pics_num = 1;
 		cv::Mat result(input[0].rows, input[0].cols * input.size(), input[0].type());
 
 		auto start = std::chrono::high_resolution_clock::now();
@@ -1157,12 +1329,14 @@ namespace NA113 {
 
 
 				/** BoxFilter */
-				cv::blur(_grayB, _grayB2, cv::Size(21, 21));
-				//_grayB2 = cv::Mat::zeros(_grayB.size(), _grayB.type());
-				//int result2 = blur2.IM_BoxBlur_SSE(_grayB.ptr<uchar>(0), _grayB2.ptr<uchar>(0), _grayB.cols, _grayB.rows, _grayB.cols, 10);
+				cv::Mat tem;
+				cv::blur(_grayB, tem, cv::Size(21, 21));
+				_grayB2 = cv::Mat::zeros(_grayB.size(), _grayB.type());
+				int result2 = blur2.IM_BoxBlur_SSE_Comment(_grayB.ptr<uchar>(0), _grayB2.ptr<uchar>(0), _grayB.cols, _grayB.rows, _grayB.cols, 10);
 				//blur2.IM_BoxBlur_SSE_Blocks(_grayB, _grayB2, 10, 2, 2);
 
-
+				cv::Mat sub1 = tem - _grayB2;
+				cv::Mat sub2 = _grayB2 - tem;
 
 				/** subtraction */
 				_grayB = _grayB2 - _grayB;
@@ -1277,8 +1451,6 @@ namespace NA113 {
 		//memcpy(result.data + i * img1.cols * img1.elemSize() * img1.rows, img1.data, row_bytes);
 
 	}
-
-
 
 	/** 输入需要是反转后的；且配备Y方向的投影函数 */
 	void experiment5(std::vector<cv::Mat> input) {
@@ -1412,7 +1584,6 @@ namespace NA113 {
 
 	}
 
-
 	/** 学习boxfilter:  */
 	void studyBoxFilter() {
 		cv::Mat src(4, 5, CV_8UC1); // 创建 10x10 单通道矩阵
@@ -1422,7 +1593,7 @@ namespace NA113 {
 				src.at<char>(i, j) = i * src.cols + j + 1; // 计算连续值
 			}
 		}
-		/** 
+		/** 原始数据
 		1  2  3  4  5
 		6  7  8  9  10
 		11 12 13 14 15
@@ -1430,9 +1601,22 @@ namespace NA113 {
 		*/
 
 
+
+		/** 填充后的数据
+		7	6  7  8  9  10  9
+		-----------------------
+		2 | 1  2  3  4  5  | 4
+		7 |	6  7  8  9  10 | 9
+		12|	11 12 13 14 15 | 14
+		17| 16 17 18 19 20 | 19
+		-----------------------
+		12	11 12 13 14 15   14
+		*/
+
+
 		cv::Mat dst = cv::Mat::zeros(src.size(), src.type());
 		BlurVersion2 blur2 = BlurVersion2();
-		int result2 = blur2.IM_BoxBlur_SSE2(src.ptr<uchar>(0), dst.ptr<uchar>(0), src.cols, src.rows, src.cols, 1);
+		int result2 = blur2.IM_BoxBlur_SSE_Comment(src.ptr<uchar>(0), dst.ptr<uchar>(0), src.cols, src.rows, src.cols, 1);
 		/**
 		5  5  6  7  7
 		6  7  8  9  9
@@ -1445,6 +1629,125 @@ namespace NA113 {
 		LOGD("--");
 
 	}
+
+
+	void studySSECase1() {
+
+		float op1[4] = { 1.0, 2.0, 3.0, 4.0 };
+		float op2[4] = { 1.0, 2.0, 3.0, 4.0 };
+		float result[4];
+
+		__m128  a;
+		__m128  b;
+		__m128  c;
+
+		// Load
+		a = _mm_loadu_ps(op1);
+		b = _mm_loadu_ps(op2);
+
+		// Calculate
+		c = _mm_add_ps(a, b);	// c = a + b
+
+		// Store
+		_mm_storeu_ps(result, c);
+
+		cout << result[0] << endl;
+		cout << result[1] << endl;
+		cout << result[2] << endl;
+		cout << result[3] << endl;
+		system("pause");
+
+	}
+
+
+	void studySSECase2() {
+
+
+		__declspec(align(16)) float op1[4] = { 1.0, 2.0, 3.0, 4.0 };
+		__declspec(align(16)) float op2[4] = { 1.0, 2.0, 3.0, 4.0 };
+		_MM_ALIGN16 float result[4];		// _MM_ALIGN16等同于__declspec(align(16))
+
+		__m128  a;
+		__m128  b;
+		__m128  c;
+
+		// Load
+		a = _mm_load_ps(op1);
+		b = _mm_load_ps(op2);
+
+		// Calculate
+		c = _mm_add_ps(a, b);	// c = a + b
+
+		// Store
+		_mm_store_ps(result, c);
+
+		cout << result[0] << endl;
+		cout << result[1] << endl;
+		cout << result[2] << endl;
+		cout << result[3] << endl;
+		system("pause");
+
+	}
+
+
+	void sse_add(float* srcA, float* srcB, float* dest, int n) {
+		int len = n >> 2;
+		for (int i = 0; i < len; i++) {
+			*(__m128*)(dest + i * 4) = _mm_add_ps(*(__m128*)(srcA + i * 4), *(__m128*)(srcB + i * 4));
+		}
+	}
+
+	void normal_add(float* srcA, float* srcB, float* dest, int n) {
+		for (int i = 0; i < n; i++) {
+			dest[i] = srcA[i] + srcB[i];
+		}
+	}
+
+	void studySSECase3() {
+
+
+
+		DWORD timeStart = 0, timeEnd = 0;
+		const int size = 10000; //申请的内存中存放的数据个数
+		const int count = 10000;//循环计算的次数，便于观察执行效率
+
+		// 分配16字节对齐的内存
+		_MM_ALIGN16 float* srcA = (_MM_ALIGN16 float*)_mm_malloc(sizeof(float) * size, 16);
+		_MM_ALIGN16 float* srcB = (_MM_ALIGN16 float*)_mm_malloc(sizeof(float) * size, 16);
+		_MM_ALIGN16 float* dest = (_MM_ALIGN16 float*)_mm_malloc(sizeof(float) * size, 16);
+
+		// 初始化
+		for (int i = 0; i < size; i++) {
+			srcA[i] = (float)i;
+		}
+		memcpy_s(srcB, sizeof(float) * size, srcA, sizeof(float) * size);
+
+		// 标准加法
+		timeStart = GetTickCount();
+		for (int i = 0; i < count; i++) {
+			normal_add(srcA, srcB, dest, size);
+		}
+		timeEnd = GetTickCount();
+		cout << "标准加法" << (timeEnd - timeStart) << "毫秒" << endl;
+
+		// SSE指令加法
+		timeStart = GetTickCount();
+		for (int i = 0; i < count; i++) {
+			sse_add(srcA, srcB, dest, size);
+		}
+		timeEnd = GetTickCount();
+		cout << "SSE加法" << (timeEnd - timeStart) << "毫秒" << endl;
+
+		// 释放内存
+		_mm_free(srcA);
+		_mm_free(srcB);
+		_mm_free(dest);
+
+		system("pause");
+
+	}
+
+
 
 
 	void A113_solver()
@@ -1470,9 +1773,9 @@ namespace NA113 {
 		std::vector<cv::Mat> input5 = { src1, src2, src3,src4,src5,src6,src7,src8,src9, src10 };
 		//std::vector<cv::Mat> input = { src1, src2};
 
-		experiment4(input5);
+		//experiment4(input5);
 
-		//studyBoxFilter();
+		studyBoxFilter();
 
 		return;
 	}
