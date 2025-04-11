@@ -300,10 +300,15 @@ namespace NA113 {
 					{
 						unsigned char* RowMoveOut = Src + ColOffset[Y - 1] * Stride;                // 移出行的指针
 						unsigned char* RowMoveIn = Src + ColOffset[Y + Radius + Radius] * Stride;   // 移入行的指针
-						for (int X = 0; X < Width; X++)                                             // 列和增量更新
+						for (int X = 0; X < Width; X++)                                             // 增量更新
 						{
 							ColValue[X + Radius] -= RowMoveOut[X] - RowMoveIn[X];
 						}
+						// Y = 1:
+						// ColValue:   16 | 13 16 19 22 25 | 22
+						// RowMoveOut: 7  | 6  7  8  9  10 | 9
+						// RowMoveIn:  12 | 11 12 13 14 15 | 14
+						// 增量:       5  |  5  5  5  5  5 |  5
 					}
 
 					/** 边缘镜像处理 */
