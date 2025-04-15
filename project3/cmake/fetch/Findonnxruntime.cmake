@@ -46,8 +46,11 @@ list(APPEND CMAKE_MESSAGE_INDENT "[onnxtime]  ")
 
 set(onnxruntime_INCLUDE_DIR ${onnxruntime_ROOT}/include/onnxruntime/core/session              )
 set(onnxruntime_LIBRARY     ${onnxruntime_ROOT}/build/Windows/Release/Release/onnxruntime.lib )
+set(onnxruntime_LIBRARY_DIR      ${onnxruntime_ROOT}/build/Windows/Release/Release )
 set(ENV{onnxruntime_INCLUDE_DIR} ${onnxruntime_ROOT}/include/onnxruntime/core/session              )
 set(ENV{onnxruntime_LIBRARY}     ${onnxruntime_ROOT}/build/Windows/Release/Release/onnxruntime.lib )
+set(ENV{onnxruntime_LIBRARY}     ${onnxruntime_ROOT}/build/Windows/Release/Release/onnxruntime.lib )
+
 set(onnxruntime_VERSION "1.17.0")
 set(onnxruntime_FOUND 1)
 #!? 理论上是寻找包含onnxruntime_c_api.h的绝对路径；

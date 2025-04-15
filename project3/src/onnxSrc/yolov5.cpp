@@ -159,59 +159,73 @@ void drawBbox(cv::Mat& img, std::vector<Detection>& res, float& scale, std::map<
 /** 模型初始化 */
 Onnx_YOLOv5::Onnx_YOLOv5(Configuration config)
 {
-	this->objThreshold = config.objThreshold;
-	this->nmsThreshold = config.nmsThreshold;
-	this->confThresholds = config.confThresholds;
-	this->bboxAreaThreshold = config.bboxAreaThreshold;
-	std::string model_path = config.modelpath;
-	this->inpHeight = 1120;
-	this->inpWidth = 1120;
-	this->num_classes = 2;
+	try {
+		this->objThreshold = config.objThreshold;
+		this->nmsThreshold = config.nmsThreshold;
+		this->confThresholds = config.confThresholds;
+		this->bboxAreaThreshold = config.bboxAreaThreshold;
+		std::string model_path = config.modelpath;
+		this->inpHeight = 1120;
+		this->inpWidth = 1120;
+		this->num_classes = 2;
 
 
-	std::wstring widestr = std::wstring(model_path.begin(), model_path.end());
+		std::wstring widestr = std::wstring(model_path.begin(), model_path.end());
 
-	/** 配置GPU的options: sessionOptions */
-	OrtStatus* status = OrtSessionOptionsAppendExecutionProvider_CUDA(sessionOptions, 0);  // 配置ONNX Runtime使用CUDA加速，0可能代表设备ID，即使用第一个GPU。
-	sessionOptions.SetGraphOptimizationLevel(ORT_ENABLE_BASIC);                            // 设置ORT的图优化，提升性能（与GPU无关）
+		/** 配置GPU的options: sessionOptions */
+		OrtStatus* status = OrtSessionOptionsAppendExecutionProvider_CUDA(sessionOptions, 0);  // 配置ONNX Runtime使用CUDA加速，0可能代表设备ID，即使用第一个GPU。
+		sessionOptions.SetGraphOptimizationLevel(ORT_ENABLE_BASIC);                            // 设置ORT的图优化，提升性能（与GPU无关）
 
-	ort_session = new Ort::Session(env, widestr.c_str(), sessionOptions);   // 初始化ONNX Runtime的会话ort_session，加载模型和GPU信息
-	size_t numInputNodes = ort_session->GetInputCount();                    // 获取模型输入/输出节点数量
-	size_t numOutputNodes = ort_session->GetOutputCount();
+		ort_session = new Ort::Session(env, widestr.c_str(), sessionOptions);   // 初始化ONNX Runtime的会话ort_session，加载模型和GPU信息
+		size_t numInputNodes = ort_session->GetInputCount();                    // 获取模型输入/输出节点数量
+		size_t numOutputNodes = ort_session->GetOutputCount();
 
-	Ort::AllocatorWithDefaultOptions allocator;                                   // 遍历获取所有输入节点名称
-	for (int i = 0; i < numInputNodes; i++)                                       // 复制名称到input_names向量
-	{
-		auto temp_input_name = ort_session->GetInputNameAllocated(i, allocator);
-		char* s = temp_input_name.get();
-		int le = strlen(s);
-		char* inp = new char[le + 1];
-		strcpy(inp, s);
-		input_names.push_back(inp);
+		Ort::AllocatorWithDefaultOptions allocator;                                   // 遍历获取所有输入节点名称
+		for (int i = 0; i < numInputNodes; i++)                                       // 复制名称到input_names向量
+		{
+			auto temp_input_name = ort_session->GetInputNameAllocated(i, allocator);
+			char* s = temp_input_name.get();
+			int le = strlen(s);
+			char* inp = new char[le + 1];
+			strcpy(inp, s);
+			input_names.push_back(inp);
+		}
+		for (int i = 0; i < numOutputNodes; i++)                                       // 复制名称到output_names向量
+		{
+			auto temp_output_name = ort_session->GetOutputNameAllocated(i, allocator);
+			char* s = temp_output_name.get();
+			int le = strlen(s);
+			char* inp = new char[le + 1];
+			strcpy(inp, s);
+			output_names.push_back(inp);
+		}
+
+		this->nout = this->num_classes + 5; // wxywh score
+		this->num_proposal = 77175;
+
+
+		LOGI("Basic Model Infor:");
+		LOGI("model_path  : {};", model_path);
+		LOGI("(H, W)      : {};", this->inpHeight, this->inpWidth);
+		LOGI("input_names : {};", wikky_algo::vectors2string(input_names));
+		LOGI("output_names: {};", wikky_algo::vectors2string(output_names));
+		LOGI("num_classes : {};", this->num_classes);
+		LOGI("nout        : {};", this->nout);
+		LOGI("\n");
 	}
-	for (int i = 0; i < numOutputNodes; i++)                                       // 复制名称到output_names向量
+	catch (const cv::Exception& e)
 	{
-		auto temp_output_name = ort_session->GetOutputNameAllocated(i, allocator);
-		char* s = temp_output_name.get();
-		int le = strlen(s);
-		char* inp = new char[le + 1];
-		strcpy(inp, s);
-		output_names.push_back(inp);
+		LOGE("NG_UNDEFINED: e1: {};", e.what());                                    //? NG_ALGO_ERROR
 	}
+	catch (const std::exception& e)
+	{
+		LOGE("NG_UNDEFINED: e2: {};", e.what());                                    //? NG_ALGO_ERROR
 
-	this->nout = this->num_classes + 5; // wxywh score
-	this->num_proposal = 77175;
-
-
-	LOGI("Basic Model Infor:");
-	LOGI("model_path  : {};", model_path);
-	LOGI("(H, W)      : {};", this->inpHeight, this->inpWidth);
-	LOGI("input_names : {};", wikky_algo::vectors2string(input_names));
-	LOGI("output_names: {};", wikky_algo::vectors2string(output_names));
-	LOGI("num_classes : {};", this->num_classes);
-	LOGI("nout        : {};", this->nout);
-	LOGI("\n");
-
+	}
+	catch (...)
+	{
+		LOGE("NG_UNDEFINED: e3: unkown;");                                          //? NG_ALGO_ERROR
+	}
 }
 
 /** 输入resize */

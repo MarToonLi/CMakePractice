@@ -184,33 +184,56 @@ add_compile_options(
 #********** 动态库dll文件拷贝 **********#
 message("")
 if(OpenCV_FOUND)
+	if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+		set(temp "d")
+	else()
+		set(temp "")  # 非Debug配置时赋值为空字符串
+	endif()
     get_filename_component(OpenCV_BIN_DIR "${OpenCV_DIR}/../bin" ABSOLUTE)  # 查找所有可能的DLL路径
     string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\1\\2\\3" OpenCV_VERSION_3DIGIT ${OpenCV_VERSION})  # OpenCV_VERSION 为4.5.5, 正则将字符串中的点去除！
-    if(EXISTS "${PROJECT_NAME}/opencv_world${OpenCV_VERSION_3DIGIT}$<$<CONFIG:Debug>:d>.dll")
+	set(OPENCV_WORLD_DLL_PATH "${PROJECT_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}/opencv_world${OpenCV_VERSION_3DIGIT}${temp}.dll")
+	if(EXISTS "${OPENCV_WORLD_DLL_PATH}")
+		message("[copy-dll]  OpenCV DLLs have existed in ${OPENCV_WORLD_DLL_PATH}.")
+	else()
 		add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD   # 将opencv_worldxxx.dll文件拷贝到工作目录下
 			COMMAND ${CMAKE_COMMAND} -E copy
 				"${OpenCV_BIN_DIR}/opencv_world${OpenCV_VERSION_3DIGIT}$<$<CONFIG:Debug>:d>.dll"
 				$<TARGET_FILE_DIR:${PROJECT_NAME}>
-			COMMENT "[copy-dll]  Copying OpenCV DLLs..."
+			COMMENT "[copy-dll]  Copying OpenCV DLLs To ${OPENCV_WORLD_DLL_PATH}."
 		)
-	else()
-		message("[copy-dll]  OpenCV DLLs have existed.")
 	endif()
 endif()
 
 
-# 第二次的时候才能生成lib文件和dll文
-if(EXISTS "${PROJECT_NAME}/mypluginssss1.dll")
+if(EXISTS "${PROJECT_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}/mypluginssss1.dll")
+	message("[copy-dll]  mypluginssss1 DLLs have existed.")
+else()
 	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD   # 将opencv_worldxxx.dll文件拷贝到工作目录下
 		COMMAND ${CMAKE_COMMAND} -E copy
 			"${CMAKE_BINARY_DIR}/Debug/mypluginssss1.dll"
 			$<TARGET_FILE_DIR:${PROJECT_NAME}>
 		COMMENT "[copy-dll]  Copying mypluginssss1 DLLs"
 	)
-else()
-	message("[copy-dll]  mypluginssss1 DLLs have existed.")
 endif()
 message("")
+
+
+file(GLOB ONNXRUNTIME_DLLS 
+    "${onnxruntime_LIBRARY_DIR}/onnxruntime.dll"  # 匹配所有onnxruntime相关DLL
+    "${onnxruntime_LIBRARY_DIR}/onnxruntime_providers_cuda.dll"  # 匹配所有onnxruntime相关DLL
+    "${onnxruntime_LIBRARY_DIR}/onnxruntime_providers_shared.dll"  # 匹配所有onnxruntime相关DLL
+    "${onnxruntime_LIBRARY_DIR}/onnxruntime_providers_tensorrt.dll"  # 匹配所有onnxruntime相关DLL
+)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${onnxruntime_LIBRARY_DIR}/onnxruntime.dll" 
+		"${onnxruntime_LIBRARY_DIR}/onnxruntime_providers_cuda.dll"
+		"${onnxruntime_LIBRARY_DIR}/onnxruntime_providers_shared.dll"
+		"F:/Projects/CMakePractice/resources/onnxruntime_providers_tensorrt.dll"
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+	COMMENT "Copying ONNX Runtime and dependencies DLLs"
+)
 
 
 
@@ -228,6 +251,7 @@ message("[message]  cuda_INCLUDE_DIR:   ${cuda_INCLUDE_DIR}")
 message("[message]  cuda_LIBRARIES:   ${cuda_LIBRARIES}")
 message("[message]  CUDA_LIBRARIES:   ${CUDA_LIBRARIES}")
 message("[message]  CUDA_INCLUDE_DIRS:   ${CUDA_INCLUDE_DIRS}")
+message("[message]  onnxruntime_LIBRARY_DIR:   ${onnxruntime_LIBRARY_DIR}")
 
 
 
