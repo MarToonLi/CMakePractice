@@ -1,122 +1,209 @@
-# 1 project name
+ï»¿# 1 project name
 cmake_minimum_required(VERSION 3.15)
-project(onnx_solver_shared VERSION 0.1.0 LANGUAGES CXX)
+project(onnx_solver_shared VERSION 0.1.0 LANGUAGES CXX CUDA)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 
 
-# 2 ·¢ÏÖ²¢¶¨ÒåµÚÈı·½¿âÏà¹ØÂ·¾¶±äÁ¿
-set(THIRDPARTY_DIR        D:/Myself/MachineVision/third_party)                     #!? ²»¿ÉÒÔÊÇ//
+
+# 2 å‘ç°å¹¶å®šä¹‰ç¬¬ä¸‰æ–¹åº“ç›¸å…³è·¯å¾„å˜é‡
+set(THIRDPARTY_DIR        D:/Myself/MachineVision/third_party)                     #!? ä¸å¯ä»¥æ˜¯//
 set(OpenCV_DIR            ${THIRDPARTY_DIR}/opencv455_DNN/install/x64/vc17/lib)
 set(onnxruntime_ROOT      ${THIRDPARTY_DIR}/onnxruntime_1_17_cuda118)
+set(TRT_DIR               ${THIRDPARTY_DIR}/TensorRT-8.5.2.2-win)  
 set(cuda_ROOT             ${THIRDPARTY_DIR}/cuda118)
+#set(cuda_ROOT             "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8")
 
 
 
 
-
-# 3 ¹¹½¨µÚÈı·½¿â
+# 3 æ„å»ºç¬¬ä¸‰æ–¹åº“
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/fetch") # F:/Projects/Opencv-100-Questions/project3 
-include(spdlog)    # ¹¹½¨ÁËspdlog¾²Ì¬¿â
-# ½â¾öÁËspdlog.dllµÄÎÊÌâ;ËüÊÇ·ñ»á×Ô¶¯½«ÕÒµ½µÄÍ·ÎÄ¼şÂ·¾¶·ÅÖÃµ½¶ÔÓ¦µÄÍ·ÎÄ¼şËÑË÷Â·¾¶ÖĞ£»libÎÄ¼şÂ·¾¶·ÅÖÃµ½¶ÔÓ¦µÄlibsËÑË÷Â·¾¶ÏÂ
-add_subdirectory(utils)  # ¹¹½¨ÁËlogging½Ó¿Ú¿â
-#!? logging¿âÔÚÇ¨ÒÆµ½ĞÂÏîÄ¿Ê±£¬ĞèÒª¸ù¾İĞÂµÄÈÕÖ¾¼ÇÂ¼¿â¸ü»»Ô´ÎÄ¼şÖĞµÄÏà¹Ø´úÂë£»
-
-find_package(OpenCV       REQUIRED)   # ·¢ÏÖ²¢¶¨ÒåopencvÏà¹ØµÄÂ·¾¶±äÁ¿
-find_package(onnxruntime  REQUIRED)   # ·¢ÏÖ²¢¶¨ÒåonnxruntimeÏà¹ØµÄÂ·¾¶±äÁ¿ ==> #!? ¶ÔÓ¦µÄcmakeÎÄ¼şÊÇ"Findonnxruntime.cmake"
-find_package(cuda         REQUIRED)   
+include(spdlog)    # æ„å»ºäº†spdlogé™æ€åº“
+# è§£å†³äº†spdlog.dllçš„é—®é¢˜;å®ƒæ˜¯å¦ä¼šè‡ªåŠ¨å°†æ‰¾åˆ°çš„å¤´æ–‡ä»¶è·¯å¾„æ”¾ç½®åˆ°å¯¹åº”çš„å¤´æ–‡ä»¶æœç´¢è·¯å¾„ä¸­ï¼›libæ–‡ä»¶è·¯å¾„æ”¾ç½®åˆ°å¯¹åº”çš„libsæœç´¢è·¯å¾„ä¸‹
+add_subdirectory(utils)  # æ„å»ºäº†loggingæ¥å£åº“
+#!? loggingåº“åœ¨è¿ç§»åˆ°æ–°é¡¹ç›®æ—¶ï¼Œéœ€è¦æ ¹æ®æ–°çš„æ—¥å¿—è®°å½•åº“æ›´æ¢æºæ–‡ä»¶ä¸­çš„ç›¸å…³ä»£ç ï¼›
 
 
+find_package(OpenCV       REQUIRED)   # å‘ç°å¹¶å®šä¹‰opencvç›¸å…³çš„è·¯å¾„å˜é‡
+find_package(onnxruntime  REQUIRED)   # å‘ç°å¹¶å®šä¹‰onnxruntimeç›¸å…³çš„è·¯å¾„å˜é‡ ==> #!? å¯¹åº”çš„cmakeæ–‡ä»¶æ˜¯"Findonnxruntime.cmake"
+find_package(cuda         REQUIRED)   # åå­—åªèƒ½æ—¶cudaï¼Œä¸èƒ½æ˜¯CUDA; åŒæ—¶éœ€è¦è®¾å®šcuda_ROOT
+#find_package(TRT_DIR      REQUIRED)  #! windows/linuxç‰ˆæœ¬ä¸‹ä¸å­˜åœ¨cmakeæ–‡ä»¶
+
+message("PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
 
 
 
 
-# 4 ¹¹½¨¾²Ì¬¿â
+
+# 4 æ„å»ºæ¨¡å‹çš„plugin
+add_library(mypluginssss1  SHARED 
+${PROJECT_SOURCE_DIR}/src/plugin/yololayer.cu
+)
+
+include(GenerateExportHeader)
+generate_export_header(mypluginssss1)                                                   
+target_compile_definitions(mypluginssss1 PRIVATE  mypluginssss1_EXPORTS)  
+
+target_include_directories(mypluginssss1  
+PUBLIC
+	include
+	${cuda_INCLUDE_DIR}
+	${TRT_DIR}/include
+	${cuda_ROOT}/include
+	${PROJECT_SOURCE_DIR}/src/plugin
+) 
+target_link_directories(mypluginssss1 
+PUBLIC  
+	${TRT_DIR}/lib
+	${cuda_ROOT}/lib
+	${cuda_ROOT}/lib/x64
+)
+
+target_link_libraries(mypluginssss1 nvinfer cudart)
+
+set_property(TARGET mypluginssss1 PROPERTY CUDA_ARCHITECTURES 50 61 72 75)
+
+FIND_PATH(mypluginssss1_INCLUDE_DIR yololayer.h      ${PROJECT_SOURCE_DIR}/src/plugin)
+FIND_LIBRARY(mypluginssss1_LIBRARY mypluginssss1.lib ${CMAKE_BINARY_DIR}/Debug)
+
+
+
+
+# 4 æ„å»ºé™æ€åº“
 add_library(solver  STATIC  
-${PROJECT_SOURCE_DIR}/src/onnxSrc/onnx_deploy.cpp  
-${PROJECT_SOURCE_DIR}/src/onnxSrc/yolov5.cpp)     # 4.1 ÉùÃ÷¾²Ì¬¿âÃû³ÆºÍÔ´ÎÄ¼ş
+	${PROJECT_SOURCE_DIR}/src/onnxSrc/onnx_deploy.cpp  
+	${PROJECT_SOURCE_DIR}/src/onnxSrc/yolov5.cpp 
+)
 
 target_include_directories(solver  
 PUBLIC  
 	include 
-	${CMAKE_BINARY_DIR} 
+	${CMAKE_BINARY_DIR}     # F:/Projects/CMakePractice/project3/out/build/x64-Debug
 	${OpenCV_INCLUDE_DIRS} 
-	#$ENV{onnxruntime_INCLUDE_DIR} 
 	${cuda_INCLUDE_DIR}
-)   # 4.3 Ìí¼ÓÍ·ÎÄ¼şÄ¿Â¼
-target_link_libraries(solver      
-PUBLIC  
-	logging 
-	${OpenCV_LIBS} 
-	#$ENV{onnxruntime_LIBRARY}
-	onnxruntime::onnxruntime
-	cuda
-)   # 4.4 Á´½Óµ¼Èë¿âÎÄ¼şºÍ½ÓÈë¿â
+	${TRT_DIR}/include
+	${cuda_ROOT}/include
+	${PROJECT_SOURCE_DIR}/bin/debug
+	${PROJECT_SOURCE_DIR}/src/plugin
+	${mypluginssss1_INCLUDE_DIR}
 
-set_target_properties(solver PROPERTIES
-  #!? ¾²Ì¬¿âÎÄ¼şÊä³öÄ¿Â¼
-  ARCHIVE_OUTPUT_DIRECTORY_DEBUG   ${PROJECT_SOURCE_DIR}/bin/debug
-  ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release
-
-  #!? ¶¯Ì¬¿âÎÄ¼şÊä³öÄ¿Â¼
-  LIBRARY_OUTPUT_DIRECTORY_DEBUG    ${PROJECT_SOURCE_DIR}/bin/debug
-  LIBRARY_OUTPUT_DIRECTORY_RELEASE  ${PROJECT_SOURCE_DIR}/bin/release
 )
 
+target_link_directories(solver 
+PUBLIC  
+	${TRT_DIR}/lib
+	${cuda_ROOT}/lib
+	${cuda_ROOT}/lib/x64
+	${CMAKE_BINARY_DIR}
+	${CMAKE_BINARY_DIR}/Debug
+)
+
+target_link_libraries(solver  
+PUBLIC  
+	slogging 
+	scommon
+	onnxruntime::onnxruntime
+	cuda
+	nvinfer
+	cudart
+	nvinfer_plugin
+	nvonnxparser
+	nvparsers
+	mypluginssss1
+	${OpenCV_LIBS} 
+	${mypluginssss1_LIBRARY}
+) 
 
 
 
-# 5 ¹¹½¨¿ÉÖ´ĞĞÎÄ¼ş${CMAKE_BINARY_DIR}/solver.libs
-add_executable(onnx_solver_shared                cli/main.cpp)
+# 5 æ„å»ºå¯æ‰§è¡Œæ–‡ä»¶${CMAKE_BINARY_DIR}/solver libs
+add_executable(onnx_solver_shared                cli/main.cpp )
 target_include_directories(onnx_solver_shared 
 PUBLIC  
 	include 
 	${CMAKE_BINARY_DIR} 
 	${OpenCV_INCLUDE_DIRS} 
 	${CMAKE_SOURCE_DIR}/include
+
+	${cuda_INCLUDE_DIR}
+	${TRT_DIR}/samples/common
+	${TRT_DIR}/include
+	${cuda_ROOT}/include
+
+	${PROJECT_SOURCE_DIR}/bin/debug
+	${PROJECT_SOURCE_DIR}/src/plugin
+	${mypluginssss1_INCLUDE_DIR}
+)
+target_link_directories(onnx_solver_shared 
+PUBLIC  
+	${TRT_DIR}/lib
+	${cuda_ROOT}/lib
+	${cuda_ROOT}/lib/x64
+	${PROJECT_SOURCE_DIR}/bin/debug
+	${CMAKE_BINARY_DIR}
+	${CMAKE_BINARY_DIR}/Debug
 )
 target_link_libraries(onnx_solver_shared      
-PRIVATE  
-	logging 
-	${OpenCV_LIBS}  
+PUBLIC  
+	mypluginssss1
+	${OpenCV_LIBS} 
+	${mypluginssss1_LIBRARY}
 	solver
 )
-#!? OpenCV_LIBSÊÇ²»º¬Â·¾¶µÄ¿âÎÄ¼şÃû£¬Á´½ÓÆ÷»á×ÔĞĞÔÚÏµÍ³¿âÄ¿Â¼µÈÄ¬ÈÏËÑË÷Ä¿Â¼ÖĞ²éÕÒÆäËùÔÚÎ»ÖÃ(find_package(opencv)¸øµ½µÄÂ·¾¶)£¡
 
 
 
+# 6 é»˜è®¤æ„å»ºé€‰é¡¹
+#set_target_properties(mypluginssss1  PROPERTIES                      # è®¾ç½®åŠ¨æ€åº“è¾“å‡ºè·¯å¾„
+#    LIBRARY_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin/$<CONFIG>
+#    RUNTIME_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin/$<CONFIG>
+#)
 
+set_target_properties(solver PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY_DEBUG   ${PROJECT_SOURCE_DIR}/bin/debug   # é™æ€åº“æ–‡ä»¶è¾“å‡ºç›®å½•
+  ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release
+  
+  LIBRARY_OUTPUT_DIRECTORY_DEBUG    ${PROJECT_SOURCE_DIR}/bin/debug  # åŠ¨æ€åº“æ–‡ä»¶è¾“å‡ºç›®å½•
+  LIBRARY_OUTPUT_DIRECTORY_RELEASE  ${PROJECT_SOURCE_DIR}/bin/release
+)
 
-# 6 Ä¬ÈÏ¹¹½¨Ñ¡Ïî
 set_target_properties(onnx_solver_shared PROPERTIES
-  # ¿ÉÖ´ĞĞÎÄ¼şÊä³öÄ¿Â¼
-  RUNTIME_OUTPUT_DIRECTORY_DEBUG   ${PROJECT_SOURCE_DIR}/bin/debug   
+  RUNTIME_OUTPUT_DIRECTORY_DEBUG   ${PROJECT_SOURCE_DIR}/bin/debug    # å¯æ‰§è¡Œæ–‡ä»¶è¾“å‡ºç›®å½•
   RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release
-
   DEBUG_POSTFIX "d"
 )
 
 
-if(OpenCV_FOUND)
-    # ²éÕÒËùÓĞ¿ÉÄÜµÄDLLÂ·¾¶
-    get_filename_component(OpenCV_BIN_DIR "${OpenCV_DIR}/../bin" ABSOLUTE)
-    
-    # OpenCV_VERSION Îª4.5.5, ÏÂÊöÕıÔò±í´ïÊ½¿ÉÒÔ½«×Ö·û´®ÖĞµÄµãÈ¥³ı£¡
-    string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\1\\2\\3" OpenCV_VERSION_3DIGIT ${OpenCV_VERSION})
 
-    # ½«opencv_worldxxx.dllÎÄ¼ş¿½±´µ½¹¤×÷Ä¿Â¼ÏÂ
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-            "${OpenCV_BIN_DIR}/opencv_world${OpenCV_VERSION_3DIGIT}$<$<CONFIG:Debug>:d>.dll"
-            $<TARGET_FILE_DIR:${PROJECT_NAME}>
-        COMMENT "Copying OpenCV DLLs"
-    )
-
-endif()
+# ç¼–è¯‘é™„åŠ é¡¹
+add_compile_options(
+    $<$<AND:$<NOT:$<COMPILE_LANGUAGE:CUDA>>,$<OR:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>>:/utf-8>
+)
 
 
 
-# 7 µ÷ÊÔ
+
+
+# å¤åˆ¶dllæ–‡ä»¶
+#if(OpenCV_FOUND)
+#    get_filename_component(OpenCV_BIN_DIR "${OpenCV_DIR}/../bin" ABSOLUTE)  # æŸ¥æ‰¾æ‰€æœ‰å¯èƒ½çš„DLLè·¯å¾„
+#    string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\1\\2\\3" OpenCV_VERSION_3DIGIT ${OpenCV_VERSION})  # OpenCV_VERSION ä¸º4.5.5, æ­£åˆ™å°†å­—ç¬¦ä¸²ä¸­çš„ç‚¹å»é™¤ï¼
+#    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD   # å°†opencv_worldxxx.dllæ–‡ä»¶æ‹·è´åˆ°å·¥ä½œç›®å½•ä¸‹
+#        COMMAND ${CMAKE_COMMAND} -E copy
+#            "${OpenCV_BIN_DIR}/opencv_world${OpenCV_VERSION_3DIGIT}$<$<CONFIG:Debug>:d>.dll"
+#            $<TARGET_FILE_DIR:${PROJECT_NAME}>
+#        COMMENT "Copying OpenCV DLLs"
+#    )
+#endif()
+
+
+
+
+
+# 7 è°ƒè¯•
 message("PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
 message("CMAKE_BINARY_DIR:   ${CMAKE_BINARY_DIR}")
 message("CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG:   ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}")
@@ -125,3 +212,8 @@ message("OpenCV_LIBS:           ${OpenCV_LIBS}")
 message("PROJECT_BINARY_DIR:    ${PROJECT_BINARY_DIR}")
 message("onnxruntime_LIBRARY:       ${onnxruntime_LIBRARY}")
 message("ENV.onnxruntime_LIBRARY:   $ENV{onnxruntime_LIBRARY}")
+message("CMAKE_CUDA_COMPILER:   ${CMAKE_CUDA_COMPILER}")
+message("cuda_INCLUDE_DIR:   ${cuda_INCLUDE_DIR}")
+message("cuda_LIBRARIES:   ${cuda_LIBRARIES}")
+message("CUDA_LIBRARIES:   ${CUDA_LIBRARIES}")
+message("CUDA_INCLUDE_DIRS:   ${CUDA_INCLUDE_DIRS}")

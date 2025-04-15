@@ -1,7 +1,5 @@
 ﻿#include "onnx_deploy.h"
 
-
-
 bool outputGPU()
 {
 	LOGD("outputGPU enter.");
@@ -29,7 +27,7 @@ bool outputGPU()
 			if (NVML_SUCCESS != result0)
 			{
 				std::cout << "Failed to get device count: " << nvmlErrorString(result0);
-				return -1;
+				return false;
 			}
 
 			char name[NVML_DEVICE_NAME_BUFFER_SIZE];
@@ -37,7 +35,7 @@ bool outputGPU()
 			if (NVML_SUCCESS != result0)
 			{
 				std::cout << "Failed to get device name: " << nvmlErrorString(result0);
-				return -1;
+				return false;
 			}
 
 			nvmlUtilization_t utilization;
@@ -45,7 +43,7 @@ bool outputGPU()
 			if (NVML_SUCCESS != result0)
 			{
 				std::cout << "Failed to get utilization rates: " << nvmlErrorString(result0);
-				return -1;
+				return false;
 			}
 
 			nvmlMemory_t memory;
@@ -53,13 +51,13 @@ bool outputGPU()
 			if (NVML_SUCCESS != result0)
 			{
 				std::cout << "Failed to get memory info: " << nvmlErrorString(result0);
-				return -1;
+				return false;
 			}
 
 			double total = (float)(memory.total) / 1024.0f / 1024.0f / 1024.0f;
 			double isused = (float)(memory.free) / 1024.0f / 1024.0f / 1024.0f;
 
-			LOGD("isused / total =>  {}G / {}G;", isused, total);
+			LOGD("isused / total =>  {}G / {}G;", wikky_algo::d2str(isused, 3), total);
 
 		}
 	}
@@ -74,65 +72,161 @@ bool outputGPU()
 
 
 
+
+template <typename _T>
+static void destroy_nvidia_pointer(_T* ptr) {
+	if (ptr) ptr->destroy();
+}
+
+bool readEngineFile(const std::string& engineFile, IRuntime*& runtime, ICudaEngine*& engine)
+{
+	std::ifstream file(engineFile, std::ios::binary);
+	if (!file)
+	{
+		std::cerr << "Failed to open engine file: " << engineFile << std::endl;
+		return false;
+	}
+
+	file.seekg(0, file.end);
+	size_t size = file.tellg();
+	file.seekg(0, file.beg);
+
+	std::vector<char> buffer(size);
+	file.read(buffer.data(), size);
+	file.close();
+
+	std::shared_ptr<IRuntime> runtime_ = nullptr;
+	std::shared_ptr<ICudaEngine> engine_;
+
+	static Logger gLogger;
+
+	IBuilder* builder = createInferBuilder(gLogger);
+
+
+	engine_ = shared_ptr<ICudaEngine>(runtime_->deserializeCudaEngine(buffer.data(), size, nullptr),
+		destroy_nvidia_pointer<ICudaEngine>);
+
+	return true;
+
+}
+
+
+
 int yolo_min()
 {
-	SetConsoleOutputCP(CP_UTF8); // allow the chinese log to show.
+
+
+	cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_WARNING);
+	LOGD("OpencvBuildInformation --测试--: {}", cv::getBuildInformation());  //! 查看opencv编译时的选项
 	
+	bool temp = false;
+	try {
+		cv::cuda::printCudaDeviceInfo(cv::cuda::getDevice());
+		temp = true;
+	}
+	catch (...) {
+		temp = false;
+	}
+	LOGD("IsOpenCVWithCUDA: {};", temp);
+	LOGD("IsOpenCVWithDNN: {}:", (cv::dnn::getAvailableTargets(cv::dnn::DNN_BACKEND_OPENCV).empty() ? "NO" : "YES"));
+	outputGPU();
+
+
+	auto start = std::chrono::high_resolution_clock::now();
+	auto end = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+
+	/** 超参数 */
 	std::string onnxModelPath = "F:/Projects/CMakePractice/resources/3_2_best.onnx";
-
-
-	Configuration defect_config;
-	YOLOv5* firedetmodel;
+	std::string dnnOnnxModelPath = "F:/Projects/yolo_family/yolov5_7.0/pts/yolov5n.onnx";
+	//std::string engineModelPath = "F:/Projects/CMakePractice/resources/3_2_best.plan";
+	//std::string engineModelPath = "F:/Projects/CMakePractice/resources/3_2_best.trt";
+	//std::string engineModelPath = "F:/Projects/StableDiffusionEO/engine/3_6_best.plan"; 
+	std::string engineModelPath = "E://DevelopmentRoute//Produce_Algorithms//resources//yolov8s.engine";
+	cv::Mat img = cv::imread("D:/58_FGJHAT005TZ000033G-1_DA3180921.png", 1);
 	std::vector<cv::Mat> frames;
-	std::vector<std::vector<BoxInfo>> output;
 
 
 
-	defect_config.modelpath = onnxModelPath;
-	defect_config.confThreshold = 0.3;      //? 需要修改成yaml参数
-	defect_config.nmsThreshold = 0.45;
-	defect_config.objThreshold = 0.5;
+	LOGI("=============== ONNX Runtime =================");
 
-	LOGD("+++++++++++++++++++++++++++++++++++++++++ 缺陷检测模型参数 +++++++++++++++++++++++++++++++++++++++");
-	LOGD("defect_config.modelpath:        {};", defect_config.modelpath);
-	LOGD("defect_config.confThreshold:    {};", defect_config.confThreshold);
-	LOGD("defect_config.nmsThreshold:     {};", defect_config.nmsThreshold);
-	LOGD("defect_config.objThreshold:     {};", defect_config.objThreshold);
+	/** 模型初始化所需的参数 */
+	Configuration onnx_config;
+	onnx_config.modelpath = onnxModelPath;
+	onnx_config.confThresholds = { 0.3, 0.3, 0.3 };      //? 需要修改成yaml参数
+	onnx_config.nmsThreshold = 0.45;
+	onnx_config.objThreshold = 0.5;
 
-	outputGPU();
-	firedetmodel = new YOLOv5(defect_config);
+	LOGD("onnx_config.modelpath:        {};", onnx_config.modelpath);
+	LOGD("onnx_config.nmsThreshold:     {};", onnx_config.nmsThreshold);
+	LOGD("onnx_config.objThreshold:     {};", onnx_config.objThreshold);
+	LOGD("onnx_config.confThresholds:    {};", wikky_algo::vectors2string(onnx_config.confThresholds));
 
-	LOGD("202412181631");
-	cv::Mat m = cv::imread("D:/58_FGJHAT005TZ000033G-1_DA3180921.png", 1);
-	frames.push_back(m);
-	LOGD("11");
-	firedetmodel->detect(frames, output);
-	LOGD("12");
 
-	//firedetmodel->detect(frames, output);
-	//output.clear();
-	//LOGD("13");
+	/** 模型初始化 */
+	Onnx_YOLOv5* onnx_model;
+	onnx_model = new Onnx_YOLOv5(onnx_config);
+	std::vector<std::vector<BoxInfo>> onnx_output;
+	/** 测试效率 */
+	int total_pics_num = 1;
+	start = std::chrono::high_resolution_clock::now();
+	for (int i = 0; i < total_pics_num; i++) {
+		frames.clear();
+		frames.push_back(img);
+		onnx_model->onnx_detect(frames, onnx_output);
+	}
+	end = std::chrono::high_resolution_clock::now();
+	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+	LOGD("onnx_output: {};", onnx_output[0].size());
+	LOGD("{} pics time: {}; single pic time: {};\n", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+	
 
-	//firedetmodel->detect(frames, output);
-	//LOGD("13");
-	frames.clear();
-	output.clear();
-	LOGW("End:  the first defect model interface.");
-	outputGPU();
+
+
+	LOGI("=============== Opencv DNN =================");
+	Configuration dnn_config;
+	dnn_config.modelpath = dnnOnnxModelPath;
+	dnn_config.confThresholds = { 0.3, 0.3, 0.3 };      //? 需要修改成yaml参数
+	dnn_config.nmsThreshold = 0.45;
+	dnn_config.objThreshold = 0.5;
+
+	Dnn_YOLOv5* dnn_model;
+	dnn_model = new Dnn_YOLOv5(dnn_config);
+	std::vector<std::vector<BoxInfo>> dnn_output;
+
+	cv::dnn::Net dnn_net;
+	int _R = dnn_model->load_dnn_net(dnn_net, dnn_config.modelpath, true);
+	if (_R == 1) {
+		LOGI("DNN Model has been Successfilly loaded.");
+		start = std::chrono::high_resolution_clock::now();
+		for (int i = 0; i < 1; i++) {
+			frames.clear();
+			frames.push_back(img);
+			dnn_model->dnn_detect(frames, dnn_net, dnn_output);
+		}
+		end = std::chrono::high_resolution_clock::now();
+		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+		LOGD("dnn_output: {};", dnn_output[0].size());
+		LOGD("{} pics time: {}; single pic time: {};\n", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+	}
+
+
+	LOGI("=============== TensorRT =================");
+	//IRuntime* runtime = nullptr;
+	//ICudaEngine* engine = nullptr;
+
+	//if (!readEngineFile(engineModelPath, runtime, engine))
+	//{
+	//}
+
+
+	Tensorrt_YOLOv5* tensorrt_model;
+	tensorrt_model = new Tensorrt_YOLOv5();
+	tensorrt_model->tensorrt_detect2(engineModelPath);
+
 
 
 	return 1;
 }
 
-
-/*
-每次练习问题记录
-A1: BGR图像转换为RGB图像
-1. cv::Vec3i;
-
-
-
-A2: BGR图像转换成灰度图
-1. imgOut.at<uchar><row, col>
-
-*/

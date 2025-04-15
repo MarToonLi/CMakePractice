@@ -11,7 +11,7 @@
 using namespace std;
 
 
-class Logger
+class SLogger
 {
     string GetProgramDir()
     {
@@ -26,13 +26,13 @@ class Logger
     }
 
 public:
-    static Logger& getInstance()
+    static SLogger& getInstance()
     {
-        static Logger log;
+        static SLogger log;
         return log;
     }
 
-    virtual ~Logger()
+    virtual ~SLogger()
     {
         spdlog::drop(LOGGER_NAME_FILE.c_str());
         spdlog::drop(LOGGER_NAME_CONSOLE.c_str());
@@ -40,7 +40,7 @@ public:
         consoleLogger = nullptr;
     }
 
-    Logger()
+    SLogger()
     {
         spdlog::set_pattern("[%C:%m:%d-%H:%M:%S.%e][%s:%#:%!][tid:%t][%^%l%$] %v");
         spdlog::set_level(spdlog::level::debug);  // Set global log level to debug
@@ -77,61 +77,61 @@ private:
 
 #define LOGSET(_logger)                                                                            \
     {                                                                                              \
-        if (Logger::getInstance().consoleLogger)                                                   \
-            Logger::getInstance().SetLogger(_logger);                                              \
+        if (SLogger::getInstance().consoleLogger)                                                   \
+            SLogger::getInstance().SetLogger(_logger);                                              \
     }
 #define LOGT(...)                                                                                  \
     {                                                                                              \
-        if (Logger::getInstance().consoleLogger)                                                   \
-            Logger::getInstance().consoleLogger->log(                                              \
+        if (SLogger::getInstance().consoleLogger)                                                   \
+            SLogger::getInstance().consoleLogger->log(                                              \
                 spdlog::source_loc{__FILE__, __LINE__, __func__}, spdlog::level::level_enum::trace,\
                 __VA_ARGS__);                                                                      \
-        if (Logger::getInstance().asyncLogger)                                                     \
-            Logger::getInstance().asyncLogger->log(                                                \
+        if (SLogger::getInstance().asyncLogger)                                                     \
+            SLogger::getInstance().asyncLogger->log(                                                \
                 spdlog::source_loc{__FILE__, __LINE__, __func__}, spdlog::level::level_enum::trace,\
                 __VA_ARGS__);                                                                      \
     }
 #define LOGI(...)                                                                                  \
     {                                                                                              \
-        if (Logger::getInstance().consoleLogger)                                                   \
-            Logger::getInstance().consoleLogger->log(                                              \
+        if (SLogger::getInstance().consoleLogger)                                                   \
+            SLogger::getInstance().consoleLogger->log(                                              \
                 spdlog::source_loc{__FILE__, __LINE__, __func__}, spdlog::level::level_enum::info, \
                 __VA_ARGS__);                                                                      \
-        if (Logger::getInstance().asyncLogger)                                                     \
-            Logger::getInstance().asyncLogger->log(                                                \
+        if (SLogger::getInstance().asyncLogger)                                                     \
+            SLogger::getInstance().asyncLogger->log(                                                \
                 spdlog::source_loc{__FILE__, __LINE__, __func__}, spdlog::level::level_enum::info, \
                 __VA_ARGS__);                                                                      \
     }
 #define LOGD(...)                                                 \
     {                                                             \
-        if (Logger::getInstance().consoleLogger)                  \
-            Logger::getInstance().consoleLogger->log(             \
+        if (SLogger::getInstance().consoleLogger)                  \
+            SLogger::getInstance().consoleLogger->log(             \
                 spdlog::source_loc{__FILE__, __LINE__, __func__}, \
                 spdlog::level::level_enum::debug, __VA_ARGS__);   \
-        if (Logger::getInstance().asyncLogger)                    \
-            Logger::getInstance().asyncLogger->log(               \
+        if (SLogger::getInstance().asyncLogger)                    \
+            SLogger::getInstance().asyncLogger->log(               \
                 spdlog::source_loc{__FILE__, __LINE__, __func__}, \
                 spdlog::level::level_enum::debug, __VA_ARGS__);   \
     }
 #define LOGW(...)                                                                                  \
     {                                                                                              \
-        if (Logger::getInstance().consoleLogger)                                                   \
-            Logger::getInstance().consoleLogger->log(                                              \
+        if (SLogger::getInstance().consoleLogger)                                                   \
+            SLogger::getInstance().consoleLogger->log(                                              \
                 spdlog::source_loc{__FILE__, __LINE__, __func__}, spdlog::level::level_enum::warn, \
                 __VA_ARGS__);                                                                      \
-        if (Logger::getInstance().asyncLogger)                                                     \
-            Logger::getInstance().asyncLogger->log(                                                \
+        if (SLogger::getInstance().asyncLogger)                                                     \
+            SLogger::getInstance().asyncLogger->log(                                                \
                 spdlog::source_loc{__FILE__, __LINE__, __func__}, spdlog::level::level_enum::warn, \
                 __VA_ARGS__);                                                                      \
     }
 #define LOGE(...)                                                                                 \
     {                                                                                             \
-        if (Logger::getInstance().consoleLogger)                                                  \
-            Logger::getInstance().consoleLogger->log(                                             \
+        if (SLogger::getInstance().consoleLogger)                                                  \
+            SLogger::getInstance().consoleLogger->log(                                             \
                 spdlog::source_loc{__FILE__, __LINE__, __func__}, spdlog::level::level_enum::err, \
                 __VA_ARGS__);                                                                     \
-        if (Logger::getInstance().asyncLogger)                                                    \
-            Logger::getInstance().asyncLogger->log(                                               \
+        if (SLogger::getInstance().asyncLogger)                                                    \
+            SLogger::getInstance().asyncLogger->log(                                               \
                 spdlog::source_loc{__FILE__, __LINE__, __func__}, spdlog::level::level_enum::err, \
                 __VA_ARGS__);                                                                     \
     }
