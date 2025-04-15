@@ -10,11 +10,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 2 发现并定义第三方库相关路径变量
 set(THIRDPARTY_DIR        D:/Myself/MachineVision/third_party)                     #!? 不可以是//
-set(OpenCV_DIR            ${THIRDPARTY_DIR}/opencv455_DNN/install/x64/vc17/lib)
+set(OpenCV_DIR            ${THIRDPARTY_DIR}/opencv460_dnn_cuda/install/x64/vc17/lib)
 set(onnxruntime_ROOT      ${THIRDPARTY_DIR}/onnxruntime_1_17_cuda118)
 set(TRT_DIR               ${THIRDPARTY_DIR}/TensorRT-8.5.2.2-win)  
 set(cuda_ROOT             ${THIRDPARTY_DIR}/cuda118)
-#set(cuda_ROOT             "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8")
 
 
 
@@ -38,14 +37,10 @@ message("PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
 
 
 
-# 4 构建模型的plugin
+#********** myplugin **********#
 add_library(mypluginssss1  SHARED 
 ${PROJECT_SOURCE_DIR}/src/plugin/yololayer.cu
 )
-
-include(GenerateExportHeader)
-generate_export_header(mypluginssss1)                                                   
-target_compile_definitions(mypluginssss1 PRIVATE  mypluginssss1_EXPORTS)  
 
 target_include_directories(mypluginssss1  
 PUBLIC
@@ -66,13 +61,13 @@ target_link_libraries(mypluginssss1 nvinfer cudart)
 
 set_property(TARGET mypluginssss1 PROPERTY CUDA_ARCHITECTURES 50 61 72 75)
 
-FIND_PATH(mypluginssss1_INCLUDE_DIR yololayer.h      ${PROJECT_SOURCE_DIR}/src/plugin)
-FIND_LIBRARY(mypluginssss1_LIBRARY mypluginssss1.lib ${CMAKE_BINARY_DIR}/Debug)
+#FIND_PATH(mypluginssss1_INCLUDE_DIR yololayer.h      ${PROJECT_SOURCE_DIR}/src/plugin)
+#FIND_LIBRARY(mypluginssss1_LIBRARY  mypluginssss1.lib ${CMAKE_BINARY_DIR}/Debug)
 
 
 
 
-# 4 构建静态库
+#********** solver **********#
 add_library(solver  STATIC  
 	${PROJECT_SOURCE_DIR}/src/onnxSrc/onnx_deploy.cpp  
 	${PROJECT_SOURCE_DIR}/src/onnxSrc/yolov5.cpp 
@@ -89,7 +84,6 @@ PUBLIC
 	${PROJECT_SOURCE_DIR}/bin/debug
 	${PROJECT_SOURCE_DIR}/src/plugin
 	${mypluginssss1_INCLUDE_DIR}
-
 )
 
 target_link_directories(solver 
@@ -114,12 +108,12 @@ PUBLIC
 	nvparsers
 	mypluginssss1
 	${OpenCV_LIBS} 
-	${mypluginssss1_LIBRARY}
+	#${mypluginssss1_LIBRARY}
 ) 
 
 
 
-# 5 构建可执行文件${CMAKE_BINARY_DIR}/solver libs
+#********** onnx_solver_shared **********#
 add_executable(onnx_solver_shared                cli/main.cpp )
 target_include_directories(onnx_solver_shared 
 PUBLIC  
@@ -150,17 +144,17 @@ target_link_libraries(onnx_solver_shared
 PUBLIC  
 	mypluginssss1
 	${OpenCV_LIBS} 
-	${mypluginssss1_LIBRARY}
+	#${mypluginssss1_LIBRARY}
 	solver
 )
 
 
 
-# 6 默认构建选项
-#set_target_properties(mypluginssss1  PROPERTIES                      # 设置动态库输出路径
-#    LIBRARY_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin/$<CONFIG>
-#    RUNTIME_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin/$<CONFIG>
-#)
+#********** 编译附加项 **********#
+set_target_properties(mypluginssss1  PROPERTIES                      # 设置动态库输出路径
+    LIBRARY_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin/$<CONFIG>
+    RUNTIME_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin/$<CONFIG>
+)
 
 set_target_properties(solver PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY_DEBUG   ${PROJECT_SOURCE_DIR}/bin/debug   # 静态库文件输出目录
@@ -178,7 +172,7 @@ set_target_properties(onnx_solver_shared PROPERTIES
 
 
 
-# 编译附加项
+#********** 编译附加项 **********#
 add_compile_options(
     $<$<AND:$<NOT:$<COMPILE_LANGUAGE:CUDA>>,$<OR:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>>:/utf-8>
 )
@@ -187,33 +181,54 @@ add_compile_options(
 
 
 
-# 复制dll文件
-#if(OpenCV_FOUND)
-#    get_filename_component(OpenCV_BIN_DIR "${OpenCV_DIR}/../bin" ABSOLUTE)  # 查找所有可能的DLL路径
-#    string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\1\\2\\3" OpenCV_VERSION_3DIGIT ${OpenCV_VERSION})  # OpenCV_VERSION 为4.5.5, 正则将字符串中的点去除！
-#    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD   # 将opencv_worldxxx.dll文件拷贝到工作目录下
-#        COMMAND ${CMAKE_COMMAND} -E copy
-#            "${OpenCV_BIN_DIR}/opencv_world${OpenCV_VERSION_3DIGIT}$<$<CONFIG:Debug>:d>.dll"
-#            $<TARGET_FILE_DIR:${PROJECT_NAME}>
-#        COMMENT "Copying OpenCV DLLs"
-#    )
-#endif()
+#********** 动态库dll文件拷贝 **********#
+message("")
+if(OpenCV_FOUND)
+    get_filename_component(OpenCV_BIN_DIR "${OpenCV_DIR}/../bin" ABSOLUTE)  # 查找所有可能的DLL路径
+    string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\1\\2\\3" OpenCV_VERSION_3DIGIT ${OpenCV_VERSION})  # OpenCV_VERSION 为4.5.5, 正则将字符串中的点去除！
+    if(EXISTS "${PROJECT_NAME}/opencv_world${OpenCV_VERSION_3DIGIT}$<$<CONFIG:Debug>:d>.dll")
+		add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD   # 将opencv_worldxxx.dll文件拷贝到工作目录下
+			COMMAND ${CMAKE_COMMAND} -E copy
+				"${OpenCV_BIN_DIR}/opencv_world${OpenCV_VERSION_3DIGIT}$<$<CONFIG:Debug>:d>.dll"
+				$<TARGET_FILE_DIR:${PROJECT_NAME}>
+			COMMENT "[copy-dll]  Copying OpenCV DLLs..."
+		)
+	else()
+		message("[copy-dll]  OpenCV DLLs have existed.")
+	endif()
+endif()
+
+
+# 第二次的时候才能生成lib文件和dll文
+if(EXISTS "${PROJECT_NAME}/mypluginssss1.dll")
+	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD   # 将opencv_worldxxx.dll文件拷贝到工作目录下
+		COMMAND ${CMAKE_COMMAND} -E copy
+			"${CMAKE_BINARY_DIR}/Debug/mypluginssss1.dll"
+			$<TARGET_FILE_DIR:${PROJECT_NAME}>
+		COMMENT "[copy-dll]  Copying mypluginssss1 DLLs"
+	)
+else()
+	message("[copy-dll]  mypluginssss1 DLLs have existed.")
+endif()
+message("")
+
+
+
+#********** message info **********#
+message("[message]  PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
+message("[message]  CMAKE_BINARY_DIR:   ${CMAKE_BINARY_DIR}")
+message("[message]  CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG:   ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}")
+message("[message]  OpenCV_INCLUDE_DIRS:   ${OpenCV_INCLUDE_DIRS}")
+message("[message]  OpenCV_LIBS:           ${OpenCV_LIBS}")
+message("[message]  PROJECT_BINARY_DIR:    ${PROJECT_BINARY_DIR}")
+message("[message]  onnxruntime_LIBRARY:       ${onnxruntime_LIBRARY}")
+message("[message]  ENV.onnxruntime_LIBRARY:   $ENV{onnxruntime_LIBRARY}")
+message("[message]  CMAKE_CUDA_COMPILER:   ${CMAKE_CUDA_COMPILER}")
+message("[message]  cuda_INCLUDE_DIR:   ${cuda_INCLUDE_DIR}")
+message("[message]  cuda_LIBRARIES:   ${cuda_LIBRARIES}")
+message("[message]  CUDA_LIBRARIES:   ${CUDA_LIBRARIES}")
+message("[message]  CUDA_INCLUDE_DIRS:   ${CUDA_INCLUDE_DIRS}")
 
 
 
 
-
-# 7 调试
-message("PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
-message("CMAKE_BINARY_DIR:   ${CMAKE_BINARY_DIR}")
-message("CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG:   ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}")
-message("OpenCV_INCLUDE_DIRS:   ${OpenCV_INCLUDE_DIRS}")
-message("OpenCV_LIBS:           ${OpenCV_LIBS}")
-message("PROJECT_BINARY_DIR:    ${PROJECT_BINARY_DIR}")
-message("onnxruntime_LIBRARY:       ${onnxruntime_LIBRARY}")
-message("ENV.onnxruntime_LIBRARY:   $ENV{onnxruntime_LIBRARY}")
-message("CMAKE_CUDA_COMPILER:   ${CMAKE_CUDA_COMPILER}")
-message("cuda_INCLUDE_DIR:   ${cuda_INCLUDE_DIR}")
-message("cuda_LIBRARIES:   ${cuda_LIBRARIES}")
-message("CUDA_LIBRARIES:   ${CUDA_LIBRARIES}")
-message("CUDA_INCLUDE_DIRS:   ${CUDA_INCLUDE_DIRS}")
