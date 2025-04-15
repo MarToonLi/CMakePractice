@@ -146,6 +146,7 @@ int yolo_min()
 	std::string engineModelPath = "E://DevelopmentRoute//Produce_Algorithms//resources//yolov8s.engine";
 	cv::Mat img = cv::imread("D:/58_FGJHAT005TZ000033G-1_DA3180921.png", 1);
 	std::vector<cv::Mat> frames;
+	int total_pics_num = 10;
 
 
 
@@ -158,18 +159,14 @@ int yolo_min()
 	onnx_config.nmsThreshold = 0.45;
 	onnx_config.objThreshold = 0.5;
 
-	LOGD("onnx_config.modelpath:        {};", onnx_config.modelpath);
-	LOGD("onnx_config.nmsThreshold:     {};", onnx_config.nmsThreshold);
-	LOGD("onnx_config.objThreshold:     {};", onnx_config.objThreshold);
-	LOGD("onnx_config.confThresholds:    {};", wikky_algo::vectors2string(onnx_config.confThresholds));
-
-
 	/** 模型初始化 */
 	Onnx_YOLOv5* onnx_model;
 	onnx_model = new Onnx_YOLOv5(onnx_config);
 	std::vector<std::vector<BoxInfo>> onnx_output;
 	/** 测试效率 */
-	int total_pics_num = 1;
+	frames.clear();
+	frames.push_back(img);
+	onnx_model->onnx_detect(frames, onnx_output);
 	start = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < total_pics_num; i++) {
 		frames.clear();
@@ -199,6 +196,10 @@ int yolo_min()
 	int _R = dnn_model->load_dnn_net(dnn_net, dnn_config.modelpath, true);
 	if (_R == 1) {
 		LOGI("DNN Model has been Successfilly loaded.");
+		frames.clear();
+		frames.push_back(img);
+		dnn_model->dnn_detect(frames, dnn_net, dnn_output);
+
 		start = std::chrono::high_resolution_clock::now();
 		for (int i = 0; i < 1; i++) {
 			frames.clear();
@@ -213,17 +214,17 @@ int yolo_min()
 
 
 	LOGI("=============== TensorRT =================");
-	//IRuntime* runtime = nullptr;
-	//ICudaEngine* engine = nullptr;
-
-	//if (!readEngineFile(engineModelPath, runtime, engine))
-	//{
-	//}
-
-
 	Tensorrt_YOLOv5* tensorrt_model;
 	tensorrt_model = new Tensorrt_YOLOv5();
-	tensorrt_model->tensorrt_detect2(engineModelPath);
+
+	start = std::chrono::high_resolution_clock::now();
+	for (int i = 0; i < 1; i++) {
+		tensorrt_model->tensorrt_detect2(engineModelPath);
+	}
+	end = std::chrono::high_resolution_clock::now();
+	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+	LOGD("dnn_output: {};", dnn_output[0].size());
+	LOGD("{} pics time: {}; single pic time: {};\n", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
 
 

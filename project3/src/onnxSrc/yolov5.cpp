@@ -341,10 +341,10 @@ bool Onnx_YOLOv5::onnx_detect(std::vector<cv::Mat>& frames, std::vector<std::vec
 		dstImgs.push_back(dstimg);
 	}
 
-
 	// normalize
 	this->normalize_(dstImgs);       //归一化
-	
+	LOGD("normalize");
+
 
 
 	
@@ -359,6 +359,7 @@ bool Onnx_YOLOv5::onnx_detect(std::vector<cv::Mat>& frames, std::vector<std::vec
 																input_image_.data(), input_image_.size(), 
 																input_shape_.data(), input_shape_.size()
 	);
+	LOGD("CreateTensor");
 
 
 	// 基于onnxruntime会话进行推理
@@ -372,6 +373,7 @@ bool Onnx_YOLOv5::onnx_detect(std::vector<cv::Mat>& frames, std::vector<std::vec
 	float* pdata = ort_outputs[0].GetTensorMutableData<float>();         // 获取 ONNX 模型推理的可修改的底层输出数据指针，并将其转换为 float 类型的指针
 	auto type_shape_info = ort_outputs[0].GetTensorTypeAndShapeInfo();   // 获取张量的形状
 	size_t element_count = type_shape_info.GetElementCount();            // 直接获取元素总数
+	LOGD("Run");
 
 
 	
@@ -440,6 +442,8 @@ bool Onnx_YOLOv5::onnx_detect(std::vector<cv::Mat>& frames, std::vector<std::vec
 
 		pdata += num_proposal * nout;
 	}
+	LOGD("postprocess");
+
 	
 	return true;
 }

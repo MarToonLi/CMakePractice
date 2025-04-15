@@ -61,9 +61,6 @@ target_link_libraries(mypluginssss1 nvinfer cudart)
 
 set_property(TARGET mypluginssss1 PROPERTY CUDA_ARCHITECTURES 50 61 72 75)
 
-#FIND_PATH(mypluginssss1_INCLUDE_DIR yololayer.h      ${PROJECT_SOURCE_DIR}/src/plugin)
-#FIND_LIBRARY(mypluginssss1_LIBRARY  mypluginssss1.lib ${CMAKE_BINARY_DIR}/Debug)
-
 
 
 
@@ -81,9 +78,7 @@ PUBLIC
 	${cuda_INCLUDE_DIR}
 	${TRT_DIR}/include
 	${cuda_ROOT}/include
-	${PROJECT_SOURCE_DIR}/bin/debug
 	${PROJECT_SOURCE_DIR}/src/plugin
-	${mypluginssss1_INCLUDE_DIR}
 )
 
 target_link_directories(solver 
@@ -92,7 +87,6 @@ PUBLIC
 	${cuda_ROOT}/lib
 	${cuda_ROOT}/lib/x64
 	${CMAKE_BINARY_DIR}
-	${CMAKE_BINARY_DIR}/Debug
 )
 
 target_link_libraries(solver  
@@ -108,7 +102,6 @@ PUBLIC
 	nvparsers
 	mypluginssss1
 	${OpenCV_LIBS} 
-	#${mypluginssss1_LIBRARY}
 ) 
 
 
@@ -123,50 +116,39 @@ PUBLIC
 	${CMAKE_SOURCE_DIR}/include
 
 	${cuda_INCLUDE_DIR}
-	${TRT_DIR}/samples/common
 	${TRT_DIR}/include
 	${cuda_ROOT}/include
 
-	${PROJECT_SOURCE_DIR}/bin/debug
 	${PROJECT_SOURCE_DIR}/src/plugin
-	${mypluginssss1_INCLUDE_DIR}
 )
 target_link_directories(onnx_solver_shared 
 PUBLIC  
 	${TRT_DIR}/lib
 	${cuda_ROOT}/lib
 	${cuda_ROOT}/lib/x64
-	${PROJECT_SOURCE_DIR}/bin/debug
 	${CMAKE_BINARY_DIR}
-	${CMAKE_BINARY_DIR}/Debug
 )
 target_link_libraries(onnx_solver_shared      
 PUBLIC  
 	mypluginssss1
 	${OpenCV_LIBS} 
-	#${mypluginssss1_LIBRARY}
 	solver
 )
 
 
-
 #********** 编译附加项 **********#
-set_target_properties(mypluginssss1  PROPERTIES                      # 设置动态库输出路径
-    LIBRARY_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin/$<CONFIG>
-    RUNTIME_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin/$<CONFIG>
+set_target_properties(mypluginssss1  PROPERTIES                      
+    LIBRARY_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin    # 设置共享库（.dll/.so）的输出路径    
+    RUNTIME_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin    # 设置可执行文件（.exe）的输出路径
 )
 
 set_target_properties(solver PROPERTIES
-  ARCHIVE_OUTPUT_DIRECTORY_DEBUG   ${PROJECT_SOURCE_DIR}/bin/debug   # 静态库文件输出目录
-  ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release
-  
-  LIBRARY_OUTPUT_DIRECTORY_DEBUG    ${PROJECT_SOURCE_DIR}/bin/debug  # 动态库文件输出目录
-  LIBRARY_OUTPUT_DIRECTORY_RELEASE  ${PROJECT_SOURCE_DIR}/bin/release
+  ARCHIVE_OUTPUT_DIRECTORY   ${PROJECT_SOURCE_DIR}/bin   # 静态库文件输出目录
+  LIBRARY_OUTPUT_DIRECTORY    ${PROJECT_SOURCE_DIR}/bin  # 动态库文件输出目录
 )
 
 set_target_properties(onnx_solver_shared PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY_DEBUG   ${PROJECT_SOURCE_DIR}/bin/debug    # 可执行文件输出目录
-  RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/release
+  RUNTIME_OUTPUT_DIRECTORY   ${PROJECT_SOURCE_DIR}/bin   # 设置可执行文件（.exe）的输出路径
   DEBUG_POSTFIX "d"
 )
 
@@ -177,8 +159,10 @@ add_compile_options(
     $<$<AND:$<NOT:$<COMPILE_LANGUAGE:CUDA>>,$<OR:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>>:/utf-8>
 )
 
-
-
+# 方法2：生成到文件中（推荐）
+file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/target_dir.txt"
+    CONTENT "$<TARGET_FILE_DIR:${PROJECT_NAME}>\n$<CONFIG>\n"
+)
 
 
 #********** 动态库dll文件拷贝 **********#
@@ -210,30 +194,28 @@ if(EXISTS "${PROJECT_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}/mypluginssss1.dll")
 else()
 	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD   # 将opencv_worldxxx.dll文件拷贝到工作目录下
 		COMMAND ${CMAKE_COMMAND} -E copy
-			"${CMAKE_BINARY_DIR}/Debug/mypluginssss1.dll"
+			"${CMAKE_BINARY_DIR}/mypluginssss1.dll"
 			$<TARGET_FILE_DIR:${PROJECT_NAME}>
 		COMMENT "[copy-dll]  Copying mypluginssss1 DLLs"
+	)
+endif()
+
+if(EXISTS "${PROJECT_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}/onnxruntime.dll")
+	message("[copy-dll]  onnxruntime DLLs have existed.")
+else()
+	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy
+			"${onnxruntime_LIBRARY_DIR}/onnxruntime.dll" 
+			"${onnxruntime_LIBRARY_DIR}/onnxruntime_providers_cuda.dll"
+			"${onnxruntime_LIBRARY_DIR}/onnxruntime_providers_shared.dll"
+			$<TARGET_FILE_DIR:${PROJECT_NAME}>
+		COMMENT "[copy-dll]  Copying ONNX Runtime and dependencies DLLs"
 	)
 endif()
 message("")
 
 
-file(GLOB ONNXRUNTIME_DLLS 
-    "${onnxruntime_LIBRARY_DIR}/onnxruntime.dll"  # 匹配所有onnxruntime相关DLL
-    "${onnxruntime_LIBRARY_DIR}/onnxruntime_providers_cuda.dll"  # 匹配所有onnxruntime相关DLL
-    "${onnxruntime_LIBRARY_DIR}/onnxruntime_providers_shared.dll"  # 匹配所有onnxruntime相关DLL
-    "${onnxruntime_LIBRARY_DIR}/onnxruntime_providers_tensorrt.dll"  # 匹配所有onnxruntime相关DLL
-)
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${onnxruntime_LIBRARY_DIR}/onnxruntime.dll" 
-		"${onnxruntime_LIBRARY_DIR}/onnxruntime_providers_cuda.dll"
-		"${onnxruntime_LIBRARY_DIR}/onnxruntime_providers_shared.dll"
-		"F:/Projects/CMakePractice/resources/onnxruntime_providers_tensorrt.dll"
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>
-	COMMENT "Copying ONNX Runtime and dependencies DLLs"
-)
 
 
 
