@@ -140,14 +140,14 @@ int yolo_min()
 	/** 超参数 */
 	std::string onnxModelPath = "F:/Projects/CMakePractice/resources/3_2_best.onnx";
 	std::string dnnOnnxModelPath = "F:/Projects/yolo_family/yolov5_7.0/pts/yolov5n.onnx";
-	//std::string engineModelPath = "F:/Projects/CMakePractice/resources/3_2_best.plan";
+	//std::string engineModelPath = "F:/Projects/CMakePractice/resources/3_2_best_fp16.plan";
 	//std::string engineModelPath = "F:/Projects/CMakePractice/resources/3_2_best.trt";
 	//std::string engineModelPath = "F:/Projects/StableDiffusionEO/engine/3_6_best.plan"; 
 	std::string engineModelPath = "E://DevelopmentRoute//Produce_Algorithms//resources//yolov8s.engine";
 	cv::Mat img = cv::imread("D:/58_FGJHAT005TZ000033G-1_DA3180921.png", 1);
 	std::vector<cv::Mat> frames;
-	int total_pics_num = 10;
-
+	int total_pics_num = 0;
+	cv::Mat imgrst;
 
 
 	LOGI("=============== ONNX Runtime =================");
@@ -160,24 +160,34 @@ int yolo_min()
 	onnx_config.objThreshold = 0.5;
 
 	/** 模型初始化 */
-	Onnx_YOLOv5* onnx_model;
-	onnx_model = new Onnx_YOLOv5(onnx_config);
-	std::vector<std::vector<BoxInfo>> onnx_output;
-	/** 测试效率 */
-	frames.clear();
-	frames.push_back(img);
-	onnx_model->onnx_detect(frames, onnx_output);
-	start = std::chrono::high_resolution_clock::now();
-	for (int i = 0; i < total_pics_num; i++) {
-		frames.clear();
-		frames.push_back(img);
-		onnx_model->onnx_detect(frames, onnx_output);
-	}
-	end = std::chrono::high_resolution_clock::now();
-	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-	LOGD("onnx_output: {};", onnx_output[0].size());
-	LOGD("{} pics time: {}; single pic time: {};\n", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-	
+	//Onnx_YOLOv5* onnx_model;
+	//onnx_model = new Onnx_YOLOv5(onnx_config);
+	//std::vector<std::vector<BoxInfo>> onnx_output;
+	///** 测试效率 */
+	//frames.clear();
+	//frames.push_back(img);
+	//onnx_model->onnx_detect(frames, onnx_output);
+	//start = std::chrono::high_resolution_clock::now();
+	//for (int i = 0; i < total_pics_num; i++) {
+	//	frames.clear();
+	//	frames.push_back(img);
+	//	onnx_model->onnx_detect(frames, onnx_output);
+	//}
+	//end = std::chrono::high_resolution_clock::now();
+	//duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+	//LOGD("onnx_output: {};", onnx_output[0].size());
+	//LOGD("{} pics time: {}; single pic time: {};\n", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+	//
+	//imgrst = frames[0].clone();
+	//onnx_model->draw(imgrst, onnx_output);
+	//cv::resize(imgrst, imgrst, cv::Size(640, 640));
+	//cv::imshow("Inference", imgrst);
+	//cv::waitKey(0);
+
+
+
+
+
 
 
 
@@ -211,6 +221,12 @@ int yolo_min()
 		LOGD("dnn_output: {};", dnn_output[0].size());
 		LOGD("{} pics time: {}; single pic time: {};\n", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 	}
+
+
+
+
+
+
 
 
 	LOGI("=============== TensorRT =================");

@@ -1240,9 +1240,8 @@ namespace NA113 {
 
 	void experiment4(std::vector<cv::Mat> input) {
 		cv::Mat src1 = input[0];
-		cv::Mat src2 = input[1];
 
-		int total_pics_num = 1;
+		int total_pics_num = 1000;
 		cv::Mat result(input[0].rows, input[0].cols * input.size(), input[0].type());
 
 		auto start = std::chrono::high_resolution_clock::now();
@@ -1266,15 +1265,15 @@ namespace NA113 {
 		start = std::chrono::high_resolution_clock::now();
 		for (int i = 0; i < total_pics_num; i++) {
 			/** 1 BGR2GRAY*/
-			//cv::cvtColor(result, _gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
+			cv::cvtColor(result, _gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
 
-			int Height = result.rows;
-			int Width = result.cols;
-			int Stride = Width * 3;
-			unsigned char* Src = result.data;
-			unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
-			RGB2Y_4(Src, Dest, Width, Height, Stride, 2);     // sse 一次处理12个
-			_gray = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
+			//int Height = result.rows;
+			//int Width = result.cols;
+			//int Stride = Width * 3;
+			//unsigned char* Src = result.data;
+			//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
+			//RGB2Y_4(Src, Dest, Width, Height, Stride, 2);     // sse 一次处理12个
+			//_gray = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
 
 
 			/** 2 BoxFilter */
@@ -1283,7 +1282,7 @@ namespace NA113 {
 			//_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
 			//int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
 
-			blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 4, 2);
+			blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 2, 2);
 			//! 经验： 当算法中存在多个使用omp的算子时，需要合理分配omp的线程数目，不能太大，否则计算慢。
 
 
@@ -1317,26 +1316,26 @@ namespace NA113 {
 
 
 				/** BGR2GRAY */
-				//cv::cvtColor(input[j], _grayB, cv::COLOR_BGR2GRAY);
+				cv::cvtColor(input[j], _grayB, cv::COLOR_BGR2GRAY);
 
-				int Height = input[j].rows;
-				int Width = input[j].cols;
-				int Stride = Width * 3;
-				unsigned char* Src = input[j].data;
-				unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
-				RGB2Y_4(Src, Dest, Width, Height, Stride, 2);       // sse 一次处理12个
-				_grayB = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
+				//int Height = input[j].rows;
+				//int Width = input[j].cols;
+				//int Stride = Width * 3;
+				//unsigned char* Src = input[j].data;
+				//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
+				//RGB2Y_4(Src, Dest, Width, Height, Stride, 2);       // sse 一次处理12个
+				//_grayB = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
 
 
 				/** BoxFilter */
-				cv::Mat tem;
-				cv::blur(_grayB, tem, cv::Size(21, 21));
-				_grayB2 = cv::Mat::zeros(_grayB.size(), _grayB.type());
-				int result2 = blur2.IM_BoxBlur_SSE_Comment(_grayB.ptr<uchar>(0), _grayB2.ptr<uchar>(0), _grayB.cols, _grayB.rows, _grayB.cols, 10);
-				//blur2.IM_BoxBlur_SSE_Blocks(_grayB, _grayB2, 10, 2, 2);
+				//cv::Mat tem;
+				//cv::blur(_grayB, tem, cv::Size(21, 21));
+				//_grayB2 = cv::Mat::zeros(_grayB.size(), _grayB.type());
+				//int result2 = blur2.IM_BoxBlur_SSE_Comment(_grayB.ptr<uchar>(0), _grayB2.ptr<uchar>(0), _grayB.cols, _grayB.rows, _grayB.cols, 10);
+				blur2.IM_BoxBlur_SSE_Blocks(_grayB, _grayB2, 10, 2, 2);
 
-				cv::Mat sub1 = tem - _grayB2;
-				cv::Mat sub2 = _grayB2 - tem;
+				//cv::Mat sub1 = tem - _grayB2;
+				//cv::Mat sub2 = _grayB2 - tem;
 
 				/** subtraction */
 				_grayB = _grayB2 - _grayB;
@@ -1750,11 +1749,116 @@ namespace NA113 {
 
 
 
+
+	// doing: 原始dong
+	void baseline(cv::Mat& img1, cv::Mat& imgrst, BlurVersion2& blur2)
+	{
+		//try  // it really needs to exist.
+		//{
+
+
+		//}
+		//catch (const cv::Exception& e)
+		//{
+		//	LOGE("NG_UNDEFINED: e1: {};", e.what());
+		//}
+		//catch (const std::exception& e)
+		//{
+		//	LOGE("NG_UNDEFINED: e2: {};", e.what());
+		//}
+		//catch (...)
+		//{
+		//	LOGE("NG_UNDEFINED: e3: unkown;");
+		//}
+
+					/** init */
+		int _i = 0;
+		cv::Mat _gray, _gray2;
+		if (img1.channels() == 1)
+		{
+			cv::cvtColor(img1, imgrst, cv::COLOR_GRAY2BGR);
+			img1.copyTo(_gray);
+		}
+		else
+		{
+			imgrst = img1.clone();
+			cv::cvtColor(img1, _gray, cv::COLOR_BGR2GRAY);
+
+			//int Height = data.imgori.rows;
+			//int Width = data.imgori.cols;
+			//unsigned char* Src = data.imgori.data;
+			//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
+			//int Stride = Width * 3;
+			//RGB2Y_4(Src, Dest, Width, Height, Stride);      // sse 一次处理12个
+			//_gray = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
+		}
+
+		/** block1 */
+		//_gray2 = _gray.clone();
+		//cv::blur(_gray, _gray2, cv::Size(21, 21));
+		_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
+		int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
+		//blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 2, 2);
+
+
+		/** block2 */
+		_gray = _gray2 - _gray; // 提取高频信息
+
+		/** block3 */
+		int _iresult = picshadowx(_gray, &imgrst, 4);
+
+		return ;
+	}
+
+
+
+
+	// 最原始的
+	void experiment6(std::vector<cv::Mat> input) {
+		auto start = std::chrono::high_resolution_clock::now();
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+		int total_pics_num = 10000;
+		BlurVersion2 blur2 = BlurVersion2();
+
+
+		/** standard process*/
+		cv::Mat src1 = input[0];
+		cv::Mat standard_gray, standard_gray2, standard_gray3;
+		cv::Mat standard_imgrst = src1.clone();
+		cv::cvtColor(src1, standard_gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
+		cv::blur(standard_gray, standard_gray2, cv::Size(21, 21));
+		standard_gray3 = standard_gray2 - standard_gray;
+		int standard_iresult = picshadowy(standard_gray3, &standard_imgrst, 4);
+
+
+
+		/** experiments */
+		cv::Rect roi = cv::Rect(cv::Point(0, 1000), cv::Point(4095, 1200));
+
+		cv::Mat img1 = src1(roi);
+		cv::Mat imgrst = img1.clone();
+		baseline(img1, imgrst, blur2);
+
+		start = std::chrono::high_resolution_clock::now();
+		for (int i = 0; i < total_pics_num; i++) {
+			baseline(img1, imgrst, blur2);
+		}
+		end = std::chrono::high_resolution_clock::now();
+		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+	}
+
+
 	void A113_solver()
 	{
 		// https://github.com/BBuf/Image-processing-algorithm-Speed/blob/master/speed_rgb2gray_sse.cpp
 
 		cv::Mat src1 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1570__ORI_DA2710107.jpg");
+		cv::Mat src1200 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\250324 - 1200\\Image_20250412154934899.bmp");
+
 		cv::Mat src2 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
 		cv::Mat src3 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
 		cv::Mat src4 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
@@ -1765,7 +1869,7 @@ namespace NA113 {
 		cv::Mat src9 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
 		cv::Mat src10 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
 
-		std::vector<cv::Mat> input0 = { src1};
+		std::vector<cv::Mat> input0 = { src1200 };
 		std::vector<cv::Mat> input1 = { src1, src2, };
 		std::vector<cv::Mat> input2 = { src1, src2,src3,src4, };
 		std::vector<cv::Mat> input3 = { src1, src2,src3,src4,src5,src6, };
@@ -1773,9 +1877,11 @@ namespace NA113 {
 		std::vector<cv::Mat> input5 = { src1, src2, src3,src4,src5,src6,src7,src8,src9, src10 };
 		//std::vector<cv::Mat> input = { src1, src2};
 
-		//experiment4(input5);
+		//experiment4(input0);
 
-		studyBoxFilter();
+		//studyBoxFilter();
+
+		experiment6(input0);
 
 		return;
 	}

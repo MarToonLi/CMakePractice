@@ -114,8 +114,50 @@ static bool cmp(const Detection& a, const Detection& b) {
 	return a.conf > b.conf;
 }
 
-
 void NMS(std::vector<Detection>& res, float* output, const float& conf_thresh, const float& nms_thresh) {
+	int det_size = sizeof(Detection) / sizeof(float);
+	std::map<float, std::vector<Detection>> m;
+	for (int i = 0; i < output[0]; i++) {
+		if (output[1 + det_size * i + 4] <= conf_thresh) continue;
+		Detection det;
+		memcpy(&det, &output[1 + det_size * i], det_size * sizeof(float));
+
+		int index = 0;
+		float cx = det.bbox[index];      //center_x      // 获取目标框的(x1, y1, x2, y2) 
+		float cy = det.bbox[index + 1];  //center_y
+		float w = det.bbox[index + 2];   //w
+		float h = det.bbox[index + 3];   //h
+		float xmin = (cx - 0.5 * w) * 1; // xmin
+		float ymin = (cy - 0.5 * h) * 1; // ymin
+		float xmax = (cx - 0.5 * w) * 1; // xmax
+		float ymax = (cy - 0.5 * h) * 1; // ymax
+
+		det.bbox[0] = xmin;
+		det.bbox[1] = ymin;
+		det.bbox[2] = xmax;
+		det.bbox[3] = ymax;
+
+		if (m.count(det.class_id) == 0) m.emplace(det.class_id, std::vector<Detection>());
+		m[det.class_id].push_back(det);
+	}
+	for (auto it = m.begin(); it != m.end(); it++) {
+		auto& dets = it->second;
+		std::sort(dets.begin(), dets.end(), cmp);
+		for (size_t m = 0; m < dets.size(); ++m) {
+			auto& item = dets[m];
+			res.push_back(item);
+			for (size_t n = m + 1; n < dets.size(); ++n) {
+				if (iou(item.bbox, dets[n].bbox) > nms_thresh) {
+					dets.erase(dets.begin() + n);
+					--n;
+				}
+			}
+		}
+	}
+}
+
+
+void NMS_ori(std::vector<Detection>& res, float* output, const float& conf_thresh, const float& nms_thresh) {
 	int det_size = sizeof(Detection) / sizeof(float);
 	std::map<float, std::vector<Detection>> m;
 	for (int i = 0; i < output[0]; i++) {
@@ -141,8 +183,21 @@ void NMS(std::vector<Detection>& res, float* output, const float& conf_thresh, c
 	}
 }
 
-
 void drawBbox(cv::Mat& img, std::vector<Detection>& res, float& scale, std::map<int, std::string>& Labels) {
+	for (size_t j = 0; j < res.size(); j++) {
+		float l = res[j].bbox[0] / scale;
+		float t = res[j].bbox[1] / scale;
+		float r = res[j].bbox[2] / scale;
+		float b = res[j].bbox[3] / scale;
+		cv::Rect rect = cv::Rect(int(l), int(t), int(r - l), int(b - t));
+		std::string name = Labels[(int)res[j].class_id];
+		cv::rectangle(img, rect, cv::Scalar(0xFF, 0xFF, 0), 2);
+		cv::putText(img, name, cv::Point(rect.x, rect.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0), 2);
+	}
+}
+
+
+void drawBbox_xyxy(cv::Mat& img, std::vector<Detection>& res, float& scale, std::map<int, std::string>& Labels) {
 	for (size_t j = 0; j < res.size(); j++) {
 		float l = res[j].bbox[0] / scale;
 		float t = res[j].bbox[1] / scale;
@@ -323,6 +378,21 @@ void Onnx_YOLOv5::nms(std::vector<BoxInfo>& input_boxes)
 	input_boxes.erase(remove_if(input_boxes.begin(), input_boxes.end(), [&idx_t, &remove_flags](const BoxInfo& f) { return remove_flags[idx_t++]; }), input_boxes.end());
 }
 
+
+void Onnx_YOLOv5::draw(cv::Mat& imgrst, std::vector<std::vector<BoxInfo>>& output) {
+	for (int i = 0; i < output[0].size(); i++) {
+		BoxInfo cur_boxinfo = output[0][i];
+		int class_idx = cur_boxinfo.label;
+		float score = cur_boxinfo.score;
+
+		cv::Rect rect = cv::Rect(cv::Point(int(cur_boxinfo.x1), int(cur_boxinfo.y1)), cv::Point(int(cur_boxinfo.x2), int(cur_boxinfo.y2)));
+		std::string name = wikky_algo::d2str(class_idx);
+		cv::rectangle(imgrst, rect, cv::Scalar(0xFF, 0xFF, 0), 2);
+		cv::putText(imgrst, name, cv::Point(rect.x, rect.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0), 2);
+	}
+
+}
+
 /** detect */
 bool Onnx_YOLOv5::onnx_detect(std::vector<cv::Mat>& frames, std::vector<std::vector<BoxInfo>>& output)
 {
@@ -443,6 +513,10 @@ bool Onnx_YOLOv5::onnx_detect(std::vector<cv::Mat>& frames, std::vector<std::vec
 		pdata += num_proposal * nout;
 	}
 	LOGD("postprocess");
+
+
+
+
 
 	
 	return true;
@@ -761,6 +835,38 @@ void Tensorrt_YOLOv5::preData(cv::Mat& matSrc, cv::Mat& matDst)
 	LOGD("--");
 }
 
+/** 输入resize */
+cv::Mat Tensorrt_YOLOv5::resize_image(cv::Mat srcimg, int* newh, int* neww, int* top, int* left, cv::Scalar& add_color)  //修改图片大小并填充边界防止失真
+{
+	this->inpHeight = 640;
+	this->inpWidth = 640;
+
+	int srch = srcimg.rows, srcw = srcimg.cols;
+	*newh = this->inpHeight;
+	*neww = this->inpWidth;
+	cv::Mat dstimg;
+	if (this->keep_ratio && srch != srcw) {
+		float hw_scale = (float)srch / srcw;
+		if (hw_scale > 1) {
+			*newh = this->inpHeight;
+			*neww = int(this->inpWidth / hw_scale);
+			cv::resize(srcimg, dstimg, cv::Size(*neww, *newh), cv::INTER_AREA);
+			*left = int((this->inpWidth - *neww) * 0.5);
+			cv::copyMakeBorder(dstimg, dstimg, 0, 0, *left, this->inpWidth - *neww - *left, cv::BORDER_CONSTANT, add_color);
+		}
+		else {
+			*newh = (int)this->inpHeight * hw_scale;
+			*neww = this->inpWidth;
+			cv::resize(srcimg, dstimg, cv::Size(*neww, *newh), cv::INTER_AREA);  //等比例缩小，防止失真
+			*top = (int)(this->inpHeight - *newh) * 0.5;                         //上部缺失部分
+			cv::copyMakeBorder(dstimg, dstimg, *top, this->inpHeight - *newh - *top, 0, 0, cv::BORDER_CONSTANT, add_color);
+			//上部填补top大小，下部填补剩余部分，左右不填补
+		}
+	}
+	else { cv::resize(srcimg, dstimg, cv::Size(*neww, *newh), cv::INTER_AREA); }
+	return dstimg;
+}
+
 int Tensorrt_YOLOv5::tensorrt_detect(std::string strTrtSavedPath)
 {
 	//std::string strTrtSavedPath = "./savedTrt.trt";
@@ -994,20 +1100,21 @@ int Tensorrt_YOLOv5::tensorrt_detect2(std::string strTrtSavedPath)
 		std::map<int, std::string> labels;
 
 		std::string image_file_path = "F://Projects//CMakePractice//yolov8_tensorrt//images//renqun.jpg";
+		//std::string image_file_path = "D:/58_FGJHAT005TZ000033G-1_DA3180921.png";
 		cv::Mat image = cv::imread(image_file_path);
 
 
 		auto t_beg = std::chrono::high_resolution_clock::now();
-		//cap >> image;
-		float scale = 1.0;
-		int img_size = image.cols * image.rows * 3;
-		cudaMemcpyAsync(image_device, image.data, img_size, cudaMemcpyHostToDevice, stream);
-		//preprocess(image_device, image.cols, image.rows, device_buffers[0], kInputW, kInputH, stream, scale);
-
 
 		// Input preprocessing
-		cv::Mat img_bgr;
-		cv::resize(image, img_bgr, cv::Size(kInputW, kInputH));
+
+		// resize
+		cv::Scalar add_color(114, 114, 114);
+		int newh = 0, neww = 0, padh = 0, padw = 0;
+		cv::Size new_shape(this->inpHeight, this->inpWidth);
+		cv::Mat img_bgr = this->resize_image(image, &newh, &neww, &padh, &padw, add_color);   //改大小后做padding防失真
+
+
 
 		// 创建连续存储
 		if (!img_bgr.isContinuous()) {
@@ -1019,13 +1126,11 @@ int Tensorrt_YOLOv5::tensorrt_detect2(std::string strTrtSavedPath)
 		//float input_buffer[height * width * channels]{ 0 };
 		const int HW = kInputW * kInputH;
 		std::vector<float> input_buffer(HW* 3);
-		for (; c < 3; c++) {
+		for (int c = 0; c < 3; c++) {
 			for (int row = 0; row < img_bgr.rows; ++row) {
-				const uchar* p = img_bgr.ptr(row); // 获取当前行首指针
+				const uchar* p = img_bgr.ptr(row);             // 获取当前行首指针
 				for (int col = 0; col < img_bgr.cols; ++col) {
 					const int offset = (row * img_bgr.cols + col) * 3;
-
-					// 通道访问方式（BGR -> RGB）
 					input_buffer[offset + 0] = p[col * 3 + 2] / 255.0f; // R
 					input_buffer[offset + 1] = p[col * 3 + 1] / 255.0f; // G 
 					input_buffer[offset + 2] = p[col * 3 + 0] / 255.0f; // B
@@ -1034,10 +1139,12 @@ int Tensorrt_YOLOv5::tensorrt_detect2(std::string strTrtSavedPath)
 		}
 
 		// Memory copy: CPU-MEM to GPU-MEM
-		if (cudaMemcpyAsync(image_device, image.data, img_size, cudaMemcpyHostToDevice, stream) != cudaSuccess) {
-			std::cout << "ERROR: CUDA memory copy of input failed, size = " << img_size << " bytes" << std::endl;
+		if (cudaMemcpyAsync(device_buffers[0], input_buffer.data(), HW * 3 * sizeof(float), cudaMemcpyHostToDevice, stream) != cudaSuccess) {
+			std::cout << "ERROR: CUDA memory copy of input failed, size = " << HW * 3 * sizeof(float) << " bytes" << std::endl;
 			return -1;
 		}
+
+		// ------------------------------------------------------------------------------------------------------
 		context->enqueue(kBatchSize, (void**)device_buffers, stream, nullptr);
 		//context->enqueueV2((void**)device_buffers, stream, nullptr);
 		cudaMemcpyAsync(output_buffer_host, device_buffers[1], kBatchSize * kOutputSize * sizeof(float), cudaMemcpyDeviceToHost, stream);
@@ -1045,8 +1152,11 @@ int Tensorrt_YOLOv5::tensorrt_detect2(std::string strTrtSavedPath)
 
 		std::vector<Detection> res;
 		NMS(res, output_buffer_host, kConfThresh, kNmsThresh);
-		drawBbox(image, res, scale, labels);
-		cv::imshow("Inference", image);
+		float sclae = 1.0;
+
+		cv::Mat imgrst = img_bgr.clone();
+		drawBbox(imgrst, res, sclae, labels);
+		cv::imshow("imgrst", imgrst);
 		auto t_end = std::chrono::high_resolution_clock::now();
 		float total_inf = std::chrono::duration<float, std::milli>(t_end - t_beg).count();
 		std::cout << "Inference time: " << int(total_inf) << std::endl;

@@ -122,6 +122,7 @@ public:
 
     void normalize_(std::vector<cv::Mat>& frames);		// 归一化函数
     void nms(std::vector<BoxInfo>& input_boxes);
+    void draw(cv::Mat& imgrst, std::vector<std::vector<BoxInfo>>& output);
     cv::Mat resize_image(cv::Mat srcimg, int* newh, int* neww, int* top, int* left, cv::Scalar& add_color);
 
     bool onnx_detect(std::vector<cv::Mat>& frames, std::vector<std::vector<BoxInfo>>& output);
@@ -208,6 +209,7 @@ public:
 
 
     void preData(cv::Mat& matSrc, cv::Mat& matDst);
+    cv::Mat resize_image(cv::Mat srcimg, int* newh, int* neww, int* top, int* left, cv::Scalar& add_color);
     int tensorrt_detect(std::string strTrtSavedPath);
     size_t get_memory_size(const nvinfer1::Dims& dims, const int32_t elem_size);
     int tensorrt_detect2(std::string strTrtSavedPath);
@@ -219,5 +221,13 @@ private:
     const int MODEL_WIDTH = 640;
     const int MODEL_CHANNEL = 3;
     const int MODEL_OUTPUT_SIZE = 80; // 5分类
+
+    int inpWidth;
+    int inpHeight;
+    int nout;
+    int num_proposal;
+    int num_classes;
+    const bool keep_ratio = true;
+    std::string classes[2] = { "fire", "Smog" };
 };
 
