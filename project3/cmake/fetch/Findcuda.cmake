@@ -4,7 +4,6 @@ set(cuda_INCLUDE_DIR        ${cuda_ROOT}/include)
 set(cuda_LIBRARY_DIR        ${cuda_ROOT}/lib/x64 ${cuda_ROOT}/lib)
 set(cuda_LIBRARY            ${cuda_ROOT}/lib/x64/nvml.lib)
 set(ENV{cuda_INCLUDE_DIR}        ${cuda_ROOT}/include)
-set(ENV{cuda_LIBRARY_DIR}        ${cuda_ROOT}/lib/x64 ${cuda_ROOT}/lib)
 set(ENV{cuda_LIBRARY}            ${cuda_ROOT}/lib/x64/nvml.lib)
 set(cuda_FOUND 1)
 
@@ -19,7 +18,7 @@ message("cuda_LIBRARY:     ${cuda_LIBRARY}")
 
 include(FindPackageHandleStandardArgs)
 
-find_package_handle_standard_args(cuda 
+find_package_handle_standard_args(CUDA 
   REQUIRED_VARS cuda_LIBRARY cuda_INCLUDE_DIR  cuda_LIBRARY_DIR
   VERSION_VAR cuda_VERSION)
 

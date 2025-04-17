@@ -1,8 +1,13 @@
 ﻿# 1 project name
 cmake_minimum_required(VERSION 3.15)
+set(CMAKE_CUDA_COMPILER   ${cuda_ROOT}/bin/nvcc.exe)
+
+
+
 project(onnx_solver_shared VERSION 0.1.0 LANGUAGES CXX CUDA)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CUDA_STANDARD 14)
 
 
 
@@ -28,18 +33,17 @@ add_subdirectory(utils)  # 构建了logging接口库
 
 find_package(OpenCV       REQUIRED)       # 发现并定义opencv相关的路径变量
 find_package(onnxruntime  REQUIRED)       # 发现并定义onnxruntime相关的路径变量 ==> #!? 对应的cmake文件是"Findonnxruntime.cmake"
-find_package(cuda         REQUIRED)       # 名字只能时cuda，不能是CUDA; 同时需要设定cuda_ROOT
-find_package(tensorrt     REQUIRED)       # tensorrt这个名字实际上是由对应的Findxxxx.cmake中的xxxx来决定的
+find_package(CUDA         REQUIRED)       # 名字只能时cuda，不能是CUDA; 同时需要设定cuda_ROOT
+find_package(TensorRT     REQUIRED)       # tensorrt这个名字实际上是由对应的Findxxxx.cmake中的xxxx来决定的
 
 
-
-
+include_directories(${OpenCV_INCLUDE_DIRS})
+include_directories(${cuda_INCLUDE_DIR})
 
 #********** myplugin **********#
 add_library(mypluginssss1  SHARED 
 ${PROJECT_SOURCE_DIR}/src/plugin/yololayer.cu
 )
-
 target_include_directories(mypluginssss1  
 PUBLIC
 	include
@@ -53,11 +57,52 @@ PUBLIC
 	${TRT_LIBRARY_DIR}
 	${cuda_LIBRARY_DIR}
 )
-
 target_link_libraries(mypluginssss1  ${TRT_LIBRARY}  cudart)
-
 set_property(TARGET mypluginssss1 PROPERTY CUDA_ARCHITECTURES 50 61 72 75)
 
+
+
+
+add_library(yolo_plugin SHARED
+    ${PROJECT_SOURCE_DIR}/src/plugin/yoloPlugins.cpp
+    ${PROJECT_SOURCE_DIR}/src/plugin/yoloForward_nc.cu
+)
+target_include_directories(yolo_plugin 
+PUBLIC 
+	${TRT_INCLUDE_DIR} 
+	${PROJECT_SOURCE_DIR}/src/plugin 
+	${cuda_INCLUDE_DIR}
+	${PROJECT_SOURCE_DIR}/src/yoloUtils
+
+)
+target_link_directories(yolo_plugin 
+PUBLIC  
+	${TRT_LIBRARY_DIR}
+	${cuda_LIBRARY_DIR}
+)
+target_link_libraries(yolo_plugin PUBLIC  ${TRT_LIBRARY} nvinfer_plugin cudart)
+set_target_properties(yolo_plugin PROPERTIES CUDA_ARCHITECTURES "61;70;75")
+
+
+
+add_library(yolo_utils SHARED
+    ${PROJECT_SOURCE_DIR}/src/yoloUtils/postprocess.cpp
+    ${PROJECT_SOURCE_DIR}/src/yoloUtils/preprocess.cu
+)
+target_include_directories(yolo_utils 
+PUBLIC 
+	${TRT_INCLUDE_DIR} 
+	${PROJECT_SOURCE_DIR}/src/plugin 
+	${cuda_INCLUDE_DIR}
+	${PROJECT_SOURCE_DIR}/src/yoloUtils
+)
+target_link_directories(yolo_utils 
+PUBLIC  
+	${TRT_LIBRARY_DIR}
+	${cuda_LIBRARY_DIR}
+)
+target_link_libraries(yolo_utils PUBLIC ${OpenCV_LIBS}  ${TRT_LIBRARY})
+set_target_properties(yolo_utils PROPERTIES CUDA_ARCHITECTURES "61;70;75")
 
 
 
@@ -65,6 +110,7 @@ set_property(TARGET mypluginssss1 PROPERTY CUDA_ARCHITECTURES 50 61 72 75)
 add_library(solver  STATIC  
 	${PROJECT_SOURCE_DIR}/src/onnxSrc/onnx_deploy.cpp  
 	${PROJECT_SOURCE_DIR}/src/onnxSrc/yolov5.cpp 
+	${TRT_SAMPLE_DIR}/common/logger.cpp
 )
 
 target_include_directories(solver  
@@ -75,6 +121,10 @@ PUBLIC
 	${cuda_INCLUDE_DIR}
 	${TRT_INCLUDE_DIR}
 	${PROJECT_SOURCE_DIR}/src/plugin
+	${TRT_INCLUDE_DIR} 
+	${TRT_SAMPLE_DIR}/common
+	${PROJECT_SOURCE_DIR}/src/yoloUtils
+
 )
 
 target_link_directories(solver 
@@ -94,9 +144,10 @@ PUBLIC
 	${TRT_LIBRARY}
 	mypluginssss1
 	${OpenCV_LIBS} 
+	yolo_utils
 ) 
-
-
+target_link_libraries(solver PRIVATE -Wl,--no-as-needed yolo_plugin)
+set_target_properties(solver PROPERTIES CUDA_ARCHITECTURES "61;70;75")
 
 #********** onnx_solver_shared **********#
 add_executable(onnx_solver_shared                cli/main.cpp )
@@ -108,23 +159,42 @@ PUBLIC
 	${cuda_INCLUDE_DIR}
 	${TRT_INCLUDE_DIR}
 	${PROJECT_SOURCE_DIR}/src/plugin
+	${TRT_SAMPLE_DIR}/common/logger.cpp
+	${TRT_SAMPLE_DIR}/common
 )
 target_link_directories(onnx_solver_shared 
 PUBLIC  
 	${TRT_LIBRARY_DIR}
 	${cuda_LIBRARY_DIR}
 	${CMAKE_BINARY_DIR}
+	${PROJECT_SOURCE_DIR}/src/yoloUtils
 )
 target_link_libraries(onnx_solver_shared      
 PUBLIC  
 	mypluginssss1
 	${OpenCV_LIBS} 
 	solver
+	yolo_utils
 )
+target_link_libraries(onnx_solver_shared PRIVATE -Wl,--no-as-needed yolo_plugin)
+set_target_properties(onnx_solver_shared PROPERTIES CUDA_ARCHITECTURES "61;70;75")
+
+
+
 
 
 #********** 编译附加项 **********#
 set_target_properties(mypluginssss1  PROPERTIES                      
+    LIBRARY_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin    # 设置共享库（.dll/.so）的输出路径    
+    RUNTIME_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin    # 设置可执行文件（.exe）的输出路径
+)
+
+set_target_properties(yolo_utils  PROPERTIES                      
+    LIBRARY_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin    # 设置共享库（.dll/.so）的输出路径    
+    RUNTIME_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin    # 设置可执行文件（.exe）的输出路径
+)
+
+set_target_properties(yolo_plugin  PROPERTIES                      
     LIBRARY_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin    # 设置共享库（.dll/.so）的输出路径    
     RUNTIME_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin    # 设置可执行文件（.exe）的输出路径
 )
@@ -218,6 +288,7 @@ message("[message]  CUDA_LIBRARIES:   ${CUDA_LIBRARIES}")
 message("[message]  CUDA_INCLUDE_DIRS:   ${CUDA_INCLUDE_DIRS}")
 message("[message]  onnxruntime_LIBRARY_DIR:   ${onnxruntime_LIBRARY_DIR}")
 message("[message]  CMAKE_SOURCE_DIR:   ${CMAKE_SOURCE_DIR}")
+message("[message]  cuda_LIBRARY_DIR:   ${cuda_LIBRARY_DIR}")
 
 
 

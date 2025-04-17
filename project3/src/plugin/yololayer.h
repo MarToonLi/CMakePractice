@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include <wtypes.h>
 namespace nvinfer1
 {
     class __declspec(dllexport) YoloLayerPlugin : public nvinfer1::IPluginV2IOExt {

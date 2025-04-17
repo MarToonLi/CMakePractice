@@ -949,3 +949,16 @@ _mm_unpacklo_epi8接受两个128位寄存器，每个寄存器包含16个8位整
 1. 寄存器本质是128位二进制零：`00000000 00000000 ... 00000000`
 2. 位宽由操作指令的**后缀决定**（epi8/epi16/epi32/epi64）
 3. 零值可以安全参与任何位宽的整数运算
+
+
+
+
+
+
+
+## TensorRT + windows10 + yolov5 + 生成dll
+
+[Yolov5+TensorRT-生成dll-python/c++调用dll_推理模型转成dll-CSDN博客](https://blog.csdn.net/qq_44464101/article/details/128578067?spm=1001.2014.3001.5502)
+
+绝对是个好项目！
+

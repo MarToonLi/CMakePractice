@@ -1,5 +1,5 @@
 #include "yololayer.h"
-#include "config.h"
+#include "xconfig.h"
 #include <assert.h>
 #include <math.h>
 

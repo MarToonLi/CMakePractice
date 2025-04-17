@@ -211,6 +211,23 @@ void drawBbox_xyxy(cv::Mat& img, std::vector<Detection>& res, float& scale, std:
 }
 
 
+std::vector<unsigned char> loadEngineModel(const std::string& fileName)
+{
+	std::ifstream file(fileName, std::ios::binary);        // 以二进制方式读取
+	assert(file.is_open() && "load engine model failed!"); // 断言
+
+	file.seekg(0, std::ios::end); // 定位到文件末尾
+	size_t size = file.tellg();   // 获取文件大小
+
+	std::vector<unsigned char> data(size); // 创建一个vector，大小为size
+	file.seekg(0, std::ios::beg);          // 定位到文件开头
+	file.read((char*)data.data(), size);  // 读取文件内容到data中
+	file.close();
+
+	return data;
+}
+
+
 /** 模型初始化 */
 Onnx_YOLOv5::Onnx_YOLOv5(Configuration config)
 {
@@ -1038,11 +1055,6 @@ size_t Tensorrt_YOLOv5::get_memory_size(const nvinfer1::Dims& dims, const int32_
 	return std::accumulate(dims.d, dims.d + dims.nbDims, 1, std::multiplies<int64_t>()) * elem_size;
 }
 
-
-
-
-
-
 int Tensorrt_YOLOv5::tensorrt_detect2(std::string strTrtSavedPath)
 {
 	
@@ -1053,36 +1065,52 @@ int Tensorrt_YOLOv5::tensorrt_detect2(std::string strTrtSavedPath)
 
 	try
 	{
+
+		//std::fstream file;
+
+		//file.open(strTrtSavedPath, std::ios::in | std::ios::binary);
+
+		//if (!file.is_open()) {
+		//	std::cout << "Load engine file failed: " << strTrtSavedPath << std::endl;
+		//	system("pause");
+		//	exit(0);
+		//}
+		//std::cout << "Load engine file success: " << strTrtSavedPath << std::endl;
+		//size_t size = 0;
+		//file.seekg(0, file.end);
+		//size = file.tellg();
+		//file.seekg(0, file.beg);
+		//char* serialized_engine = new char[size];
+		//file.read(serialized_engine, size);
+		//file.close();
+
+
+		// ==================== 1. 创建一个runtime对象 ====================
 		nvinfer1::IRuntime* runtime = nullptr;
-		nvinfer1::ICudaEngine* engine = nullptr;
-		nvinfer1::IExecutionContext* context = nullptr;
-
-		std::fstream file;
-
-		file.open(strTrtSavedPath, std::ios::in | std::ios::binary);
-
-		if (!file.is_open()) {
-			std::cout << "Load engine file failed: " << strTrtSavedPath << std::endl;
-			system("pause");
-			exit(0);
-		}
-		std::cout << "Load engine file success: " << strTrtSavedPath << std::endl;
-		size_t size = 0;
-		file.seekg(0, file.end);
-		size = file.tellg();
-		file.seekg(0, file.beg);
-		char* serialized_engine = new char[size];
-		file.read(serialized_engine, size);
-		file.close();
-
-
 		runtime = nvinfer1::createInferRuntime(gLogger);
-		engine = runtime->deserializeCudaEngine(serialized_engine, size);
+
+
+
+		// ==================== 2. 反序列化生成engine ====================
+		nvinfer1::ICudaEngine* engine = nullptr;
+		auto engineModel = loadEngineModel(strTrtSavedPath);
+		engine = runtime->deserializeCudaEngine(engineModel.data(), engineModel.size(), nullptr);
+		if (!engine) { LOGE("deserialize engine failed!"); return -1; }
+
+
+		// ==================== 3. 创建一个执行上下文 ====================
+		nvinfer1::IExecutionContext* context = nullptr;
 		context = engine->createExecutionContext();
+		if (!context) { LOGE("context create failed!"); return -1; }
 
 
-		cudaStream_t stream;
+
+		// ========== 4. 创建输入输出缓冲区 =========
+		// 设置stream 流
+		cudaStream_t stream = nullptr;
 		cudaStreamCreate(&stream);
+
+		// 设置输入数据
 		const int kOutputSize = kMaxNumOutputBbox * sizeof(Detection) / sizeof(float) + 1;
 
 		float* device_buffers[2];
@@ -1405,3 +1433,4 @@ int Tensorrt_YOLOv5::tensorrt_detect2(std::string strTrtSavedPath)
 
 	return 1;
 }
+
