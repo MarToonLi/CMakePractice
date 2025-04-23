@@ -1359,7 +1359,7 @@ namespace NA113 {
 		memset(blackcout, 0, binary.rows * 4);
 		int _total = 0;
 
-#pragma omp parallel for num_threads(numThreads)
+#pragma omp parallel for num_threads(numThreads)  reduction(+:_total)
 		for (int i = 0; i < binary.rows; i++)
 		{
 			if (single_rows > 0 && i % single_rows < 5) { continue; }  // 避免拼接交界处出现的伪缺陷问题
@@ -1369,6 +1369,7 @@ namespace NA113 {
 			{
 				if (ptr[j] > 50)
 				{
+					#pragma omp atomic  // 并行安全
 					blackcout[i]++; //垂直投影按列在x轴进行投影
 					++_total;
 				}
@@ -1835,9 +1836,9 @@ namespace NA113 {
 
 
 		/** experiments */
-		cv::Rect roi = cv::Rect(cv::Point(0, 1000), cv::Point(4095, 1200));
-
-		cv::Mat img1 = src1(roi);
+		//cv::Rect roi = cv::Rect(cv::Point(0, 1000), cv::Point(4095, 1200));
+		//cv::Mat img1 = src1(roi);
+		cv::Mat img1 = src1.clone();
 		cv::Mat imgrst = img1.clone();
 		baseline(img1, imgrst, blur2);
 
@@ -1869,7 +1870,7 @@ namespace NA113 {
 		cv::Mat src9 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
 		cv::Mat src10 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
 
-		std::vector<cv::Mat> input0 = { src1200 };
+		std::vector<cv::Mat> input0 = { src1 };
 		std::vector<cv::Mat> input1 = { src1, src2, };
 		std::vector<cv::Mat> input2 = { src1, src2,src3,src4, };
 		std::vector<cv::Mat> input3 = { src1, src2,src3,src4,src5,src6, };

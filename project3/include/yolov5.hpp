@@ -36,7 +36,6 @@
 
 #include <cstdlib>
 #include<numeric>
-#include "yololayer.h"
 
 using namespace nvinfer1;
 using namespace plugin;
