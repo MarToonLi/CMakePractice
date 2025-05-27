@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <chrono>
 #include <future>
+#include <algorithm>
 
 using namespace std;
 using namespace cv;
@@ -29,6 +30,35 @@ using namespace cv;
 
 namespace NA113 {
 	int NUMTHREADS = 4;
+
+	// 参数：将认定为缺陷的区域和认定为非缺陷的区域的差异更加明显化！
+	double FEATURE1_CONTRAST_DEGREE = 45;    // 50      值越小，缺陷越多
+	double DEFECT_LENGTH = 8.5;    // 5.3()   不能实现
+	double DEFECT_LENGTH2 = 5.3;   // 5.3()   
+	double DEFECT1_WIDTH = 3;
+
+
+	double FEATURE2_CONTRAST_DEGREE = 45;
+	double FEATURE2_BLOCK_LENGTH = 3;
+	double FEATURE2_BLOCK_NUMS = 3;
+	double DEFECT2_WIDTH = 3;
+
+
+	double FEATURE3_CONTRAST_DEGREE = 20;
+	double FEATURE3_DIAMETER = 44;
+	double FEATURE3_DIAMETER_THLD = 3;
+	double DEFECT3_WIDTH = 3;
+
+
+	int BLUR_RADIUS = 10;
+	// 250μm （50, 5。3）；   125μm（50， 3.3）
+
+
+	// 绘制
+	int DRAW_MAX_H = 15;
+	int NG_DRAW_MAX_H = 5;
+
+
 	float Gaussian_Ker_XY[Gaussian_Size];
 
 	class BlurVersion2
@@ -1238,6 +1268,320 @@ namespace NA113 {
 		return _res;
 	}
 
+	int picshadowx_ptr_0519(unsigned char* binary, unsigned char* show, int numThreads, int width, int height)
+	{
+		int _res = 1;
+
+		int* feature1out = new int[width];  // 单列目标像素点数量（皮屑）
+		int* feature2out = new int[width];  // 单列目标像素点区间的数量（气泡）
+		int* feature3out = new int[width];  // 单列光纤宽度（凹陷和凸起）
+
+		memset(feature1out, 0, width * 4);
+		memset(feature2out, 0, width * 4);
+		memset(feature3out, 0, width * 4);
+
+		int _feature1_total = 0;
+		int _feature2_total = 0;
+		int _feature3_total = 0;
+
+		try {
+
+			/*** Step1: 计算每列的特征123 ***/
+#pragma omp parallel for num_threads(numThreads) reduction(+:_feature1_total, _feature2_total, _feature3_total)
+			// reduction子句会为每个线程创建一个私有的_total副本，在并行区域结束时将这些副本安全地累加到原始的_total变量中
+			for (int j = 0; j < width; j++)
+			{
+				std::vector<std::pair<int, int>> feature2_result;
+				int feature2_start = -1;
+				int feature2_count = 0;
+
+				int feature3_start = -1;
+				int feature3_end = -1;
+
+				for (int i = 0; i < height; i++)
+				{
+					int p = binary[i * width + j];
+
+					// feature1：计算单列目标像素点数量
+					if (p > FEATURE1_CONTRAST_DEGREE)
+					{
+#pragma omp atomic  // 并行安全
+						feature1out[j]++;     //垂直投影按列在x轴进行投影
+						++_feature1_total;
+					}
+
+
+
+					// feature2：计算目标像素点区间
+					if (p > FEATURE2_CONTRAST_DEGREE) {
+						if (feature2_start == -1) { feature2_start = i; } // 记录区间开始位置
+						feature2_count++;
+					}
+					else {
+						if (feature2_count >= FEATURE2_BLOCK_LENGTH) { feature2_result.emplace_back(feature2_start, i - 1); }
+						feature2_start = -1;
+						feature2_count = 0;
+					}
+					if (i == height - 1) {  // 处理末尾可能存在的连续目标像素点
+						if (feature2_count >= FEATURE2_BLOCK_LENGTH) { feature2_result.emplace_back(feature2_start, i); }
+					}
+
+
+
+					// feature3: 光纤当前列的起始索引
+					if (p > FEATURE3_CONTRAST_DEGREE && feature3_start == -1) { feature3_start = i; }
+					if (p > FEATURE3_CONTRAST_DEGREE) { feature3_end = i; }
+
+				}
+
+
+				if (feature2_result.size() >= FEATURE2_BLOCK_NUMS) {
+					int size = feature2_result.size();
+					feature2out[j] = size;
+					_feature2_total++;
+				}
+
+				int diff = std::abs(feature3_end - feature3_start - FEATURE3_DIAMETER);
+				if (diff > FEATURE3_DIAMETER_THLD) {
+					int value = diff - FEATURE3_DIAMETER_THLD;
+					feature3out[j] = value;
+					_feature3_total++;
+				}
+			}
+
+
+
+
+			/* Step2: 根据规则（阴影高度、目标像素连续区间长度、列宽度）构建各特征对应缺陷区间 */
+			double _avg = _feature1_total * 1.0 / width;
+
+			std::vector<std::vector<int>> feature1_candidates_result;
+			std::vector<int> feature1_temp_area;
+
+			for (int i = 0; i < width; ++i) {
+				bool condition1 = feature1out[i] - _avg > DEFECT_LENGTH;
+				bool condition2 = feature1out[i] - _avg > DEFECT_LENGTH / 5;
+				if ((condition1) || ((condition2) && !feature1_temp_area.empty()))
+				{
+					feature1_temp_area.push_back(i);
+				}
+				else
+				{
+					if (!feature1_temp_area.empty()) {  // 如果temp不为空，
+						feature1_candidates_result.push_back(feature1_temp_area);
+						feature1_temp_area.clear();
+					}
+				}
+				if (i == width - 1 && !feature1_temp_area.empty()) { feature1_candidates_result.push_back(feature1_temp_area); feature1_temp_area.clear(); }  // 处理最后一个连续区间
+			}
+
+
+			std::vector<std::vector<int>> feature2_candidates_result;
+			std::vector<int> feature2_temp_area;
+
+			for (int i = 0; i < width; ++i) {
+				bool condition1 = feature2out[i] > 0;
+				if (condition1)
+				{
+					feature2_temp_area.push_back(i);
+				}
+				else
+				{
+					if (!feature2_temp_area.empty()) {  // 如果temp不为空，
+						feature2_candidates_result.push_back(feature2_temp_area);
+						feature2_temp_area.clear();
+					}
+				}
+
+				if (i == width - 1 && !feature2_temp_area.empty()) { feature2_candidates_result.push_back(feature2_temp_area); feature2_temp_area.clear(); }  // 处理最后一个连续区间
+			}
+
+
+			std::vector<std::vector<int>> feature3_candidates_result;
+			std::vector<int> feature3_temp_area;
+
+			for (int i = 0; i < width; ++i) {
+				bool condition1 = feature3out[i] > 0;
+				if (condition1)
+				{
+					feature3_temp_area.push_back(i);
+				}
+				else
+				{
+					if (!feature3_temp_area.empty()) {  // 如果temp不为空，
+						feature3_candidates_result.push_back(feature3_temp_area);
+						feature3_temp_area.clear();
+					}
+				}
+
+				if (i == width - 1 && !feature3_temp_area.empty()) { feature3_candidates_result.push_back(feature3_temp_area); feature3_temp_area.clear(); }  // 处理最后一个连续区间
+			}
+
+
+
+
+			/* Step3: 处理每个集合，根据规则(连续长度)判断该集合是否为缺陷区域 */
+			int candidates_total_length = 0;
+
+			std::vector<std::vector<int>> defects1_result;
+			std::vector<std::vector<int>> defects2_result;
+			std::vector<std::vector<int>> defects3_result;
+
+			for (int i = 0; i < feature1_candidates_result.size(); ++i)
+			{
+				candidates_total_length += feature1_candidates_result[i].size();
+				if (feature1_candidates_result[i].size() > DEFECT1_WIDTH) { defects1_result.push_back(feature1_candidates_result[i]); }
+			}
+			if (candidates_total_length > DEFECT1_WIDTH) {
+				defects1_result = feature1_candidates_result;
+			}
+
+			for (int i = 0; i < feature2_candidates_result.size(); ++i)
+			{
+				if (feature2_candidates_result[i].size() > DEFECT2_WIDTH) { defects2_result.push_back(feature2_candidates_result[i]); }
+			}
+
+			for (int i = 0; i < feature3_candidates_result.size(); ++i)
+			{
+				if (feature3_candidates_result[i].size() > DEFECT3_WIDTH) { defects3_result.push_back(feature3_candidates_result[i]); }
+			}
+
+
+
+
+			/*** Step4: 判断是否NG ***/
+			if (defects1_result.size() != 0) { _res = 2; }
+			if (defects2_result.size() != 0) { _res = 2; }
+			if (defects3_result.size() != 0) { _res = 2; }
+			//LOGD("[MARK]: defects1_result.size: {};", defects1_result.size());
+			//LOGD("[MARK]: defects2_result.size: {};", defects2_result.size());
+			//LOGD("[MARK]: defects3_result.size: {};", defects3_result.size());
+
+
+
+
+
+			/*** Step5: SHOW ***/
+			if (nullptr != show)
+			{
+
+				/* 绘制超过缺陷长度阈值的列，及其超过数值 */
+#pragma omp parallel for num_threads(numThreads)
+				for (int i = 0; i < width; i++)
+				{
+					double temp = feature1out[i] - _avg - DEFECT_LENGTH;
+					if (temp)
+					{
+						int temp2 = (std::min)(static_cast<int>(temp), DRAW_MAX_H);  //!? 限制绘制的高度
+						temp2 = std::clamp(temp2, 0, height - 1 - NG_DRAW_MAX_H);
+						for (int j = NG_DRAW_MAX_H; j < NG_DRAW_MAX_H + temp2; j++)
+						{
+							show[(j * width + i) * 3 + 0] = 128;
+							show[(j * width + i) * 3 + 1] = 128;
+							show[(j * width + i) * 3 + 2] = 128;
+						}
+					}
+				}
+
+				/* 绘制每列暗黑数目 */
+#pragma omp parallel for num_threads(numThreads)
+				for (int i = 0; i < width; i++)
+				{
+					for (int j = 0; j < feature1out[i]; j++)
+					{
+						int row = height - j - 1;
+
+						show[(row * width + i) * 3 + 0] = 255;
+						show[(row * width + i) * 3 + 1] = 255;
+						show[(row * width + i) * 3 + 2] = 0;
+					}
+				}
+			}
+
+			/* 绘制被认定为缺陷的区域（连续列的集合） */
+			for (int i = 0; i < defects1_result.size(); ++i)
+			{
+				for (int j = 0; j < defects1_result[i].size(); ++j)
+				{
+					int z = defects1_result[i][j];
+					for (int j = 0; j < NG_DRAW_MAX_H; j++)
+					{
+						show[(j * width + z) * 3 + 0] = 0;
+						show[(j * width + z) * 3 + 1] = 0;
+						show[(j * width + z) * 3 + 2] = 255;
+					}
+				}
+			}
+
+
+			for (int i = 0; i < defects2_result.size(); ++i)
+			{
+				for (int j = 0; j < defects2_result[i].size(); ++j)
+				{
+					int c = defects2_result[i][j];
+					int temp_draw_max = std::clamp(feature2out[c], 0, NG_DRAW_MAX_H);
+					for (int z = NG_DRAW_MAX_H; z < NG_DRAW_MAX_H + temp_draw_max; z++)
+					{
+						show[(z * width + c) * 3 + 0] = 255;
+						show[(z * width + c) * 3 + 1] = 0;
+						show[(z * width + c) * 3 + 2] = 0;
+					}
+				}
+			}
+
+
+			for (int i = 0; i < defects3_result.size(); ++i)
+			{
+				for (int j = 0; j < defects3_result[i].size(); ++j)
+				{
+					int c = defects3_result[i][j];
+					int temp_draw_max = std::clamp(feature3out[c], 0, NG_DRAW_MAX_H);
+					for (int z = NG_DRAW_MAX_H * 2; z < NG_DRAW_MAX_H * 2 + temp_draw_max; z++)
+					{
+						show[(z * width + c) * 3 + 0] = 0;
+						show[(z * width + c) * 3 + 1] = 255;
+						show[(z * width + c) * 3 + 2] = 0;
+					}
+				}
+			}
+
+
+
+			/* 绘制avg向下取整值的位置 */
+			int int_avg = height - static_cast<int>(std::floor(_avg));  // i = 3 当_avg为0时，
+			int_avg = std::clamp(int_avg, 0, height - 1);               // 没有该句，会越界 int_avg = height。
+			for (int col = 0; col < width; ++col) {
+				//int int_avg =10;  // i = 3
+				show[(int_avg * width + col) * 3 + 0] = 0;
+				show[(int_avg * width + col) * 3 + 1] = 0;
+				show[(int_avg * width + col) * 3 + 2] = 255;
+			}
+		}
+		catch (const cv::Exception& e)
+		{
+			LOGE("NG_UNDEFINED: e1: {};", e.what());
+		}
+		catch (const std::exception& e)
+		{
+			LOGE("NG_UNDEFINED: e2: {};", e.what());
+		}
+		catch (...)
+		{
+			LOGE("NG_UNDEFINED: e3: unkown;");
+		}
+
+
+		delete[] feature1out;
+		delete[] feature2out;
+		delete[] feature3out;
+
+		feature1out = nullptr;
+		feature2out = nullptr;
+		feature3out = nullptr;
+
+		return _res;
+	}
+
 	void experiment4(std::vector<cv::Mat> input) {
 		cv::Mat src1 = input[0];
 
@@ -1747,10 +2091,6 @@ namespace NA113 {
 
 	}
 
-
-
-
-
 	// doing: 原始dong
 	void baseline(cv::Mat& img1, cv::Mat& imgrst, BlurVersion2& blur2)
 	{
@@ -1812,7 +2152,64 @@ namespace NA113 {
 	}
 
 
+	void optimize_0519(cv::Mat& img1, cv::Mat& imgrst, BlurVersion2& blur2)
+	{
+		//try  // it really needs to exist.
+		//{
 
+
+		//}
+		//catch (const cv::Exception& e)
+		//{
+		//	LOGE("NG_UNDEFINED: e1: {};", e.what());
+		//}
+		//catch (const std::exception& e)
+		//{
+		//	LOGE("NG_UNDEFINED: e2: {};", e.what());
+		//}
+		//catch (...)
+		//{
+		//	LOGE("NG_UNDEFINED: e3: unkown;");
+		//}
+
+					/** init */
+		int _i = 0;
+		cv::Mat _gray, _gray2;
+		if (img1.channels() == 1)
+		{
+			cv::cvtColor(img1, imgrst, cv::COLOR_GRAY2BGR);
+			img1.copyTo(_gray);
+		}
+		else
+		{
+			imgrst = img1.clone();
+			cv::cvtColor(img1, _gray, cv::COLOR_BGR2GRAY);
+
+			//int Height = data.imgori.rows;
+			//int Width = data.imgori.cols;
+			//unsigned char* Src = data.imgori.data;
+			//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
+			//int Stride = Width * 3;
+			//RGB2Y_4(Src, Dest, Width, Height, Stride);      // sse 一次处理12个
+			//_gray = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
+		}
+
+		/** block1 */
+		//_gray2 = _gray.clone();
+		//cv::blur(_gray, _gray2, cv::Size(21, 21));
+		_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
+		int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
+		//blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 2, 2);
+
+
+		/** block2 */
+		_gray = _gray2 - _gray; // 提取高频信息
+
+		/** block3 */
+		int _iresult = picshadowx_ptr_0519(_gray.ptr(0), imgrst.ptr(0), 4, _gray.cols, _gray.rows);
+
+		return;
+	}
 
 	// 最原始的
 	void experiment6(std::vector<cv::Mat> input) {
@@ -1853,6 +2250,57 @@ namespace NA113 {
 	}
 
 
+
+	// picshadowx_ptr_0519测试
+	void experiment7(std::vector<cv::Mat> input) {
+		auto start = std::chrono::high_resolution_clock::now();
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+		int total_pics_num = 10000;
+		BlurVersion2 blur2 = BlurVersion2();
+
+
+		/** standard process*/
+		cv::Mat src1 = input[0];
+		cv::Mat standard_gray, standard_gray2, standard_gray3;
+		cv::Mat standard_imgrst = src1.clone();
+		cv::cvtColor(src1, standard_gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
+		cv::blur(standard_gray, standard_gray2, cv::Size(21, 21));
+		standard_gray3 = standard_gray2 - standard_gray;
+		int standard_iresult = picshadowy(standard_gray3, &standard_imgrst, 4);
+
+
+
+		/** experiments */
+		//cv::Rect roi = cv::Rect(cv::Point(0, 1000), cv::Point(4095, 1200));
+		//cv::Mat img1 = src1(roi);
+		cv::Mat img1 = src1.clone();
+		cv::Mat imgrst = img1.clone();
+		optimize_0519(img1, imgrst, blur2);
+
+		start = std::chrono::high_resolution_clock::now();
+		for (int i = 0; i < total_pics_num; i++) {
+			optimize_0519(img1, imgrst, blur2);
+		}
+		end = std::chrono::high_resolution_clock::now();
+		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+	}
+
+	// 测试int变量如果通过++越界，会变成什么
+	// 结论：假如0~255； 则重新从0开始！
+	void test1() {
+		uint8_t count = 0;
+		for (int i = 0; i < 512; i++) {
+			count++;
+			LOGD("count: {};", count);
+		}
+	}
+
+
+
 	void A113_solver()
 	{
 		// https://github.com/BBuf/Image-processing-algorithm-Speed/blob/master/speed_rgb2gray_sse.cpp
@@ -1882,7 +2330,12 @@ namespace NA113 {
 
 		//studyBoxFilter();
 
-		experiment6(input0);
+		//experiment6(input0);
+
+		//experiment7(input0);
+
+		test1();
+
 
 		return;
 	}

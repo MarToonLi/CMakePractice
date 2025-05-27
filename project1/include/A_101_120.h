@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <opencv2/opencv.hpp>
 #include "logger.h"
+#include <algorithm>
 #ifndef _A_101_120_
 #define _A_101_120_
 
@@ -51,6 +52,8 @@ namespace NA112 {
 }
 
 namespace NA113 {
+
+
 	void A113_solver();
 }
 
