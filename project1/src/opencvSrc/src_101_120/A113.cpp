@@ -2217,7 +2217,7 @@ namespace NA113 {
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-		int total_pics_num = 10000;
+		int total_pics_num = 1000;
 		BlurVersion2 blur2 = BlurVersion2();
 
 
@@ -2242,6 +2242,7 @@ namespace NA113 {
 		start = std::chrono::high_resolution_clock::now();
 		for (int i = 0; i < total_pics_num; i++) {
 			baseline(img1, imgrst, blur2);
+			//if (i % 10 == 0) { LOGD(i); }
 		}
 		end = std::chrono::high_resolution_clock::now();
 		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -2257,7 +2258,7 @@ namespace NA113 {
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-		int total_pics_num = 10000;
+		int total_pics_num = 1000;
 		BlurVersion2 blur2 = BlurVersion2();
 
 
@@ -2282,6 +2283,7 @@ namespace NA113 {
 		start = std::chrono::high_resolution_clock::now();
 		for (int i = 0; i < total_pics_num; i++) {
 			optimize_0519(img1, imgrst, blur2);
+			//if (i % 10 == 0) { LOGD(i); }
 		}
 		end = std::chrono::high_resolution_clock::now();
 		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -2307,6 +2309,13 @@ namespace NA113 {
 
 		cv::Mat src1 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1570__ORI_DA2710107.jpg");
 		cv::Mat src1200 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\250324 - 1200\\Image_20250412154934899.bmp");
+		cv::Rect roi1(0, 1135, 4096, 200);
+		cv::Rect roi2(0, 1135, 4096, 400);
+		cv::Mat local_image1 = src1200(roi1);  // 4096 * 200
+		cv::Mat local_image2 = src1200(roi2);  // 4096 * 400
+		cv::Mat local_image3;
+		cv::hconcat(local_image1, local_image1, local_image3);  // 8192 * 200
+
 
 		cv::Mat src2 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
 		cv::Mat src3 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
@@ -2326,15 +2335,32 @@ namespace NA113 {
 		std::vector<cv::Mat> input5 = { src1, src2, src3,src4,src5,src6,src7,src8,src9, src10 };
 		//std::vector<cv::Mat> input = { src1, src2};
 
+
+		std::vector<cv::Mat> input01 = { local_image1 };
+		std::vector<cv::Mat> input02 = { local_image2 };
+		std::vector<cv::Mat> input03 = { local_image3 };
+
 		//experiment4(input0);
 
 		//studyBoxFilter();
 
-		//experiment6(input0);
+		LOGD("4096 * 200");
+		experiment6(input01);
+		experiment7(input01); 
 
-		//experiment7(input0);
+		LOGD("4096 * 400");
+		experiment6(input02);
+		experiment7(input02);
 
-		test1();
+		LOGD("8192 * 200");
+		experiment6(input03);
+		experiment7(input03);
+
+
+
+
+
+		//test1();
 
 
 		return;

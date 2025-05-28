@@ -14,7 +14,8 @@ int main()
 	//NA110::A110_solver();
 	//NA111::A111_solver();
 	//NA112::A112_solver();
-	NA113::A113_solver();
+	//NA113::A113_solver();
+	NA114::A114_solver();
 
 
 	return 1;
