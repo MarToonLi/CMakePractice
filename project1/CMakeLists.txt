@@ -80,7 +80,7 @@ OpenMP::OpenMP_CXX
 #solver111
 #solver112
 solver113
-solver114
+#solver114
 )
 #!? OpenCV_LIBS是不含路径的库文件名，链接器会自行在系统库目录等默认搜索目录中查找其所在位置(find_package(opencv)给到的路径)！
 

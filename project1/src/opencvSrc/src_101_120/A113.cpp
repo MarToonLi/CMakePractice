@@ -2291,6 +2291,131 @@ namespace NA113 {
 
 	}
 
+
+	int enhance_center_image(unsigned char* binary, int width, int height)
+	{
+		int FEATURE3_CONTRAST_DEGREE = 50;
+#pragma omp parallel for num_threads(4)
+		for (int j = 0; j < width; j++)
+		{
+			int feature3_start = -1;
+			int feature3_end = -1;
+
+			int roi_up = -1;
+			int roi_down = -1;
+
+			for (int i = 0; i < height - 3; i++)  //!? 与next_next_p的处理相联系
+			{
+				int p = binary[i * width + j];
+				int next_p = binary[(i + 1) * width + j];
+				int next_next_p = binary[(i + 2) * width + j];
+
+				// 找到上边缘
+				bool feature3_cond1 = (p > FEATURE3_CONTRAST_DEGREE && next_p > FEATURE3_CONTRAST_DEGREE && next_next_p > FEATURE3_CONTRAST_DEGREE);  //!? 必须满足连续一段的像素均超过某个均值，避免椒盐噪声的影响！
+				if (feature3_cond1 && feature3_start == -1) { feature3_start = i; }  // 记录上边界
+				if (feature3_cond1) { feature3_end = i; }                             // 记录下边界，一直在被更新
+
+				// 确定中心区域
+				if (feature3_start != -1) {
+					roi_up = feature3_start + FEATURE3_DIAMETER / 4;
+					roi_down = feature3_start + FEATURE3_DIAMETER / 4 * 3;
+				}
+
+				if (i >= roi_up && i <= roi_down) { binary[i * width + j] += 30; binary[i * width + j] -= 30;
+				}
+			}
+		}
+
+
+		return 0;
+	}
+
+	void optimize_0609(cv::Mat& img1, cv::Mat& imgrst, BlurVersion2& blur2)
+	{
+		int _i = 0;
+		cv::Mat _gray, _gray2;
+		if (img1.channels() == 1)
+		{
+			cv::cvtColor(img1, imgrst, cv::COLOR_GRAY2BGR);
+			img1.copyTo(_gray);
+		}
+		else
+		{
+			imgrst = img1.clone();
+			cv::cvtColor(img1, _gray, cv::COLOR_BGR2GRAY);
+		}
+
+		/** block1 */
+		//_gray2 = _gray.clone();
+		//cv::blur(_gray, _gray2, cv::Size(21, 21));
+		_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
+		int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
+		//blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 2, 2);
+
+
+		/** block2 */
+		_gray = _gray2 - _gray; // 提取高频信息
+
+		enhance_center_image(_gray.ptr(0), _gray.cols, _gray.rows);
+
+
+		/** block3 */
+		int _iresult = picshadowx_ptr_0519(_gray.ptr(0), imgrst.ptr(0), 4, _gray.cols, _gray.rows);
+
+		return;
+	}
+
+	// enhance_center_image测试
+	void experiment8(std::vector<cv::Mat> input) {
+		auto start = std::chrono::high_resolution_clock::now();
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+		int total_pics_num = 1000;
+		BlurVersion2 blur2 = BlurVersion2();
+
+
+		/** standard process*/
+		cv::Mat src1 = input[0];
+		cv::Mat standard_gray, standard_gray2, standard_gray3;
+		cv::Mat standard_imgrst = src1.clone();
+		cv::cvtColor(src1, standard_gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
+		cv::blur(standard_gray, standard_gray2, cv::Size(21, 21));
+		standard_gray3 = standard_gray2 - standard_gray;
+
+		start = std::chrono::high_resolution_clock::now();
+		for (int i = 0; i < total_pics_num; i++) {
+			enhance_center_image(standard_gray3.ptr(0), standard_gray3.cols, standard_gray3.rows);
+		}
+		end = std::chrono::high_resolution_clock::now();
+		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+		LOGD("enhance_center_image {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+		
+		int standard_iresult = picshadowy(standard_gray3, &standard_imgrst, 4);
+
+
+
+		/** experiments */
+		//cv::Rect roi = cv::Rect(cv::Point(0, 1000), cv::Point(4095, 1200));
+		//cv::Mat img1 = src1(roi);
+		cv::Mat img1 = src1.clone();
+		cv::Mat imgrst = img1.clone();
+		optimize_0609(img1, imgrst, blur2);
+
+		start = std::chrono::high_resolution_clock::now();
+		for (int i = 0; i < total_pics_num; i++) {
+			optimize_0609(img1, imgrst, blur2);
+			//if (i % 10 == 0) { LOGD(i); }
+		}
+		end = std::chrono::high_resolution_clock::now();
+		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+
+
+	}
+
 	// 测试int变量如果通过++越界，会变成什么
 	// 结论：假如0~255； 则重新从0开始！
 	void test1() {
@@ -2307,25 +2432,29 @@ namespace NA113 {
 	{
 		// https://github.com/BBuf/Image-processing-algorithm-Speed/blob/master/speed_rgb2gray_sse.cpp
 
-		cv::Mat src1 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1570__ORI_DA2710107.jpg");
-		cv::Mat src1200 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\250324 - 1200\\Image_20250412154934899.bmp");
-		cv::Rect roi1(0, 1135, 4096, 200);
-		cv::Rect roi2(0, 1135, 4096, 400);
+		cv::Mat src1 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\1111cmaketests\\1.jpg");
+		cv::Mat src1200 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\1111cmaketests\\1.jpg");
+		//cv::Rect roi1(0, 1135, 4096, 200);
+		//cv::Rect roi2(0, 1135, 4096, 400);
+
+		cv::Rect roi1(0, 10, 10, 10);
+		cv::Rect roi2(0, 10, 10, 10);
+
 		cv::Mat local_image1 = src1200(roi1);  // 4096 * 200
 		cv::Mat local_image2 = src1200(roi2);  // 4096 * 400
 		cv::Mat local_image3;
 		cv::hconcat(local_image1, local_image1, local_image3);  // 8192 * 200
 
 
-		cv::Mat src2 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
-		cv::Mat src3 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
-		cv::Mat src4 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
-		cv::Mat src5 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
-		cv::Mat src6 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
-		cv::Mat src7 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
-		cv::Mat src8 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
-		cv::Mat src9 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
-		cv::Mat src10 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\ngs_test\\1575__ORI_DA2710107.jpg");
+		cv::Mat src2 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\1111cmaketests\\1.jpg");
+		cv::Mat src3 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\1111cmaketests\\2.jpg");
+		cv::Mat src4 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\1111cmaketests\\3.jpg");
+		cv::Mat src5 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\1111cmaketests\\4.jpg");
+		cv::Mat src6 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\1111cmaketests\\5.jpg");
+		cv::Mat src7 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\1111cmaketests\\6.jpg");
+		cv::Mat src8 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\1111cmaketests\\7.jpg");
+		cv::Mat src9 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\1111cmaketests\\8.jpg");
+		cv::Mat src10 = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\1111cmaketests\\9.jpg");
 
 		std::vector<cv::Mat> input0 = { src1 };
 		std::vector<cv::Mat> input1 = { src1, src2, };
@@ -2344,17 +2473,22 @@ namespace NA113 {
 
 		//studyBoxFilter();
 
-		LOGD("4096 * 200");
-		experiment6(input01);
-		experiment7(input01); 
+		//LOGD("4096 * 200");
+		//experiment6(input01);
+		//experiment7(input01); 
 
-		LOGD("4096 * 400");
-		experiment6(input02);
-		experiment7(input02);
+		//LOGD("4096 * 400");
+		//experiment6(input02);
+		//experiment7(input02);
 
-		LOGD("8192 * 200");
-		experiment6(input03);
-		experiment7(input03);
+		//LOGD("8192 * 200");
+		//experiment6(input03);
+		//experiment7(input03);
+
+		LOGD("720 * 168");
+		experiment6(input0);
+		experiment7(input0);
+		experiment8(input0);
 
 
 
