@@ -210,4 +210,10 @@ namespace NA114 {
     };
 }
 
+
+namespace NA115 {
+
+    void A115_solver();
+}
+
 #endif 
