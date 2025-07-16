@@ -18,7 +18,7 @@ using namespace cv;
 /*
 功能：
 
-1. 过去memory
+1. 获取memory
 1. C++常见犯错点
 
 
@@ -119,12 +119,12 @@ namespace NA114 {
 		}
 	}
 
-
 	// 2. 形参和实参的问题（int arr[] = {0} 中arr虽然是指针变量，但是它属于常量指针，不允许被修改）
 	void foo(int* p) {
 		p++;
 	}
 
+	// 3. ？
 	void test2()
 	{
 		LOGD("test2");
@@ -182,7 +182,7 @@ namespace NA114 {
 		// & 取址运算符  * 解引用运算符（*只能用于指针类型！）
 	}
 
-
+	// 4. ?
 	void test3()
 	{
 		// 我们需要什么？
@@ -193,16 +193,9 @@ namespace NA114 {
 		std::string::size_type s_i = 0;
 		std::vector<int>::size_type v_i = 0;  // unsigned __int64类型;
 
-
-
-		
-
 		LOGD("s1.size.type: {}; vector.size.type: {};", typeid(decltype(s1.size())).name(), typeid(decltype(v1.size())).name());
 		LOGD("s_i.size.type: {}; v_i.size.type: {};", typeid(decltype(s_i)).name(), typeid(decltype(v_i)).name());
 	}
-
-	
-
 
 	
 	void A114_solver()

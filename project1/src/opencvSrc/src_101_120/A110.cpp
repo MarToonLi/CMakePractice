@@ -15,7 +15,6 @@ using namespace cv;
 /*
 功能：将BGR格式的彩色图像转换为灰度图像
 
-
 */
 
 
@@ -344,8 +343,6 @@ namespace NA110 {
 		for (int j = 0; j < i; ++j)
 			fut[j].wait();
 	}
-
-
 
     void A110_solver()
     {

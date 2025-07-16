@@ -17,6 +17,19 @@ using namespace ml;
 
 #pragma execution_character_set("utf-8") 
 
+/**********************************
+*
+练习目标：
+1. 光纤缺陷检测的SVM解法
+
+
+
+
+************************************/
+
+
+
+
 namespace NA115 {
 
 	typedef struct HOG_PARAM

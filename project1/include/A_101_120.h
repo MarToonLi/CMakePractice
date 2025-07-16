@@ -212,8 +212,22 @@ namespace NA114 {
 
 
 namespace NA115 {
-
     void A115_solver();
 }
+
+
+namespace NA116 {
+    void A116_solver();
+}
+
+
+namespace NA117 {
+    void A117_solver();
+}
+
+namespace NA118 {
+    void A118_solver();
+}
+
 
 #endif 

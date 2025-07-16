@@ -2330,6 +2330,94 @@ namespace NA113 {
 		return 0;
 	}
 
+
+	inline int enhance_center_image_0612(unsigned char* binary, int width, int height, int numThreads)
+	{
+		int FEATURE3_CONTRAST_DEGREE = 50;
+
+		const int roi_up_offset = FEATURE3_DIAMETER / 4;
+		const int roi_down_offset = FEATURE3_DIAMETER / 4 * 3;
+
+#pragma omp parallel for num_threads(numThreads)  // 明确每列的独立性，确保线程间无共享变量冲突
+		for (int j = 0; j < width; j++)
+		{
+			int feature3_start = -1;
+			int roi_up = -1;
+			int roi_down = -1;
+
+			for (int i = 0; i < height - 3; i++)  //!? 与next_next_p的处理相联系
+			{
+				int p0 = binary[i * width + j];
+				int p1 = binary[(i + 1) * width + j];
+				int p2 = binary[(i + 2) * width + j];
+
+				// 找到上边缘
+				bool cond = (p0 > FEATURE3_CONTRAST_DEGREE && p1 > FEATURE3_CONTRAST_DEGREE && p2 > FEATURE3_CONTRAST_DEGREE);
+				//!? 必须满足连续一段的像素均超过某个均值，避免椒盐噪声的影响！
+				if (cond && feature3_start == -1) { feature3_start = i; }  // 记录上边界
+
+				// 确定中心区域
+				if (feature3_start != -1) {
+					roi_up = feature3_start + roi_up_offset;
+					roi_down = feature3_start + roi_down_offset;
+				}
+
+				// enhance operation
+				binary[i * width + j] += (roi_down != -1 && i >= roi_up && i <= roi_down) ? 30 : 0;
+
+				// 节约时间
+				if (roi_down != -1 && i > roi_down) { break; }
+			}
+		}
+
+		return 0;
+	}
+
+
+
+	int enhance_center_image_06122(
+		unsigned char* binary, int width, int height, int numThreads)
+	{
+		int FEATURE3_CONTRAST_DEGREE = 50;
+		const int roi_up_offset = FEATURE3_DIAMETER / 4;
+		const int roi_down_offset = FEATURE3_DIAMETER / 4 * 3;
+#pragma omp parallel for num_threads(4)
+		for (int j = 0; j < width; j++)
+		{
+			int feature3_start = -1;
+			int roi_up = -1;
+			int roi_down = -1;
+
+			for (int i = 0; i < height - 3; i++)  //!? 与next_next_p的处理相联系
+			{
+				int p0 = binary[i * width + j];
+				int p1 = binary[(i + 1) * width + j];
+				int p2 = binary[(i + 2) * width + j];
+
+				// 找到上边缘
+				bool cond = (p0 > FEATURE3_CONTRAST_DEGREE && p1 > FEATURE3_CONTRAST_DEGREE && p2 > FEATURE3_CONTRAST_DEGREE);
+				//!? 必须满足连续一段的像素均超过某个均值，避免椒盐噪声的影响！
+				if (cond && feature3_start == -1) { feature3_start = i; }  // 记录上边界
+
+				// 确定中心区域
+				if (feature3_start != -1) {
+					roi_up = feature3_start + roi_up_offset;
+					roi_down = feature3_start + roi_down_offset;
+
+					for (int c = roi_up; c < roi_down + 1; c++)
+					{
+						binary[(c) * width + j] += 30;
+					}
+
+					break;
+				}
+
+			}
+		}
+
+		return 0;
+	}
+
 	void optimize_0609(cv::Mat& img1, cv::Mat& imgrst, BlurVersion2& blur2)
 	{
 		int _i = 0;
@@ -2365,6 +2453,42 @@ namespace NA113 {
 		return;
 	}
 
+
+	void optimize_0612(cv::Mat& img1, cv::Mat& imgrst, BlurVersion2& blur2)
+	{
+		int _i = 0;
+		cv::Mat _gray, _gray2;
+		if (img1.channels() == 1)
+		{
+			cv::cvtColor(img1, imgrst, cv::COLOR_GRAY2BGR);
+			img1.copyTo(_gray);
+		}
+		else
+		{
+			imgrst = img1.clone();
+			cv::cvtColor(img1, _gray, cv::COLOR_BGR2GRAY);
+		}
+
+		/** block1 */
+		//_gray2 = _gray.clone();
+		//cv::blur(_gray, _gray2, cv::Size(21, 21));
+		_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
+		int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
+		//blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 2, 2);
+
+
+		/** block2 */
+		_gray = _gray2 - _gray; // 提取高频信息
+
+		enhance_center_image_06122(_gray.ptr(0), _gray.cols, _gray.rows, 4 );
+
+
+		/** block3 */
+		int _iresult = picshadowx_ptr_0519(_gray.ptr(0), imgrst.ptr(0), 4, _gray.cols, _gray.rows);
+
+		return;
+	}
+
 	// enhance_center_image测试
 	void experiment8(std::vector<cv::Mat> input) {
 		auto start = std::chrono::high_resolution_clock::now();
@@ -2383,13 +2507,27 @@ namespace NA113 {
 		cv::blur(standard_gray, standard_gray2, cv::Size(21, 21));
 		standard_gray3 = standard_gray2 - standard_gray;
 
+
+
+
+		start = std::chrono::high_resolution_clock::now();
+		for (int i = 0; i < total_pics_num; i++) {
+			enhance_center_image_06122(standard_gray3.ptr(0), standard_gray3.cols, standard_gray3.rows, 4);
+		}
+		end = std::chrono::high_resolution_clock::now();
+		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+		LOGD("enhance_center_image0612 {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+
 		start = std::chrono::high_resolution_clock::now();
 		for (int i = 0; i < total_pics_num; i++) {
 			enhance_center_image(standard_gray3.ptr(0), standard_gray3.cols, standard_gray3.rows);
 		}
 		end = std::chrono::high_resolution_clock::now();
 		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("enhance_center_image {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+		LOGD("enhance_center_image0609 {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+
 
 		
 		int standard_iresult = picshadowy(standard_gray3, &standard_imgrst, 4);
@@ -2401,19 +2539,48 @@ namespace NA113 {
 		//cv::Mat img1 = src1(roi);
 		cv::Mat img1 = src1.clone();
 		cv::Mat imgrst = img1.clone();
-		optimize_0609(img1, imgrst, blur2);
-
+		optimize_0612(img1, imgrst, blur2);
 		start = std::chrono::high_resolution_clock::now();
 		for (int i = 0; i < total_pics_num; i++) {
-			optimize_0609(img1, imgrst, blur2);
-			//if (i % 10 == 0) { LOGD(i); }
+			optimize_0612(img1, imgrst, blur2);
 		}
 		end = std::chrono::high_resolution_clock::now();
 		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+		LOGD("0612: {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
 
+		cv::Mat img2 = src1.clone();
+		cv::Mat imgrst2 = img1.clone();
+		optimize_0609(img2, imgrst2, blur2);
+		start = std::chrono::high_resolution_clock::now();
+		for (int i = 0; i < total_pics_num; i++) {
+			optimize_0609(img2, imgrst2, blur2);
+		}
+		end = std::chrono::high_resolution_clock::now();
+		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+		LOGD("0609: {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
+		cv::Mat img3 = src1.clone();
+		cv::Mat imgrst3 = img1.clone();
+		optimize_0612(img3, imgrst3, blur2);
+		start = std::chrono::high_resolution_clock::now();
+		for (int i = 0; i < total_pics_num; i++) {
+			optimize_0612(img3, imgrst3, blur2);
+		}
+		end = std::chrono::high_resolution_clock::now();
+		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+		LOGD("0612: {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+		cv::Mat img4 = src1.clone();
+		cv::Mat imgrst4 = img1.clone();
+		optimize_0609(img4, imgrst4, blur2);
+		start = std::chrono::high_resolution_clock::now();
+		for (int i = 0; i < total_pics_num; i++) {
+			optimize_0609(img4, imgrst4, blur2);
+		}
+		end = std::chrono::high_resolution_clock::now();
+		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+		LOGD("0609: {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 	}
 
 	// 测试int变量如果通过++越界，会变成什么
