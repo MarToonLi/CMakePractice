@@ -217,6 +217,7 @@ namespace Case2 {
 
 
 
+
 namespace Case3 {
 
 	bool cal_target_val(std::vector<double> vals, float down = 0.8f, float up = 0.3f)
@@ -284,6 +285,12 @@ namespace Case3 {
 
 
 
+
+
+
+
+
+
 namespace Case4 {
 
 
@@ -302,6 +309,166 @@ namespace Case4 {
 
 
 
+namespace Case5 {
+	/**
+	* 1. 抵抗产品图像亮度不均匀的问题
+	* 2. 不同颜色的产品如何统一处理获取产品轮廓
+	* 3. 自适应直方图
+	**/
+
+
+	void start() {
+		// 读取图像
+		//cv::Mat image = cv::imread("H:\\Projects\\datasets\\AnomaDataset\\GXCF165ADV2\\abnormal\\Image_20250515151918604.bmp", IMREAD_GRAYSCALE);   //!? 缺陷样本
+		cv::Mat image = cv::imread("D:\\Myself\\MachineVision\\resources\\GuangXian\\1111 SamplesLibrary\\1200w\\Pic_2025_07_05_163638_1.bmp", IMREAD_GRAYSCALE);   //!? 亮暗不一
+
+
+		// 操作方式： 原图像减去均值滤波结果
+		cv::Mat image_clone1 = image.clone();
+
+		cv::Mat image_clone1_blur1;
+		cv::blur(image_clone1, image_clone1_blur1, cv::Size(21, 5));
+		cv::Mat image_clone1_result1 = image_clone1_blur1 - image_clone1;   //!? 卷积核越大，平滑性越高，高频信息被平滑的幅度越大，则高频信息越明显(与周围像素的平均变化程度)
+
+		cv::Mat image_clone1_blur2;
+		cv::blur(image_clone1, image_clone1_blur2, cv::Size(41, 5));
+		cv::Mat image_clone1_result2 = image_clone1_blur2 - image_clone1;
+
+		cv::Mat image_clone1_blur3;
+		cv::blur(image_clone1, image_clone1_blur3, cv::Size(61, 5));
+		cv::Mat image_clone1_result3 = image_clone1_blur3 - image_clone1;  //!? 边界处由于其附近大多是白色像素，因此滤波核尺寸的增大基本不会影响该结果图像素值的变化
+
+
+		// 中值滤波
+		cv::Mat image_clone2 = image.clone();
+
+		cv::Mat image_clone2_medianBlur1;
+		cv::medianBlur(image_clone2, image_clone2_medianBlur1, 21);
+		cv::Mat image_clone2_result1 = image_clone2_medianBlur1 - image_clone2;
+
+		cv::Mat image_clone2_medianBlur2;
+		cv::medianBlur(image_clone2, image_clone2_medianBlur2, 41);
+		cv::Mat image_clone2_result2 = image_clone2_medianBlur2 - image_clone2;
+
+		cv::Mat image_clone2_medianBlur3;
+		cv::medianBlur(image_clone2, image_clone2_medianBlur3, 61);
+		cv::Mat image_clone2_result3 = image_clone2_medianBlur3 - image_clone2;
+
+
+		// 高斯滤波
+		cv::Mat image_clone3 = image.clone();
+
+		cv::Mat image_clone3_GaussianBlur1;
+		cv::GaussianBlur(image_clone3, image_clone3_GaussianBlur1, cv::Size(21, 5), 0);
+		cv::Mat image_clone3_result1 = image_clone3_GaussianBlur1 - image_clone3;
+
+		cv::Mat image_clone3_GaussianBlur2;
+		cv::GaussianBlur(image_clone3, image_clone3_GaussianBlur2, cv::Size(41, 5), 0);
+		cv::Mat image_clone3_result2 = image_clone3_GaussianBlur2 - image_clone3;
+
+		cv::Mat image_clone3_medianBlur3;
+		cv::GaussianBlur(image_clone3, image_clone3_medianBlur3, cv::Size(61, 5), 0);
+		cv::Mat image_clone3_result3 = image_clone3_medianBlur3 - image_clone3;
+
+		cv::Mat image_clone3_medianBlur4;
+		cv::GaussianBlur(image_clone3, image_clone3_medianBlur4, cv::Size(61, 5), 1);
+		cv::Mat image_clone3_result4 = image_clone3_medianBlur4 - image_clone3;
+
+
+		// 顶帽变换
+		cv::Mat image_clone4 = image.clone();
+
+		cv::Mat image_clone4_open1;
+		cv::morphologyEx(image_clone4, image_clone4_open1, cv::MORPH_OPEN, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(21, 5)));
+		cv::Mat image_clone4_result1 = image_clone4 - image_clone4_open1;
+
+		cv::Mat image_clone4_open2;
+		cv::morphologyEx(image_clone4, image_clone4_open2, cv::MORPH_OPEN, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(21, 21)));
+		cv::Mat image_clone4_result2 = image_clone4 - image_clone4_open2;
+
+		cv::Mat image_clone4_open3;
+		cv::morphologyEx(image_clone4, image_clone4_open3, cv::MORPH_OPEN, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5)));
+		cv::Mat image_clone4_result3 = image_clone4 - image_clone4_open3;
+
+		cv::Mat image_clone4_close1;
+		cv::morphologyEx(image_clone4, image_clone4_close1, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5)));
+		cv::Mat image_clone4_result41 = image_clone4 - image_clone4_close1;
+		cv::Mat image_clone4_result42 = image_clone4_close1 - image_clone4;
+
+		cv::Mat image_clone4_close2;
+		cv::morphologyEx(image_clone4, image_clone4_close2, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(11, 11)));
+		cv::Mat image_clone4_result51 = image_clone4 - image_clone4_close2;
+		cv::Mat image_clone4_result52 = image_clone4_close2 - image_clone4;
+
+		cv::Mat image_clone4_close3;
+		cv::morphologyEx(image_clone4, image_clone4_close3, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(21, 21)));
+		cv::Mat image_clone4_result61 = image_clone4 - image_clone4_close3;
+		cv::Mat image_clone4_result62 = image_clone4_close3 - image_clone4;
+
+		cv::Mat image_clone4_close4;
+		cv::morphologyEx(image_clone4, image_clone4_close4, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(21, 5)));
+		cv::Mat image_clone4_result71 = image_clone4 - image_clone4_close4;
+		cv::Mat image_clone4_result72 = image_clone4_close4 - image_clone4;    //!? 具有类似与均值滤波的效果！黑帽操作，分离周围暗一些的操作！
+
+		cv::Mat image_clone4_close5;
+		cv::morphologyEx(image_clone4, image_clone4_close5, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(41, 5)));
+		cv::Mat image_clone4_result81 = image_clone4 - image_clone4_close5;
+		cv::Mat image_clone4_result82 = image_clone4_close5 - image_clone4;    //!? 具有类似与均值滤波的效果！黑帽操作，分离周围暗一些的操作！
+
+
+		cv::Mat image_clone4_close6;
+		cv::morphologyEx(image_clone4, image_clone4_close6, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(41, 5)));
+		cv::Mat image_clone4_result91 = image_clone4 - image_clone4_close6;
+		cv::Mat image_clone4_result92 = image_clone4_close6 - image_clone4;    //!? 具有类似与均值滤波的效果！黑帽操作，分离周围暗一些的操作！
+
+
+
+		// 自适应直方图均衡化
+		cv::Mat image_clone5 = image.clone();
+		cv::Mat image_clone5_result1;
+		cv::Mat image_clone5_result2;
+		cv::Mat image_clone5_result3;
+		cv::Mat image_clone5_result4;
+		cv::Mat image_clone5_result5;
+
+		//!? clipLimit  限制每个小块直方图中单个灰度级的最大像素数，避免某些灰度级过度增强。
+		//!? tileGridSize defines the number of tiles in row and column
+		cv::Ptr<cv::CLAHE> clahe1 = cv::createCLAHE(20, cv::Size(10, 1));
+		cv::Ptr<cv::CLAHE> clahe2 = cv::createCLAHE(20, cv::Size(10, 5));
+		cv::Ptr<cv::CLAHE> clahe3 = cv::createCLAHE(20, cv::Size(10, 10));
+		cv::Ptr<cv::CLAHE> clahe4 = cv::createCLAHE(20, cv::Size(1, 10));
+		cv::Ptr<cv::CLAHE> clahe5 = cv::createCLAHE(20, cv::Size(5, 10));
+		clahe1->apply(image_clone5, image_clone5_result1);
+		clahe2->apply(image_clone5, image_clone5_result2);
+		clahe3->apply(image_clone5, image_clone5_result3);
+		clahe4->apply(image_clone5, image_clone5_result4);
+		clahe5->apply(image_clone5, image_clone5_result5);
+
+
+		// 查看一张图的RGB通道数据
+		//!? 很大的前提时，你得有一张RGB图像才能做通道分离！
+		//!? 合适的通道的判断条件：1） 能找到对应缺陷；2）便于你做各种运算，比如找到完整的产品边界！
+
+
+
+		LOGD("mark");
+	}
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
 
 
 namespace NA118 {
@@ -310,7 +477,7 @@ namespace NA118 {
 
 
         LOGD("......");
-		Case3::start();
+		Case5::start();
 
         return;
     }

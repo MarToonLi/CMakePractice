@@ -241,6 +241,8 @@ namespace wikky_algo
 
 	std::string vectors2string(std::vector<float> vectors);
 
+	std::string vectors2string(std::vector<int64_t> vectors);
+
 	std::string vectors2string(cv::Rect rect);
 
 	bool getHostname(std::string& hostname_str);

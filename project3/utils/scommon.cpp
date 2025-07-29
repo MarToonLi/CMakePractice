@@ -64,6 +64,19 @@ namespace wikky_algo
 	}
 
 
+	std::string vectors2string(std::vector<int64_t> vectors) {
+		if (vectors.size() == 0) { return ""; }
+		std::ostringstream oss;
+		for (size_t i = 0; i < vectors.size(); ++i) {
+			oss << (vectors[i] ? vectors[i] : -1);
+			if (i != vectors.size() - 1) { oss << "-"; }  // 如果不是最后一个数字，则添加横杠作为分隔符
+		}
+		std::string vstring = oss.str();
+
+		return vstring;
+	}
+
+
 	std::string vectors2string(cv::Rect rect) {
 		std::ostringstream oss;
 		oss << rect.x << ", " << rect.y << ", " << rect.width << ", " << rect.height;

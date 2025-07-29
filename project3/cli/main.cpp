@@ -9,7 +9,9 @@ int main()
 
 	LOGD("SSS 测试");
 
-	int a = yolo_min();
+	//int a = yolo_min();
+
+	int b = anomalib_min();
 
 	return 1;
 }

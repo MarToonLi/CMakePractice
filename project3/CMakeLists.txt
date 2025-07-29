@@ -45,6 +45,7 @@ include_directories(${cuda_INCLUDE_DIR})
 add_library(solver  STATIC  
 	${PROJECT_SOURCE_DIR}/src/onnxSrc/onnx_deploy.cpp  
 	${PROJECT_SOURCE_DIR}/src/onnxSrc/yolov5.cpp 
+	${PROJECT_SOURCE_DIR}/src/onnxSrc/anomalib.cpp 
 	${TRT_SAMPLE_DIR}/common/logger.cpp
 )
 
