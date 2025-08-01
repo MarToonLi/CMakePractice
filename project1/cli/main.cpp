@@ -19,7 +19,8 @@ int main()
 	//NA115::A115_solver();
 	//NA116::A116_solver();
 	//NA117::A117_solver();
-	NA118::A118_solver();
+	//NA118::A118_solver();
+	NA119::A119_solver();
 
 
 	return 1;

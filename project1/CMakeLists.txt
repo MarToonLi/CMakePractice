@@ -102,6 +102,15 @@ target_include_directories(solver118 PUBLIC  include ${CMAKE_BINARY_DIR} ${OpenC
 target_link_libraries(solver118      PRIVATE  logging ${OpenCV_LIBS} OpenMP::OpenMP_CXX)
 
 
+add_library(solver119                STATIC  src/opencvSrc/src_101_120/A119.cpp)
+target_include_directories(solver119 PUBLIC  include ${CMAKE_BINARY_DIR} ${OpenCV_INCLUDE_DIRS} 
+    ${THIRDPARTY_DIR}/eigen3/install
+    ${THIRDPARTY_DIR}/eigen3/install/include
+    ${THIRDPARTY_DIR}/eigen3/install/include/eigen3
+    ${THIRDPARTY_DIR}/eigen3/install/include/eigen3/Eigen/src)
+target_link_libraries(solver119      PRIVATE  logging ${OpenCV_LIBS} OpenMP::OpenMP_CXX)
+
+
 # 5 构建可执行文件
 add_executable(opencv_solver             cli/main.cpp)
 target_include_directories(opencv_solver PUBLIC  include ${CMAKE_BINARY_DIR} ${OpenCV_INCLUDE_DIRS})
@@ -119,6 +128,7 @@ solver115
 solver116
 solver117
 solver118
+solver119
 )
 #!? OpenCV_LIBS是不含路径的库文件名，链接器会自行在系统库目录等默认搜索目录中查找其所在位置(find_package(opencv)给到的路径)！
 

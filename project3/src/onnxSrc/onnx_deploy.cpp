@@ -280,7 +280,7 @@ int anomalib_min()
 	//std::string engineModelPath = "E://DevelopmentRoute//Produce_Algorithms//resources//yolov8s.engine";
 	cv::Mat img = cv::imread("H:\\Projects\\datasets\\AnomaDataset\\GXCF165ADV3\\abnormal\\Image_20250515150342788.bmp", 1);
 	std::vector<cv::Mat> frames;
-	int total_pics_num = 3;
+	int total_pics_num = 1000;
 	SLogger::getInstance().SetLogger(3);
 
 

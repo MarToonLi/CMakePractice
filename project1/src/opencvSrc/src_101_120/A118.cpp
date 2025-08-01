@@ -227,8 +227,8 @@ namespace Case3 {
 		std::sort(vals.begin(), vals.end());
 		// 2. 计算 20% 和 70% 的位置索引
 		int n = vals.size();
-		int start_index = static_cast<int>(std::round((1- down) * n));
-		int end_index = static_cast<int>(std::round((1- up) * n));
+		int start_index = static_cast<int>(std::round((1 - down) * n));
+		int end_index = static_cast<int>(std::round((1 - up) * n));
 
 		// 确保索引不越界
 		start_index = (std::max)(0, start_index);
@@ -248,9 +248,8 @@ namespace Case3 {
 		LOGD("min: {};", vals.front());
 		LOGD("max: {};", vals.back());
 
-
+		return 1;
 	}
-
 
 
 	void start() {
