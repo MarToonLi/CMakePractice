@@ -69,7 +69,7 @@ namespace NA106 {
 
     void A106()
     {
-        src_ori = cv::imread("F:\\Projects\\Opencv-100-Questions\\OpencvTestImg\\canny2.png", cv::IMREAD_GRAYSCALE);
+        src_ori = cv::imread("H:\\Projects\\CMakePractice\\resources\\OpencvTestImg\\canny2.png", cv::IMREAD_GRAYSCALE);
 
         cv::resize(src_ori, src, cv::Size(1000, 1000));
 

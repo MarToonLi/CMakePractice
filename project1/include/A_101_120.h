@@ -19,34 +19,88 @@
 using namespace cv;
 using namespace std;
 
+
+/***
+计算出溢胶区域的面积
+***/
 void A101();
+
+
+/***
+将一个不规则图像的轮廓使用findcontour以外的方法呈现(morphologyEx)
+***/
 void A102();
+
+
+
+/***
+将一个不规则图像的轮廓使用findcontour以外的方法呈现(morphologyEx)
+***/
 void A103();
+
+
+
+/***
+基于角度将图像进行透视变换
+***/
 void A104();
+
+
+/***
+亚像素
+***/
 void A105();
 
+
+
+/***
+测试blob
+***/
 namespace NA106 {
 	void A106();
 }
 
+
+
+/***
+可以被重写
+***/
 namespace NA107 {
 	void A107();
 }
 
+
+
+/***
+可以被重写
+***/
 namespace NA108 {
 	void A108_solver();
 }
 
 
+
+/*
+功能：测试omp和parellelfor方式的加速效果
+*/
 namespace NA109 {
 	void A109_solver();
 }
 
 
+/*
+功能：通过SSE\多路并行计算等方式优化RGB2Y
+*/
 namespace NA110 {
 	void A110_solver();
 }
 
+
+
+
+/*
+功能：通过SSE\多路并行计算等方式优化picshadowx
+*/
 namespace NA111 {
 	int picshadowx(cv::Mat binary, cv::Mat* show);
 	void doing(cv::Mat imgori);
@@ -54,181 +108,114 @@ namespace NA111 {
 }
 
 
+
+/*
+功能：深度图与点云图互转(获取实际像素点的横坐标)
+*/
 namespace NA112 {
 	void A112_solver();
 }
 
+
+
+
+/***
+测试GX项目中各个功能函数的批量执行效率；
+Case1:验证功能：多张图构建成一张图后再进行缺陷检测
+Case2:一张图像，先行后列遍历和先列后行遍历的执行效率差别
+Case3: 两张图像横向拼接在一起
+Case5: 图像如果是竖直方向的，则执行竖直方向的投影检测的执行效率情况
+Case6: 研究均值滤波和SSE
+Case7: 测试各版本投影操作的执行效率
+Case8: 测试中心区域增强的执行效率
+***/
 namespace NA113 {
 	void A113_solver();
 }
 
 
+
+
+/***
+C++开发toy functions;
+Case1: 获取memory信息；
+***/
 namespace NA114 {
-
-	//IncrementalMean local_meaner;
-
-
 	void A114_solver();
-
-    struct SingleMat
-    {
-        int camPos = -1;
-        std::chrono::steady_clock::time_point starttime;
-        int w, h, format;
-        char* imgori = nullptr;
-        cv::Mat imgrst;
-        size_t index;
-        int groupsize;
-        int _iresult;
-        bool _bshow = true;
-        std::string sn_fromscanner;
-        std::string cam_serial;
-        std::vector<std::string> error_message;
-
-        // 默认构造函数
-        SingleMat() = default;   // 相当于 SingleMat() {}；
-
-        // 拷贝构造函数（深度拷贝）
-        SingleMat(const SingleMat& other)
-            : camPos(other.camPos),
-            starttime(other.starttime),
-            w(other.w),
-            h(other.h),
-            format(other.format),
-            imgrst(other.imgrst.clone()), // 深度拷贝 cv::Mat
-            index(other.index),
-            groupsize(other.groupsize),
-            _iresult(other._iresult),
-            _bshow(other._bshow),
-            sn_fromscanner(other.sn_fromscanner),
-            cam_serial(other.cam_serial),
-            error_message(other.error_message)
-        {
-            // 其他成员函数通过调用其所属数据类型的拷贝构造函数，实现深度拷贝；
-            // 深度拷贝 imgori
-            if (other.imgori != nullptr && other.w > 0 && other.h > 0)
-            {
-                size_t size = other.w * other.h * (other.format == 1 ? 1 : 3);
-                imgori = new char[size];
-                std::memcpy(imgori, other.imgori, size);
-            }
-            else
-            {
-                imgori = nullptr;
-            }
-        }
-
-        // 拷贝赋值运算符（深度拷贝）
-        SingleMat& operator=(const SingleMat& other)
-        {
-            if (this != &other)
-            {
-                // 释放原有资源
-                delete[] imgori;
-
-                // 拷贝基本类型成员
-                camPos = other.camPos;
-                starttime = other.starttime;
-                w = other.w;
-                h = other.h;
-                format = other.format;
-                index = other.index;
-                groupsize = other.groupsize;
-                _iresult = other._iresult;
-                _bshow = other._bshow;
-
-                // 拷贝字符串和容器
-                sn_fromscanner = other.sn_fromscanner;
-                cam_serial = other.cam_serial;
-                error_message = other.error_message;
-
-                // 深度拷贝 cv::Mat
-                imgrst = other.imgrst.clone();
-
-                // 深度拷贝 imgori
-                if (other.imgori != nullptr && other.w > 0 && other.h > 0)
-                {
-                    size_t size = other.w * other.h * (other.format == 1 ? 1 : 3);
-                    imgori = new char[size];
-                    std::memcpy(imgori, other.imgori, size);
-                }
-                else
-                {
-                    imgori = nullptr;
-                }
-            }
-            return *this;
-        }
-
-        // 移动构造函数
-        SingleMat(SingleMat&& other) noexcept  // 移动构造函数，通过窃取临时对象（右值）的资源来构造新对象的构造函数，同时将原对象重置。
-            : camPos(other.camPos),
-            starttime(other.starttime),
-            w(other.w),
-            h(other.h),
-            format(other.format),
-            imgori(other.imgori),
-            imgrst(std::move(other.imgrst)),
-            index(other.index),
-            groupsize(other.groupsize),
-            _iresult(other._iresult),
-            _bshow(other._bshow),
-            sn_fromscanner(std::move(other.sn_fromscanner)),
-            cam_serial(std::move(other.cam_serial)),
-            error_message(std::move(other.error_message))
-        {
-            other.imgori = nullptr;
-        }
-
-        // 移动赋值运算符
-        SingleMat& operator=(SingleMat&& other) noexcept
-        {
-            if (this != &other)
-            {
-                delete[] imgori;
-
-                camPos = other.camPos;
-                starttime = other.starttime;
-                w = other.w;
-                h = other.h;
-                format = other.format;
-                imgori = other.imgori;
-                imgrst = std::move(other.imgrst);
-                index = other.index;
-                groupsize = other.groupsize;
-                _iresult = other._iresult;
-                _bshow = other._bshow;
-                sn_fromscanner = std::move(other.sn_fromscanner);
-                cam_serial = std::move(other.cam_serial);
-                error_message = std::move(other.error_message);
-
-                other.imgori = nullptr;
-            }
-            return *this;
-        }
-
-        ~SingleMat()
-        {
-            delete[] imgori;
-        }
-    };
 }
 
 
+
+
+
+/***
+* @brief A115_solver
+* function: C++中Opencv的传统机器学习算法
+Case1: SVM+GX
+***/
 namespace NA115 {
     void A115_solver();
 }
 
 
+
+
+/***
+* @brief A116_solver
+* function: 学习C++的知识：
+Case1: C++的控制赋值
+***/
 namespace NA116 {
     void A116_solver();
 }
 
 
+
+
+/***
+* @brief A117_solver
+* function: 线程相关知识;
+Case1: 基于线程模仿算子计算队列和图像保存队列的处理效率随外部系统应用运行的变化；
+***/
 namespace NA117 {
     void A117_solver();
 }
 
+
+
+
+
+/***
+* @brief A118_solver
+* function: 图像处理的常用方法和技巧(不断积累)
+* 
+传统图像处理常用方法：
+1. （辅助）颜色空间转换：提取某个通道色彩或者增强某个物体的对比度
+2. 形态学操作：去除噪声、提取边界（黑帽）、连接和分割对象；
+3. （辅助）图像增强：灰度变换、直方图均衡、锐化等方法，增强目标物体间的对比度
+4. 图像分割和特征提取：阈值分割、轮廓提取、分水岭算法（*），提升目标区域的对比度，将目标区域从图像中分割出来
+5. （辅助）图像去噪：利用中值滤波去除椒盐噪声、通过傅里叶变换进行频域处理；
+6. （优化）图像格式转换与优化：指针数据与Mat类型变量的转换
+7. 特征点检测与匹配：（非工业视觉场景）
+
+
+* Case1: 基于连通域信息能够提取出图像中的目标特征点
+*
+* Case3: 二八原则的均值计算技巧
+* 去除噪声数据，提升估计值的重复计算的稳定性以及准确度！
+*
+* 场景：
+* 1. 根据3D图像中铆钉有弧形的上表面深度值的集合，估计搞铆钉的高度
+* 2. 根据鲜花整个茎干的直径的集合，估计茎干的合理直径值
+* 
+* Case4: 顶帽和黑帽的应用场景:
+* 1. 顶帽：本质上一句话，为了分离比邻近点亮一些的斑块；（原图 - 原图的开运算结果）
+* 2. 黑帽：本质上一句话，为了分离比邻近点暗一些的斑块；（原图的闭运算结果 - 原图）
+* Case5:
+* 1. 顶帽操作中不同开运算操作和滤波操作对黑斑/亮斑提取效果的实验：抵抗产品图像亮度不均匀的问题
+* 2. 不同颜色的产品如何统一处理获取产品轮廓
+* 3. 自适应直方图
+***/
 namespace NA118 {
     void A118_solver();
 }
@@ -253,8 +240,6 @@ namespace NA118 {
 * CMatchToolDlg matcher;
 * matcher.SetConfig(config);
 * matcher.Match(xt_m_matSrc, xt_m_matDst);
-*
-*
 **/
 namespace NA119 {
 

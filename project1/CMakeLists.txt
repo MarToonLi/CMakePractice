@@ -41,13 +41,13 @@ find_package(OpenMP    REQUIRED)   # 发现并定义opencv相关的路径变量
 #target_link_libraries(solver111      PRIVATE  logging ${OpenCV_LIBS} OpenMP::OpenMP_CXX)
 
 
-#add_library(solver112                STATIC  src/opencvSrc/src_101_120/A112.cpp)
-#target_include_directories(solver112 PUBLIC  include ${CMAKE_BINARY_DIR} ${OpenCV_INCLUDE_DIRS} 
-#    ${THIRDPARTY_DIR}/eigen3/install
-#    ${THIRDPARTY_DIR}/eigen3/install/include
-#    ${THIRDPARTY_DIR}/eigen3/install/include/eigen3
-#    ${THIRDPARTY_DIR}/eigen3/install/include/eigen3/Eigen/src)
-#target_link_libraries(solver112      PRIVATE  logging ${OpenCV_LIBS} OpenMP::OpenMP_CXX)
+add_library(solver112                STATIC  src/opencvSrc/src_101_120/A112.cpp)
+target_include_directories(solver112 PUBLIC  include ${CMAKE_BINARY_DIR} ${OpenCV_INCLUDE_DIRS} 
+    ${THIRDPARTY_DIR}/eigen3/install
+    ${THIRDPARTY_DIR}/eigen3/install/include
+    ${THIRDPARTY_DIR}/eigen3/install/include/eigen3
+    ${THIRDPARTY_DIR}/eigen3/install/include/eigen3/Eigen/src)
+target_link_libraries(solver112      PRIVATE  logging ${OpenCV_LIBS} OpenMP::OpenMP_CXX)
 # 这里需要注意的是，eigen在solver112的源文件中被使用，就需要在solver112下include其库文件；在opencv_solver中包含是没有用的；
 
 add_library(solver113                STATIC  src/opencvSrc/src_101_120/A113.cpp)

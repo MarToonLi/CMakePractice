@@ -25,8 +25,6 @@ using namespace cv;
 
 namespace NA111 {
 	int NUMTHREADS = 4;
-	float Gaussian_Ker_XY[Gaussian_Size];
-
 
 	class BlurVersion1
 	{

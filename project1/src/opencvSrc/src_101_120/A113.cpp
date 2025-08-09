@@ -28,39 +28,55 @@ using namespace cv;
 
 #pragma execution_character_set("utf-8") 
 
-namespace NA113 {
-	int NUMTHREADS = 4;
 
+
+
+
+/***
+测试GX项目中各个功能函数的批量执行效率；
+Case1:验证功能：多张图构建成一张图后再进行缺陷检测
+Case2:一张图像，先行后列遍历和先列后行遍历的执行效率差别
+Case3: 两张图像横向拼接在一起
+Case5: 图像如果是竖直方向的，则执行竖直方向的投影检测的执行效率情况
+Case6: 研究均值滤波和SSE
+Case7: 测试各版本投影操作的执行效率
+Case8: 测试中心区域增强的执行效率
+***/
+namespace NA113 {
+
+	/***  ***/
 	// 参数：将认定为缺陷的区域和认定为非缺陷的区域的差异更加明显化！
 	double FEATURE1_CONTRAST_DEGREE = 45;    // 50      值越小，缺陷越多
 	double DEFECT_LENGTH = 8.5;    // 5.3()   不能实现
 	double DEFECT_LENGTH2 = 5.3;   // 5.3()   
 	double DEFECT1_WIDTH = 3;
 
-
 	double FEATURE2_CONTRAST_DEGREE = 45;
 	double FEATURE2_BLOCK_LENGTH = 3;
 	double FEATURE2_BLOCK_NUMS = 3;
 	double DEFECT2_WIDTH = 3;
-
 
 	double FEATURE3_CONTRAST_DEGREE = 20;
 	double FEATURE3_DIAMETER = 44;
 	double FEATURE3_DIAMETER_THLD = 3;
 	double DEFECT3_WIDTH = 3;
 
-
+	int NUMTHREADS = 4;
 	int BLUR_RADIUS = 10;
 	// 250μm （50, 5。3）；   125μm（50， 3.3）
-
-
-	// 绘制
-	int DRAW_MAX_H = 15;
+	
+	int DRAW_MAX_H = 15;   // 绘制
 	int NG_DRAW_MAX_H = 5;
 
 
-	float Gaussian_Ker_XY[Gaussian_Size];
 
+
+
+
+
+
+
+	/** 均值滤波的SSE实现方式 **/
 	class BlurVersion2
 	{
 	public:
@@ -833,6 +849,9 @@ namespace NA113 {
 
 	};
 
+
+
+	/** RGB2Y_4的omp+十二路并行计算方式 **/
 	void RGB2Y_4(unsigned char* Src, unsigned char* Dest, int Width, int Height, int Stride, int threads_num = 4) {
 		const int B_WT = int(0.114 * 256 + 0.5);
 		const int G_WT = int(0.587 * 256 + 0.5);
@@ -902,304 +921,341 @@ namespace NA113 {
 
 	// ===============================================================================================
 
-	// for + cv::max(p1, p2)
-	void test_doing(cv::Mat imgori1, cv::Mat imgori2) {
-		cv::cvtColor(imgori1, imgori1, cv::COLOR_BGR2GRAY);
-		cv::cvtColor(imgori2, imgori2, cv::COLOR_BGR2GRAY);
 
 
-		cv::Mat _grayA1, _grayB1;
-		cv::Mat _grayA2, _grayB2;
-		cv::blur(imgori1, _grayA1, cv::Size(21, 21));  //! 均值提取低频信息
-		cv::blur(imgori2, _grayB1, cv::Size(21, 21));  //! 均值提取低频信息
-		_grayA2 = _grayA1 - imgori1;
-		_grayB2 = _grayB1 - imgori2;
 
-		cv::Mat result(imgori1.rows, imgori1.cols, CV_8UC1);
-		int total_pics_num = 1000;
-		auto start = std::chrono::high_resolution_clock::now();
+	/*** 
+	Case1: 验证功能：多张图构建成一张图后再进行缺陷检测
+	实验结果：对连续多张图像的重复一致性要求很高。
+	***/
+	namespace Case1 {
 
-		for (int i = 0; i < total_pics_num; i++) {
-			auto* p1 = _grayA2.ptr<unsigned char>();
-			auto* p2 = _grayB2.ptr<unsigned char>();
-			auto* presult = result.ptr<unsigned char>();
+	// for + cv::max(p1, p2); 
+		void test_doing(cv::Mat imgori1, cv::Mat imgori2) {
+			cv::cvtColor(imgori1, imgori1, cv::COLOR_BGR2GRAY);
+			cv::cvtColor(imgori2, imgori2, cv::COLOR_BGR2GRAY);
 
-			const int total = imgori1.total();
+
+			cv::Mat _grayA1, _grayB1;
+			cv::Mat _grayA2, _grayB2;
+			cv::blur(imgori1, _grayA1, cv::Size(21, 21));  //! 均值提取低频信息
+			cv::blur(imgori2, _grayB1, cv::Size(21, 21));  //! 均值提取低频信息
+			_grayA2 = _grayA1 - imgori1;
+			_grayB2 = _grayB1 - imgori2;
+
+			cv::Mat result(imgori1.rows, imgori1.cols, CV_8UC1);
+			int total_pics_num = 1000;
+			auto start = std::chrono::high_resolution_clock::now();
+
+			for (int i = 0; i < total_pics_num; i++) {
+				auto* p1 = _grayA2.ptr<unsigned char>();
+				auto* p2 = _grayB2.ptr<unsigned char>();
+				auto* presult = result.ptr<unsigned char>();
+
+				const int total = imgori1.total();
 #pragma omp parallel for num_threads(8)
-			for (int i = 0; i < total; ++i) {
-				presult[i] = (cv::max)(p1[i], p2[i]);
+				for (int i = 0; i < total; ++i) {
+					presult[i] = (cv::max)(p1[i], p2[i]);
+				}
 			}
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
 		}
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
-	}
-
-	// unsigned char
-	void test_doing3(cv::Mat imgori1, cv::Mat imgori2) {
-		cv::cvtColor(imgori1, imgori1, cv::COLOR_BGR2GRAY);
-		cv::cvtColor(imgori2, imgori2, cv::COLOR_BGR2GRAY);
+		// for + unsigned char
+		void test_doing3(cv::Mat imgori1, cv::Mat imgori2) {
+			cv::cvtColor(imgori1, imgori1, cv::COLOR_BGR2GRAY);
+			cv::cvtColor(imgori2, imgori2, cv::COLOR_BGR2GRAY);
 
 
-		cv::Mat _grayA1, _grayB1;
-		cv::Mat _grayA2, _grayB2;
-		cv::blur(imgori1, _grayA1, cv::Size(21, 21));  //! 均值提取低频信息
-		cv::blur(imgori2, _grayB1, cv::Size(21, 21));  //! 均值提取低频信息
-		_grayA2 = _grayA1 - imgori1;
-		_grayB2 = _grayB1 - imgori2;
+			cv::Mat _grayA1, _grayB1;
+			cv::Mat _grayA2, _grayB2;
+			cv::blur(imgori1, _grayA1, cv::Size(21, 21));  //! 均值提取低频信息
+			cv::blur(imgori2, _grayB1, cv::Size(21, 21));  //! 均值提取低频信息
+			_grayA2 = _grayA1 - imgori1;
+			_grayB2 = _grayB1 - imgori2;
 
-		cv::Mat result(imgori1.rows, imgori1.cols, CV_8UC1);
-		int total_pics_num = 1000;
-		auto start = std::chrono::high_resolution_clock::now();
+			cv::Mat result(imgori1.rows, imgori1.cols, CV_8UC1);
+			int total_pics_num = 1000;
+			auto start = std::chrono::high_resolution_clock::now();
 
-		/** 将cv::Mat的数据装入到数组中 */
-		unsigned char* data_array1 = new unsigned char[_grayA2.total()];
-		unsigned char* data_array2 = new unsigned char[_grayB2.total()];
-		if (_grayA2.isContinuous() && _grayB2.isContinuous()) {
-			memcpy(data_array1, _grayA2.data, _grayA2.total() * sizeof(unsigned char));
-			memcpy(data_array2, _grayB2.data, _grayB2.total() * sizeof(unsigned char));
-		}
-		unsigned char* data_array3 = new unsigned char[_grayA2.total()];
+			/** 将cv::Mat的数据装入到数组中 */
+			unsigned char* data_array1 = new unsigned char[_grayA2.total()];
+			unsigned char* data_array2 = new unsigned char[_grayB2.total()];
+			if (_grayA2.isContinuous() && _grayB2.isContinuous()) {
+				memcpy(data_array1, _grayA2.data, _grayA2.total() * sizeof(unsigned char));
+				memcpy(data_array2, _grayB2.data, _grayB2.total() * sizeof(unsigned char));
+			}
+			unsigned char* data_array3 = new unsigned char[_grayA2.total()];
 
-		for (int i = 0; i < total_pics_num; i++) {
-			/** min */
+			for (int i = 0; i < total_pics_num; i++) {
+				/** min */
 #pragma omp parallel for num_threads(8)
-			for (int i = 0; i < _grayA2.total(); ++i) {
-				data_array3[i] = (std::min)(data_array1[i], data_array2[i]);
+				for (int i = 0; i < _grayA2.total(); ++i) {
+					data_array3[i] = (std::min)(data_array1[i], data_array2[i]);
+				}
 			}
+
+			/** 将数组转换成mat */
+			cv::Mat mat_deep(imgori1.rows, imgori1.cols, CV_8UC1);
+			memcpy(mat_deep.data, data_array3, imgori1.rows * imgori1.cols * sizeof(unsigned char));
+
+
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
 		}
 
-		/** 将数组转换成mat */
-		cv::Mat mat_deep(imgori1.rows, imgori1.cols, CV_8UC1);
-		memcpy(mat_deep.data, data_array3, imgori1.rows * imgori1.cols * sizeof(unsigned char));
+		// cv::max(mat1, mat2)
+		void test_doing4(cv::Mat imgori1, cv::Mat imgori2) {
+			cv::cvtColor(imgori1, imgori1, cv::COLOR_BGR2GRAY);
+			cv::cvtColor(imgori2, imgori2, cv::COLOR_BGR2GRAY);
 
 
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+			cv::Mat _grayA1, _grayB1;
+			cv::Mat _grayA2, _grayB2;
+			cv::blur(imgori1, _grayA1, cv::Size(21, 21));  //! 均值提取低频信息
+			cv::blur(imgori2, _grayB1, cv::Size(21, 21));  //! 均值提取低频信息
+			_grayA2 = _grayA1 - imgori1;
+			_grayB2 = _grayB1 - imgori2;
 
-	}
-
-	// cv::max(mat1, mat2)
-	void test_doing4(cv::Mat imgori1, cv::Mat imgori2) {
-		cv::cvtColor(imgori1, imgori1, cv::COLOR_BGR2GRAY);
-		cv::cvtColor(imgori2, imgori2, cv::COLOR_BGR2GRAY);
-
-
-		cv::Mat _grayA1, _grayB1;
-		cv::Mat _grayA2, _grayB2;
-		cv::blur(imgori1, _grayA1, cv::Size(21, 21));  //! 均值提取低频信息
-		cv::blur(imgori2, _grayB1, cv::Size(21, 21));  //! 均值提取低频信息
-		_grayA2 = _grayA1 - imgori1;
-		_grayB2 = _grayB1 - imgori2;
-
-		// cv::min
-		cv::Mat result(imgori1.rows, imgori1.cols, CV_8UC1);
-		int total_pics_num = 1000;
-		auto start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			result = (cv::min)(imgori1, imgori2);
-		}
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-	}
-
-	/** 测试两张图合并为相同shape的一张图的合并操作的时间 */
-	void experiment1(std::vector<cv::Mat> input)
-	{
-		cv::Mat src1 = input[0];
-		cv::Mat src2 = input[1];
-
-		int total_pics_num = 1;
-		auto start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			test_doing(src1, src2);
-		}
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-		return;
-	}
-
-	// 行优先遍历测试
-	void rowMajorAccess(cv::Mat& img) {
-		for (int r = 0; r < img.rows; ++r) {
-			auto* ptr = img.ptr<uchar>(r);
-			for (int c = 0; c < img.cols; ++c) {
-				ptr[c] = static_cast<uchar>((ptr[c] + 1) % 256);
-				//img.at<uchar>(r, c) = static_cast<uchar>((img.at<uchar>(r, c) + 1) % 256);
+			// cv::min
+			cv::Mat result(imgori1.rows, imgori1.cols, CV_8UC1);
+			int total_pics_num = 1000;
+			auto start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				result = (cv::min)(imgori1, imgori2);
 			}
-		}
-	}
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
-	// 列优先遍历测试
-	void colMajorAccess(cv::Mat& img) {
-		for (int c = 0; c < img.cols; ++c) {
+		}
+
+		/** 测试两张图合并为相同shape的一张图的合并操作的时间 */
+		void experiment1(std::vector<cv::Mat> input)
+		{
+			cv::Mat src1 = input[0];
+			cv::Mat src2 = input[1];
+
+			int total_pics_num = 1;
+			auto start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				test_doing(src1, src2);
+			}
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+			return;
+		}
+
+	}
+	
+
+
+	/***
+	Case2: 测试: 一张图像，先行后列遍历和先列后行遍历的执行效率差别
+	***/
+	namespace Case2 {
+	
+		// 行优先遍历测试
+		void rowMajorAccess(cv::Mat& img) {
 			for (int r = 0; r < img.rows; ++r) {
-				img.at<uchar>(r, c) = static_cast<uchar>((img.at<uchar>(r, c) + 1) % 256);
+				auto* ptr = img.ptr<uchar>(r);
+				for (int c = 0; c < img.cols; ++c) {
+					ptr[c] = static_cast<uchar>((ptr[c] + 1) % 256);
+					//img.at<uchar>(r, c) = static_cast<uchar>((img.at<uchar>(r, c) + 1) % 256);
+				}
 			}
 		}
+
+		// 列优先遍历测试
+		void colMajorAccess(cv::Mat& img) {
+			for (int c = 0; c < img.cols; ++c) {
+				for (int r = 0; r < img.rows; ++r) {
+					img.at<uchar>(r, c) = static_cast<uchar>((img.at<uchar>(r, c) + 1) % 256);
+				}
+			}
+		}
+
+		/** 测试: 一张图像，先行后列遍历和先列后行遍历的差别 */
+		void experiment2(std::vector<cv::Mat> input)
+		{
+			cv::Mat src1 = input[0];
+			cv::Mat src2 = input[1];
+
+			int total_pics_num = 1000;
+			auto start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				colMajorAccess(src1);
+				//rowMajorAccess(src1);
+			}
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				//colMajorAccess(src1);
+				rowMajorAccess(src1);
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+			return;
+		}
+
+
 	}
 
-	/** 测试: 一张图像，先行后列遍历和先列后行遍历的差别 */
-	void experiment2(std::vector<cv::Mat> input)
-	{
-		cv::Mat src1 = input[0];
-		cv::Mat src2 = input[1];
-
-		int total_pics_num = 1000;
-		auto start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			colMajorAccess(src1);
-			//rowMajorAccess(src1);
-		}
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
 
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			//colMajorAccess(src1);
-			rowMajorAccess(src1);
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
-		return;
-	}
-
-	void hconcat_memcpy(cv::Mat& img1, cv::Mat& result, int i, int thread_num) {
+	/***
+	Case3: 两张图像横向拼接在一起
+	***/
+	namespace Case3 {
+		void hconcat_memcpy(cv::Mat& img1, cv::Mat& result, int i, int thread_num) {
 #pragma omp parallel for num_threads(thread_num)
-		for (int r = 0; r < img1.rows; ++r) {
-			uchar* dst = result.ptr<uchar>(r);
-			const uchar* src1 = img1.ptr<uchar>(r);
-			memcpy(dst + i * img1.cols * img1.elemSize(), src1, img1.cols * img1.elemSize());
+			for (int r = 0; r < img1.rows; ++r) {
+				uchar* dst = result.ptr<uchar>(r);
+				const uchar* src1 = img1.ptr<uchar>(r);
+				memcpy(dst + i * img1.cols * img1.elemSize(), src1, img1.cols * img1.elemSize());
+			}
 		}
+
+		cv::Mat hconcat_roi(cv::Mat& img1, cv::Mat& img2) {
+			CV_Assert(img1.rows == img2.rows && img1.type() == img2.type());
+
+			cv::Mat result(img1.rows, img1.cols + img2.cols, img1.type());
+
+			// 左半部分
+			img1.copyTo(result(cv::Rect(0, 0, img1.cols, img1.rows)));
+			// 右半部分
+			img2.copyTo(result(cv::Rect(img1.cols, 0, img2.cols, img2.rows)));
+
+			return result;
+		}
+
+		/** 测试: 两张图像横向拼接在一起 */
+		void experiment3(std::vector<cv::Mat> input)
+		{
+			cv::Mat src1 = input[0];
+			cv::Mat src2 = input[1];
+
+			int total_pics_num = 1000;
+			cv::Mat result(input[0].rows, input[0].cols * input.size(), input[0].type());
+
+			auto start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				for (int j = 0; j < input.size(); j++)
+				{
+					hconcat_memcpy(input[j], result, j, 0);
+				}
+			}
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				for (int j = 0; j < input.size(); j++)
+				{
+					hconcat_memcpy(input[j], result, j, 2);
+				}
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				for (int j = 0; j < input.size(); j++)
+				{
+					hconcat_memcpy(input[j], result, j, 4);
+				}
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				for (int j = 0; j < input.size(); j++)
+				{
+					hconcat_memcpy(input[j], result, j, 8);
+				}
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				for (int j = 0; j < input.size(); j++)
+				{
+					hconcat_memcpy(input[j], result, j, 16);
+				}
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+
+
+
+			//start = std::chrono::high_resolution_clock::now();
+			//for (int i = 0; i < total_pics_num; i++) {
+			//	for (int j = 0; j < input.size(); j++)
+			//	{
+			//		if (j == 0) { result = input[0]; }
+			//		else {
+			//			//result = hconcat_roi(result, input[j]);
+			//		}
+			//	}
+			//}
+			//end = std::chrono::high_resolution_clock::now();
+			//duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			//LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+
+			//start = std::chrono::high_resolution_clock::now();
+			//for (int i = 0; i < total_pics_num; i++) {
+
+			//	for (int j = 0; j < input.size(); j++)
+			//	{
+			//		if (j == 0) { result = input[0]; }
+			//		else {
+			//			//cv::hconcat(result, input[j], result);
+			//		}
+			//	}
+			//}
+			//end = std::chrono::high_resolution_clock::now();
+			//duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			//LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+			return;
+		}
+	
+	
 	}
 
-	cv::Mat hconcat_roi(cv::Mat& img1, cv::Mat& img2) {
-		CV_Assert(img1.rows == img2.rows && img1.type() == img2.type());
-
-		cv::Mat result(img1.rows, img1.cols + img2.cols, img1.type());
-
-		// 左半部分
-		img1.copyTo(result(cv::Rect(0, 0, img1.cols, img1.rows)));
-		// 右半部分
-		img2.copyTo(result(cv::Rect(img1.cols, 0, img2.cols, img2.rows)));
-
-		return result;
-	}
-
-	/** 测试: 两张图像横向拼接在一起 */
-	void experiment3(std::vector<cv::Mat> input)
-	{
-		cv::Mat src1 = input[0];
-		cv::Mat src2 = input[1];
-
-		int total_pics_num = 1000;
-		cv::Mat result(input[0].rows, input[0].cols * input.size(), input[0].type());
-
-		auto start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			for (int j = 0; j < input.size(); j++)
-			{
-				hconcat_memcpy(input[j], result, j, 0);
-			}
-		}
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			for (int j = 0; j < input.size(); j++)
-			{
-				hconcat_memcpy(input[j], result, j, 2);
-			}
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			for (int j = 0; j < input.size(); j++)
-			{
-				hconcat_memcpy(input[j], result, j, 4);
-			}
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			for (int j = 0; j < input.size(); j++)
-			{
-				hconcat_memcpy(input[j], result, j, 8);
-			}
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			for (int j = 0; j < input.size(); j++)
-			{
-				hconcat_memcpy(input[j], result, j, 16);
-			}
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
 
 
-
-		//start = std::chrono::high_resolution_clock::now();
-		//for (int i = 0; i < total_pics_num; i++) {
-		//	for (int j = 0; j < input.size(); j++)
-		//	{
-		//		if (j == 0) { result = input[0]; }
-		//		else {
-		//			//result = hconcat_roi(result, input[j]);
-		//		}
-		//	}
-		//}
-		//end = std::chrono::high_resolution_clock::now();
-		//duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		//LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-
-		//start = std::chrono::high_resolution_clock::now();
-		//for (int i = 0; i < total_pics_num; i++) {
-
-		//	for (int j = 0; j < input.size(); j++)
-		//	{
-		//		if (j == 0) { result = input[0]; }
-		//		else {
-		//			//cv::hconcat(result, input[j], result);
-		//		}
-		//	}
-		//}
-		//end = std::chrono::high_resolution_clock::now();
-		//duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		//LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-		return;
-	}
-
+	/***
+	Case4: 不清楚
+	***/
 	int picshadowx(cv::Mat binary, cv::Mat* show, int numThreads = 4)
 	{
 		int _res = 2;
@@ -1267,6 +1323,540 @@ namespace NA113 {
 
 		return _res;
 	}
+
+	namespace Case4 {
+		void experiment4(std::vector<cv::Mat> input) {
+			cv::Mat src1 = input[0];
+
+			int total_pics_num = 1000;
+			cv::Mat result(input[0].rows, input[0].cols * input.size(), input[0].type());
+
+			auto start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				for (int j = 0; j < input.size(); j++)
+				{
+					Case3::hconcat_memcpy(input[j], result, j, 4);
+				}
+			}
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+
+
+			cv::Mat imgrst = result.clone();
+			BlurVersion2 blur2 = BlurVersion2();
+			cv::Mat _gray;
+			cv::Mat  _gray2;
+
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				/** 1 BGR2GRAY*/
+				cv::cvtColor(result, _gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
+
+				//int Height = result.rows;
+				//int Width = result.cols;
+				//int Stride = Width * 3;
+				//unsigned char* Src = result.data;
+				//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
+				//RGB2Y_4(Src, Dest, Width, Height, Stride, 2);     // sse 一次处理12个
+				//_gray = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
+
+
+				/** 2 BoxFilter */
+				//cv::blur(_gray, _gray2, cv::Size(21, 21));
+
+				//_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
+				//int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
+
+				blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 2, 2);
+				//! 经验： 当算法中存在多个使用omp的算子时，需要合理分配omp的线程数目，不能太大，否则计算慢。
+
+
+				/** 3 subtraction */
+				_gray = _gray2 - _gray;  // 如果复用 gray 用时0.08ms, 而使用新矩阵会0.45ms;
+
+				//cv::Mat subtraction1 = standard_gray3 - _gray3;
+				//cv::Mat subtraction2 = _gray3 - standard_gray3;
+
+
+				///** 4 picshadowy */
+				int _iresult = picshadowx(_gray, &imgrst, 2);
+
+
+
+				//LOGD("s");
+
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+
+			cv::Mat imgrstB = src1.clone();
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				for (int j = 0; j < input.size(); j++)
+				{
+					/** 初始化 */
+					cv::Mat _grayB, _grayB2;
+
+
+					/** BGR2GRAY */
+					cv::cvtColor(input[j], _grayB, cv::COLOR_BGR2GRAY);
+
+					//int Height = input[j].rows;
+					//int Width = input[j].cols;
+					//int Stride = Width * 3;
+					//unsigned char* Src = input[j].data;
+					//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
+					//RGB2Y_4(Src, Dest, Width, Height, Stride, 2);       // sse 一次处理12个
+					//_grayB = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
+
+
+					/** BoxFilter */
+					//cv::Mat tem;
+					//cv::blur(_grayB, tem, cv::Size(21, 21));
+					//_grayB2 = cv::Mat::zeros(_grayB.size(), _grayB.type());
+					//int result2 = blur2.IM_BoxBlur_SSE_Comment(_grayB.ptr<uchar>(0), _grayB2.ptr<uchar>(0), _grayB.cols, _grayB.rows, _grayB.cols, 10);
+					blur2.IM_BoxBlur_SSE_Blocks(_grayB, _grayB2, 10, 2, 2);
+
+					//cv::Mat sub1 = tem - _grayB2;
+					//cv::Mat sub2 = _grayB2 - tem;
+
+					/** subtraction */
+					_grayB = _grayB2 - _grayB;
+
+
+					/** picshadowy */
+					int _iresult = picshadowx(_grayB, &imgrstB, 2);
+				}
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+		}
+	}
+
+
+
+
+
+
+
+	int picshadowy(cv::Mat binary, cv::Mat* show, int numThreads = 4, int single_rows = -1)
+	{
+		if (single_rows == -1) { single_rows = binary.rows; }
+		int _res = 2;
+		int* blackcout = new int[binary.rows];
+		memset(blackcout, 0, binary.rows * 4);
+		int _total = 0;
+
+#pragma omp parallel for num_threads(numThreads)  reduction(+:_total)
+		for (int i = 0; i < binary.rows; i++)
+		{
+			if (single_rows > 0 && i % single_rows < 5) { continue; }  // 避免拼接交界处出现的伪缺陷问题
+
+			auto* ptr = binary.ptr<uchar>(i);
+			for (int j = 0; j < binary.cols; j++)
+			{
+				if (ptr[j] > 50)
+				{
+#pragma omp atomic  // 并行安全
+					blackcout[i]++; //垂直投影按列在x轴进行投影
+					++_total;
+				}
+			}
+		}
+		double _avg = _total * 1.0 / binary.rows;
+
+
+
+#pragma omp parallel for num_threads(numThreads)
+		for (int i = 0; i < binary.rows; i++)
+		{
+			if (single_rows > 0 && i % single_rows < 5) { continue; }  // 避免拼接交界处出现的伪缺陷问题
+
+			if (blackcout[i] > _avg + 5.3)
+			{
+				_res = 1;
+				break;
+			}
+		}
+
+
+		if (nullptr != show)
+		{
+#pragma omp parallel for num_threads(numThreads)
+			for (int i = 0; i < binary.rows; i++)
+			{
+				if (blackcout[i] > _avg + 5.3)
+				{
+					for (int j = 0; j < binary.cols / 10; j++)
+					{
+						show->at<cv::Vec3b>(i, j)[0] = 128;//翻转到下面，便于观看
+						show->at<cv::Vec3b>(i, j)[1] = 128;//翻转到下面，便于观看
+						show->at<cv::Vec3b>(i, j)[2] = 128;//翻转到下面，便于观看
+					}
+				}
+			}
+#pragma omp parallel for num_threads(numThreads)
+			for (int i = 0; i < binary.rows; i++)
+			{
+				int count = blackcout[i];
+				for (int j = 0; j < count; j++)
+				{
+					show->at<cv::Vec3b>(i, show->cols - 1 - j)[0] = 255; //翻转到下面，便于观看
+					show->at<cv::Vec3b>(i, show->cols - 1 - j)[1] = 255; //翻转到下面，便于观看
+					show->at<cv::Vec3b>(i, show->cols - 1 - j)[2] = 0;   //翻转到下面，便于观看
+				}
+			}
+		}
+
+		delete[] blackcout;
+		blackcout = nullptr;
+
+		return _res;
+	}
+
+	/***
+	Case5: 图像如果是竖直方向的，则执行竖直方向的投影检测的执行效率情况
+	***/
+	namespace Case5 {
+
+		void ff(std::vector<cv::Mat>& input, std::vector<cv::Mat>& output)
+		{
+			for (int i = 0; i < input.size(); i++)
+			{
+				cv::Mat dst;
+				cv::rotate(input[i], dst, cv::ROTATE_90_CLOCKWISE);
+				output.push_back(dst.isContinuous() ? dst : dst.clone());
+			}
+
+		}
+
+		void vconcat_memcpy(cv::Mat& img1, cv::Mat& result, int i, int thread_num) {
+			const size_t row_bytes = img1.cols * img1.elemSize();
+
+#pragma omp parallel for num_threads(thread_num)
+			for (int r = 0; r < img1.rows; ++r) {
+				uchar* dst = result.ptr<uchar>(img1.rows * i + r);
+				const uchar* src = img1.ptr<uchar>(r);
+				memcpy(dst, src, row_bytes);
+			}
+
+			//const size_t row_bytes = img1.cols * img1.elemSize() * img1.rows;
+			//memcpy(result.data + i * img1.cols * img1.elemSize() * img1.rows, img1.data, row_bytes);
+
+		}
+
+		/** 输入需要是反转后的；且配备Y方向的投影函数 */
+		void experiment5(std::vector<cv::Mat> input) {
+
+			std::vector<cv::Mat> output;
+			ff(input, output);
+
+			cv::Mat src1 = output[0];
+
+			int total_pics_num = 1000;
+			cv::Mat result(output[0].rows * output.size(), output[0].cols, output[0].type());
+
+			auto start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				for (int j = 0; j < output.size(); j++)
+				{
+					vconcat_memcpy(output[j], result, j, 4);
+				}
+			}
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+
+
+
+
+
+			/** standard process*/
+			cv::Mat standard_gray, standard_gray2, standard_gray3;
+			cv::Mat standard_imgrst = result.clone();
+			cv::cvtColor(result, standard_gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
+			cv::blur(standard_gray, standard_gray2, cv::Size(21, 21));
+			standard_gray3 = standard_gray2 - standard_gray;
+			int standard_iresult = picshadowy(standard_gray3, &standard_imgrst, 4);
+
+
+
+			/** experiments */
+			BlurVersion2 blur2 = BlurVersion2();
+			cv::Mat imgrst = result.clone();
+			cv::Mat _gray;
+			cv::Mat  _gray2;
+			//cv::Mat _gray = standard_gray;
+			//cv::blur(_gray, _gray2, cv::Size(21, 21));
+
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				/** 1 BGR2GRAY*/
+				//cv::cvtColor(result, _gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
+
+				int Height = result.rows;
+				int Width = result.cols;
+				int Stride = Width * 3;
+				unsigned char* Src = result.data;
+				unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
+				RGB2Y_4(Src, Dest, Width, Height, Stride, 2);     // sse 一次处理12个
+				_gray = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
+
+
+				/** 2 BoxFilter */
+				//cv::blur(_gray, _gray2, cv::Size(21, 21));
+
+				//_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
+				//int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
+
+				blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 10, 2);
+				//! 经验： 当算法中存在多个使用omp的算子时，需要合理分配omp的线程数目，不能太大，否则计算慢。
+
+
+				/** 3 subtraction */
+				_gray = _gray2 - _gray;  // 如果复用 gray 用时0.08ms, 而使用新矩阵会0.45ms;
+
+				//cv::Mat subtraction1 = standard_gray3 - _gray3;
+				//cv::Mat subtraction2 = _gray3 - standard_gray3;
+
+
+				///** 4 picshadowy */
+				int _iresult = picshadowy(_gray, &imgrst, 2, src1.rows);
+
+
+
+				//LOGD("s");
+
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+
+			cv::Mat imgrstB = src1.clone();
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				for (int j = 0; j < output.size(); j++)
+				{
+					/** 初始化 */
+					cv::Mat _grayB, _grayB2;
+
+
+					/** BGR2GRAY */
+					cv::cvtColor(output[j], _grayB, cv::COLOR_BGR2GRAY);
+
+					//int Height = output[j].rows;
+					//int Width = output[j].cols;
+					//int Stride = Width * 3;
+					//unsigned char* Src = output[j].data;
+					//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
+					//RGB2Y_4(Src, Dest, Width, Height, Stride, 2);       // sse 一次处理12个
+					//_grayB = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
+
+
+					/** BoxFilter */
+					//cv::blur(_grayB, _grayB2, cv::Size(21, 21));
+					//_grayB2 = cv::Mat::zeros(_grayB.size(), _grayB.type());
+					//int result2 = blur2.IM_BoxBlur_SSE(_grayB.ptr<uchar>(0), _grayB2.ptr<uchar>(0), _grayB.cols, _grayB.rows, _grayB.cols, 10);
+					blur2.IM_BoxBlur_SSE_Blocks(_grayB, _grayB2, 10, 2, 2);
+
+
+
+					/** subtraction */
+					_grayB = _grayB2 - _grayB;
+
+
+					/** picshadowy */
+					int _iresult = picshadowy(_grayB, &imgrstB, 2);
+				}
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+		}
+	}
+
+
+
+	/***
+	Case6: 研究均值滤波和SSE
+	***/
+	namespace Case6 {
+		/** 学习boxfilter:  */
+		void studyBoxFilter() {
+			cv::Mat src(4, 5, CV_8UC1); // 创建 10x10 单通道矩阵
+			//cv::randu(src, cv::Scalar(0), cv::Scalar(11)); // [0,11) 区间'
+			for (int i = 0; i < src.rows; i++) {
+				for (int j = 0; j < src.cols; j++) {
+					src.at<char>(i, j) = i * src.cols + j + 1; // 计算连续值
+				}
+			}
+			/** 原始数据
+			1  2  3  4  5
+			6  7  8  9  10
+			11 12 13 14 15
+			16 17 18 19 20
+			*/
+
+
+
+			/** 填充后的数据
+			7	6  7  8  9  10  9
+			-----------------------
+			2 | 1  2  3  4  5  | 4
+			7 |	6  7  8  9  10 | 9
+			12|	11 12 13 14 15 | 14
+			17| 16 17 18 19 20 | 19
+			-----------------------
+			12	11 12 13 14 15   14
+			*/
+
+
+			cv::Mat dst = cv::Mat::zeros(src.size(), src.type());
+			BlurVersion2 blur2 = BlurVersion2();
+			int result2 = blur2.IM_BoxBlur_SSE_Comment(src.ptr<uchar>(0), dst.ptr<uchar>(0), src.cols, src.rows, src.cols, 1);
+			/**
+			5  5  6  7  7
+			6  7  8  9  9
+			11   12  13  14  14
+			13   13   14   15   16
+			*/
+			cv::Mat dst2;
+			cv::blur(src, dst2, cv::Size(3, 3));
+
+			LOGD("--");
+
+		}
+
+
+		void studySSECase1() {
+
+			float op1[4] = { 1.0, 2.0, 3.0, 4.0 };
+			float op2[4] = { 1.0, 2.0, 3.0, 4.0 };
+			float result[4];
+
+			__m128  a;
+			__m128  b;
+			__m128  c;
+
+			// Load
+			a = _mm_loadu_ps(op1);
+			b = _mm_loadu_ps(op2);
+
+			// Calculate
+			c = _mm_add_ps(a, b);	// c = a + b
+
+			// Store
+			_mm_storeu_ps(result, c);
+
+			cout << result[0] << endl;
+			cout << result[1] << endl;
+			cout << result[2] << endl;
+			cout << result[3] << endl;
+			system("pause");
+
+		}
+
+
+		void studySSECase2() {
+
+
+			__declspec(align(16)) float op1[4] = { 1.0, 2.0, 3.0, 4.0 };
+			__declspec(align(16)) float op2[4] = { 1.0, 2.0, 3.0, 4.0 };
+			_MM_ALIGN16 float result[4];		// _MM_ALIGN16等同于__declspec(align(16))
+
+			__m128  a;
+			__m128  b;
+			__m128  c;
+
+			// Load
+			a = _mm_load_ps(op1);
+			b = _mm_load_ps(op2);
+
+			// Calculate
+			c = _mm_add_ps(a, b);	// c = a + b
+
+			// Store
+			_mm_store_ps(result, c);
+
+			cout << result[0] << endl;
+			cout << result[1] << endl;
+			cout << result[2] << endl;
+			cout << result[3] << endl;
+			system("pause");
+
+		}
+
+
+		void sse_add(float* srcA, float* srcB, float* dest, int n) {
+			int len = n >> 2;
+			for (int i = 0; i < len; i++) {
+				*(__m128*)(dest + i * 4) = _mm_add_ps(*(__m128*)(srcA + i * 4), *(__m128*)(srcB + i * 4));
+			}
+		}
+
+		void normal_add(float* srcA, float* srcB, float* dest, int n) {
+			for (int i = 0; i < n; i++) {
+				dest[i] = srcA[i] + srcB[i];
+			}
+		}
+
+		void studySSECase3() {
+
+
+
+			DWORD timeStart = 0, timeEnd = 0;
+			const int size = 10000; //申请的内存中存放的数据个数
+			const int count = 10000;//循环计算的次数，便于观察执行效率
+
+			// 分配16字节对齐的内存
+			_MM_ALIGN16 float* srcA = (_MM_ALIGN16 float*)_mm_malloc(sizeof(float) * size, 16);
+			_MM_ALIGN16 float* srcB = (_MM_ALIGN16 float*)_mm_malloc(sizeof(float) * size, 16);
+			_MM_ALIGN16 float* dest = (_MM_ALIGN16 float*)_mm_malloc(sizeof(float) * size, 16);
+
+			// 初始化
+			for (int i = 0; i < size; i++) {
+				srcA[i] = (float)i;
+			}
+			memcpy_s(srcB, sizeof(float) * size, srcA, sizeof(float) * size);
+
+			// 标准加法
+			timeStart = GetTickCount();
+			for (int i = 0; i < count; i++) {
+				normal_add(srcA, srcB, dest, size);
+			}
+			timeEnd = GetTickCount();
+			cout << "标准加法" << (timeEnd - timeStart) << "毫秒" << endl;
+
+			// SSE指令加法
+			timeStart = GetTickCount();
+			for (int i = 0; i < count; i++) {
+				sse_add(srcA, srcB, dest, size);
+			}
+			timeEnd = GetTickCount();
+			cout << "SSE加法" << (timeEnd - timeStart) << "毫秒" << endl;
+
+			// 释放内存
+			_mm_free(srcA);
+			_mm_free(srcB);
+			_mm_free(dest);
+
+			system("pause");
+
+		}
+
+
+	}
+
+
 
 	int picshadowx_ptr_0519(unsigned char* binary, unsigned char* show, int numThreads, int width, int height)
 	{
@@ -1582,1006 +2172,509 @@ namespace NA113 {
 		return _res;
 	}
 
-	void experiment4(std::vector<cv::Mat> input) {
-		cv::Mat src1 = input[0];
 
-		int total_pics_num = 1000;
-		cv::Mat result(input[0].rows, input[0].cols * input.size(), input[0].type());
+	/*** 
+	Case7: 测试各版本投影操作的执行效率
+	***/
+	namespace Case7 {
 
-		auto start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			for (int j = 0; j < input.size(); j++)
+		// doing: 原始dong(picshadowx)
+		void baseline(cv::Mat& img1, cv::Mat& imgrst, BlurVersion2& blur2)
+		{
+			//try  // it really needs to exist.
+			//{
+
+
+			//}
+			//catch (const cv::Exception& e)
+			//{
+			//	LOGE("NG_UNDEFINED: e1: {};", e.what());
+			//}
+			//catch (const std::exception& e)
+			//{
+			//	LOGE("NG_UNDEFINED: e2: {};", e.what());
+			//}
+			//catch (...)
+			//{
+			//	LOGE("NG_UNDEFINED: e3: unkown;");
+			//}
+
+						/** init */
+			int _i = 0;
+			cv::Mat _gray, _gray2;
+			if (img1.channels() == 1)
 			{
-				hconcat_memcpy(input[j], result, j, 4);
+				cv::cvtColor(img1, imgrst, cv::COLOR_GRAY2BGR);
+				img1.copyTo(_gray);
 			}
-		}
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-
-
-		cv::Mat imgrst = result.clone();
-		BlurVersion2 blur2 = BlurVersion2();
-		cv::Mat _gray;
-		cv::Mat  _gray2;
-
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			/** 1 BGR2GRAY*/
-			cv::cvtColor(result, _gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
-
-			//int Height = result.rows;
-			//int Width = result.cols;
-			//int Stride = Width * 3;
-			//unsigned char* Src = result.data;
-			//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
-			//RGB2Y_4(Src, Dest, Width, Height, Stride, 2);     // sse 一次处理12个
-			//_gray = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
-
-
-			/** 2 BoxFilter */
-			//cv::blur(_gray, _gray2, cv::Size(21, 21));
-
-			//_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
-			//int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
-
-			blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 2, 2);
-			//! 经验： 当算法中存在多个使用omp的算子时，需要合理分配omp的线程数目，不能太大，否则计算慢。
-
-
-			/** 3 subtraction */
-			_gray = _gray2 - _gray;  // 如果复用 gray 用时0.08ms, 而使用新矩阵会0.45ms;
-
-			//cv::Mat subtraction1 = standard_gray3 - _gray3;
-			//cv::Mat subtraction2 = _gray3 - standard_gray3;
-
-
-			///** 4 picshadowy */
-			int _iresult = picshadowx(_gray, &imgrst, 2);
-
-
-
-			//LOGD("s");
-
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-
-		cv::Mat imgrstB = src1.clone();
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			for (int j = 0; j < input.size(); j++)
+			else
 			{
-				/** 初始化 */
-				cv::Mat _grayB, _grayB2;
+				imgrst = img1.clone();
+				cv::cvtColor(img1, _gray, cv::COLOR_BGR2GRAY);
 
-
-				/** BGR2GRAY */
-				cv::cvtColor(input[j], _grayB, cv::COLOR_BGR2GRAY);
-
-				//int Height = input[j].rows;
-				//int Width = input[j].cols;
-				//int Stride = Width * 3;
-				//unsigned char* Src = input[j].data;
+				//int Height = data.imgori.rows;
+				//int Width = data.imgori.cols;
+				//unsigned char* Src = data.imgori.data;
 				//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
-				//RGB2Y_4(Src, Dest, Width, Height, Stride, 2);       // sse 一次处理12个
-				//_grayB = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
-
-
-				/** BoxFilter */
-				//cv::Mat tem;
-				//cv::blur(_grayB, tem, cv::Size(21, 21));
-				//_grayB2 = cv::Mat::zeros(_grayB.size(), _grayB.type());
-				//int result2 = blur2.IM_BoxBlur_SSE_Comment(_grayB.ptr<uchar>(0), _grayB2.ptr<uchar>(0), _grayB.cols, _grayB.rows, _grayB.cols, 10);
-				blur2.IM_BoxBlur_SSE_Blocks(_grayB, _grayB2, 10, 2, 2);
-
-				//cv::Mat sub1 = tem - _grayB2;
-				//cv::Mat sub2 = _grayB2 - tem;
-
-				/** subtraction */
-				_grayB = _grayB2 - _grayB;
-
-
-				/** picshadowy */
-				int _iresult = picshadowx(_grayB, &imgrstB, 2);
+				//int Stride = Width * 3;
+				//RGB2Y_4(Src, Dest, Width, Height, Stride);      // sse 一次处理12个
+				//_gray = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
 			}
+
+			/** block1 */
+			//_gray2 = _gray.clone();
+			//cv::blur(_gray, _gray2, cv::Size(21, 21));
+			_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
+			int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
+			//blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 2, 2);
+
+
+			/** block2 */
+			_gray = _gray2 - _gray; // 提取高频信息
+
+			/** block3 */
+			int _iresult = picshadowx(_gray, &imgrst, 4);
+
+			return;
 		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+
+		// baseline + picshadowx_ptr_0519
+		void optimize_0519(cv::Mat& img1, cv::Mat& imgrst, BlurVersion2& blur2)
+		{
+			//try  // it really needs to exist.
+			//{
+
+
+			//}
+			//catch (const cv::Exception& e)
+			//{
+			//	LOGE("NG_UNDEFINED: e1: {};", e.what());
+			//}
+			//catch (const std::exception& e)
+			//{
+			//	LOGE("NG_UNDEFINED: e2: {};", e.what());
+			//}
+			//catch (...)
+			//{
+			//	LOGE("NG_UNDEFINED: e3: unkown;");
+			//}
+
+						/** init */
+			int _i = 0;
+			cv::Mat _gray, _gray2;
+			if (img1.channels() == 1)
+			{
+				cv::cvtColor(img1, imgrst, cv::COLOR_GRAY2BGR);
+				img1.copyTo(_gray);
+			}
+			else
+			{
+				imgrst = img1.clone();
+				cv::cvtColor(img1, _gray, cv::COLOR_BGR2GRAY);
+
+				//int Height = data.imgori.rows;
+				//int Width = data.imgori.cols;
+				//unsigned char* Src = data.imgori.data;
+				//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
+				//int Stride = Width * 3;
+				//RGB2Y_4(Src, Dest, Width, Height, Stride);      // sse 一次处理12个
+				//_gray = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
+			}
+
+			/** block1 */
+			//_gray2 = _gray.clone();
+			//cv::blur(_gray, _gray2, cv::Size(21, 21));
+			_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
+			int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
+			//blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 2, 2);
+
+
+			/** block2 */
+			_gray = _gray2 - _gray; // 提取高频信息
+
+			/** block3 */
+			int _iresult = picshadowx_ptr_0519(_gray.ptr(0), imgrst.ptr(0), 4, _gray.cols, _gray.rows);
+
+			return;
+		}
+
+		// 测试原始doing(picshadowx)的执行效率
+		void experiment6(std::vector<cv::Mat> input) {
+			auto start = std::chrono::high_resolution_clock::now();
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+			int total_pics_num = 1000;
+			BlurVersion2 blur2 = BlurVersion2();
+
+
+			/** standard process*/
+			cv::Mat src1 = input[0];
+			cv::Mat standard_gray, standard_gray2, standard_gray3;
+			cv::Mat standard_imgrst = src1.clone();
+			cv::cvtColor(src1, standard_gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
+			cv::blur(standard_gray, standard_gray2, cv::Size(21, 21));
+			standard_gray3 = standard_gray2 - standard_gray;
+			int standard_iresult = picshadowy(standard_gray3, &standard_imgrst, 4);
+
+
+
+			/** experiments */
+			//cv::Rect roi = cv::Rect(cv::Point(0, 1000), cv::Point(4095, 1200));
+			//cv::Mat img1 = src1(roi);
+			cv::Mat img1 = src1.clone();
+			cv::Mat imgrst = img1.clone();
+			baseline(img1, imgrst, blur2);
+
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				baseline(img1, imgrst, blur2);
+				//if (i % 10 == 0) { LOGD(i); }
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+		}
+
+		// 测试原始doing(picshadowx_ptr_0519)的执行效率
+		void experiment7(std::vector<cv::Mat> input) {
+			auto start = std::chrono::high_resolution_clock::now();
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+			int total_pics_num = 1000;
+			BlurVersion2 blur2 = BlurVersion2();
+
+
+			/** standard process*/
+			cv::Mat src1 = input[0];
+			cv::Mat standard_gray, standard_gray2, standard_gray3;
+			cv::Mat standard_imgrst = src1.clone();
+			cv::cvtColor(src1, standard_gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
+			cv::blur(standard_gray, standard_gray2, cv::Size(21, 21));
+			standard_gray3 = standard_gray2 - standard_gray;
+			int standard_iresult = picshadowy(standard_gray3, &standard_imgrst, 4);
+
+
+
+			/** experiments */
+			//cv::Rect roi = cv::Rect(cv::Point(0, 1000), cv::Point(4095, 1200));
+			//cv::Mat img1 = src1(roi);
+			cv::Mat img1 = src1.clone();
+			cv::Mat imgrst = img1.clone();
+			optimize_0519(img1, imgrst, blur2);
+
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				optimize_0519(img1, imgrst, blur2);
+				//if (i % 10 == 0) { LOGD(i); }
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+
+		}
 
 	}
 
-	int picshadowy(cv::Mat binary, cv::Mat* show, int numThreads = 4, int single_rows = -1)
-	{
-		if (single_rows == -1) { single_rows = binary.rows; }
-		int _res = 2;
-		int* blackcout = new int[binary.rows];
-		memset(blackcout, 0, binary.rows * 4);
-		int _total = 0;
-
-#pragma omp parallel for num_threads(numThreads)  reduction(+:_total)
-		for (int i = 0; i < binary.rows; i++)
+	/*** 
+	Case8: 测试中心区域增强的执行效率
+	***/
+	namespace Case8 {
+	
+		int enhance_center_image(unsigned char* binary, int width, int height)
 		{
-			if (single_rows > 0 && i % single_rows < 5) { continue; }  // 避免拼接交界处出现的伪缺陷问题
-
-			auto* ptr = binary.ptr<uchar>(i);
-			for (int j = 0; j < binary.cols; j++)
+			int FEATURE3_CONTRAST_DEGREE = 50;
+#pragma omp parallel for num_threads(4)
+			for (int j = 0; j < width; j++)
 			{
-				if (ptr[j] > 50)
+				int feature3_start = -1;
+				int feature3_end = -1;
+
+				int roi_up = -1;
+				int roi_down = -1;
+
+				for (int i = 0; i < height - 3; i++)  //!? 与next_next_p的处理相联系
 				{
-					#pragma omp atomic  // 并行安全
-					blackcout[i]++; //垂直投影按列在x轴进行投影
-					++_total;
-				}
-			}
-		}
-		double _avg = _total * 1.0 / binary.rows;
+					int p = binary[i * width + j];
+					int next_p = binary[(i + 1) * width + j];
+					int next_next_p = binary[(i + 2) * width + j];
 
+					// 找到上边缘
+					bool feature3_cond1 = (p > FEATURE3_CONTRAST_DEGREE && next_p > FEATURE3_CONTRAST_DEGREE && next_next_p > FEATURE3_CONTRAST_DEGREE);  //!? 必须满足连续一段的像素均超过某个均值，避免椒盐噪声的影响！
+					if (feature3_cond1 && feature3_start == -1) { feature3_start = i; }  // 记录上边界
+					if (feature3_cond1) { feature3_end = i; }                             // 记录下边界，一直在被更新
 
+					// 确定中心区域
+					if (feature3_start != -1) {
+						roi_up = feature3_start + FEATURE3_DIAMETER / 4;
+						roi_down = feature3_start + FEATURE3_DIAMETER / 4 * 3;
+					}
 
-#pragma omp parallel for num_threads(numThreads)
-		for (int i = 0; i < binary.rows; i++)
-		{
-			if (single_rows > 0 && i % single_rows < 5) { continue; }  // 避免拼接交界处出现的伪缺陷问题
-
-			if (blackcout[i] > _avg + 5.3)
-			{
-				_res = 1;
-				break;
-			}
-		}
-
-
-		if (nullptr != show)
-		{
-#pragma omp parallel for num_threads(numThreads)
-			for (int i = 0; i < binary.rows; i++)
-			{
-				if (blackcout[i] > _avg + 5.3)
-				{
-					for (int j = 0; j < binary.cols / 10; j++)
-					{
-						show->at<cv::Vec3b>(i, j)[0] = 128;//翻转到下面，便于观看
-						show->at<cv::Vec3b>(i, j)[1] = 128;//翻转到下面，便于观看
-						show->at<cv::Vec3b>(i, j)[2] = 128;//翻转到下面，便于观看
+					if (i >= roi_up && i <= roi_down) {
+						binary[i * width + j] += 30; binary[i * width + j] -= 30;
 					}
 				}
 			}
-#pragma omp parallel for num_threads(numThreads)
-			for (int i = 0; i < binary.rows; i++)
-			{
-				int count = blackcout[i];
-				for (int j = 0; j < count; j++)
-				{
-					show->at<cv::Vec3b>(i, show->cols - 1 - j)[0] = 255; //翻转到下面，便于观看
-					show->at<cv::Vec3b>(i, show->cols - 1 - j)[1] = 255; //翻转到下面，便于观看
-					show->at<cv::Vec3b>(i, show->cols - 1 - j)[2] = 0;   //翻转到下面，便于观看
-				}
-			}
+
+
+			return 0;
 		}
 
-		delete[] blackcout;
-		blackcout = nullptr;
-
-		return _res;
-	}
-
-	void ff(std::vector<cv::Mat>& input, std::vector<cv::Mat>& output)
-	{
-		for (int i = 0; i < input.size(); i++)
+		inline int enhance_center_image_0612(unsigned char* binary, int width, int height, int numThreads)
 		{
-			cv::Mat dst;
-			cv::rotate(input[i], dst, cv::ROTATE_90_CLOCKWISE);
-			output.push_back(dst.isContinuous() ? dst : dst.clone());
-		}
+			int FEATURE3_CONTRAST_DEGREE = 50;
 
-	}
-
-	void vconcat_memcpy(cv::Mat& img1, cv::Mat& result, int i, int thread_num) {
-		const size_t row_bytes = img1.cols * img1.elemSize();
-
-#pragma omp parallel for num_threads(thread_num)
-		for (int r = 0; r < img1.rows; ++r) {
-			uchar* dst = result.ptr<uchar>(img1.rows * i + r);
-			const uchar* src = img1.ptr<uchar>(r);
-			memcpy(dst, src, row_bytes);
-		}
-
-		//const size_t row_bytes = img1.cols * img1.elemSize() * img1.rows;
-		//memcpy(result.data + i * img1.cols * img1.elemSize() * img1.rows, img1.data, row_bytes);
-
-	}
-
-	/** 输入需要是反转后的；且配备Y方向的投影函数 */
-	void experiment5(std::vector<cv::Mat> input) {
-
-		std::vector<cv::Mat> output;
-		ff(input, output);
-
-		cv::Mat src1 = output[0];
-
-		int total_pics_num = 1000;
-		cv::Mat result(output[0].rows * output.size(), output[0].cols , output[0].type());
-
-		auto start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			for (int j = 0; j < output.size(); j++)
-			{
-				vconcat_memcpy(output[j], result, j, 4);
-			}
-		}
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-
-
-
-
-
-		/** standard process*/
-		cv::Mat standard_gray, standard_gray2, standard_gray3;
-		cv::Mat standard_imgrst = result.clone();
-		cv::cvtColor(result, standard_gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
-		cv::blur(standard_gray, standard_gray2, cv::Size(21, 21));
-		standard_gray3 = standard_gray2 - standard_gray;
-		int standard_iresult = picshadowy(standard_gray3, &standard_imgrst, 4);
-
-
-
-		/** experiments */
-		BlurVersion2 blur2 = BlurVersion2();
-		cv::Mat imgrst = result.clone();
-		cv::Mat _gray;
-		cv::Mat  _gray2;
-		//cv::Mat _gray = standard_gray;
-		//cv::blur(_gray, _gray2, cv::Size(21, 21));
-
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			/** 1 BGR2GRAY*/
-			//cv::cvtColor(result, _gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
-
-			int Height = result.rows;
-			int Width = result.cols;
-			int Stride = Width * 3;
-			unsigned char* Src = result.data;
-			unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
-			RGB2Y_4(Src, Dest, Width, Height, Stride, 2);     // sse 一次处理12个
-			_gray = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
-
-
-			/** 2 BoxFilter */
-			//cv::blur(_gray, _gray2, cv::Size(21, 21));
-
-			//_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
-			//int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
-
-			blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 10, 2); 
-			//! 经验： 当算法中存在多个使用omp的算子时，需要合理分配omp的线程数目，不能太大，否则计算慢。
-
-
-			/** 3 subtraction */
-			_gray = _gray2 - _gray;  // 如果复用 gray 用时0.08ms, 而使用新矩阵会0.45ms;
-
-			//cv::Mat subtraction1 = standard_gray3 - _gray3;
-			//cv::Mat subtraction2 = _gray3 - standard_gray3;
-
-
-			///** 4 picshadowy */
-			int _iresult = picshadowy(_gray, &imgrst, 2, src1.rows);
-
-
-
-			//LOGD("s");
-
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-
-		cv::Mat imgrstB = src1.clone();
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			for (int j = 0; j < output.size(); j++)
-			{
-				/** 初始化 */
-				cv::Mat _grayB, _grayB2;
-
-
-				/** BGR2GRAY */
-				cv::cvtColor(output[j], _grayB, cv::COLOR_BGR2GRAY);
-
-				//int Height = output[j].rows;
-				//int Width = output[j].cols;
-				//int Stride = Width * 3;
-				//unsigned char* Src = output[j].data;
-				//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
-				//RGB2Y_4(Src, Dest, Width, Height, Stride, 2);       // sse 一次处理12个
-				//_grayB = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
-
-
-				/** BoxFilter */
-				//cv::blur(_grayB, _grayB2, cv::Size(21, 21));
-				//_grayB2 = cv::Mat::zeros(_grayB.size(), _grayB.type());
-				//int result2 = blur2.IM_BoxBlur_SSE(_grayB.ptr<uchar>(0), _grayB2.ptr<uchar>(0), _grayB.cols, _grayB.rows, _grayB.cols, 10);
-				blur2.IM_BoxBlur_SSE_Blocks(_grayB, _grayB2, 10, 2, 2);
-
-
-
-				/** subtraction */
-				_grayB = _grayB2 - _grayB;
-
-
-				/** picshadowy */
-				int _iresult = picshadowy(_grayB, &imgrstB, 2);
-			}
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-	}
-
-	/** 学习boxfilter:  */
-	void studyBoxFilter() {
-		cv::Mat src(4, 5, CV_8UC1); // 创建 10x10 单通道矩阵
-		//cv::randu(src, cv::Scalar(0), cv::Scalar(11)); // [0,11) 区间'
-		for (int i = 0; i < src.rows; i++) {
-			for (int j = 0; j < src.cols; j++) {
-				src.at<char>(i, j) = i * src.cols + j + 1; // 计算连续值
-			}
-		}
-		/** 原始数据
-		1  2  3  4  5
-		6  7  8  9  10
-		11 12 13 14 15
-		16 17 18 19 20
-		*/
-
-
-
-		/** 填充后的数据
-		7	6  7  8  9  10  9
-		-----------------------
-		2 | 1  2  3  4  5  | 4
-		7 |	6  7  8  9  10 | 9
-		12|	11 12 13 14 15 | 14
-		17| 16 17 18 19 20 | 19
-		-----------------------
-		12	11 12 13 14 15   14
-		*/
-
-
-		cv::Mat dst = cv::Mat::zeros(src.size(), src.type());
-		BlurVersion2 blur2 = BlurVersion2();
-		int result2 = blur2.IM_BoxBlur_SSE_Comment(src.ptr<uchar>(0), dst.ptr<uchar>(0), src.cols, src.rows, src.cols, 1);
-		/**
-		5  5  6  7  7
-		6  7  8  9  9
-		11   12  13  14  14
-		13   13   14   15   16
-		*/
-		cv::Mat dst2;
-		cv::blur(src, dst2, cv::Size(3, 3));
-		
-		LOGD("--");
-
-	}
-
-
-	void studySSECase1() {
-
-		float op1[4] = { 1.0, 2.0, 3.0, 4.0 };
-		float op2[4] = { 1.0, 2.0, 3.0, 4.0 };
-		float result[4];
-
-		__m128  a;
-		__m128  b;
-		__m128  c;
-
-		// Load
-		a = _mm_loadu_ps(op1);
-		b = _mm_loadu_ps(op2);
-
-		// Calculate
-		c = _mm_add_ps(a, b);	// c = a + b
-
-		// Store
-		_mm_storeu_ps(result, c);
-
-		cout << result[0] << endl;
-		cout << result[1] << endl;
-		cout << result[2] << endl;
-		cout << result[3] << endl;
-		system("pause");
-
-	}
-
-
-	void studySSECase2() {
-
-
-		__declspec(align(16)) float op1[4] = { 1.0, 2.0, 3.0, 4.0 };
-		__declspec(align(16)) float op2[4] = { 1.0, 2.0, 3.0, 4.0 };
-		_MM_ALIGN16 float result[4];		// _MM_ALIGN16等同于__declspec(align(16))
-
-		__m128  a;
-		__m128  b;
-		__m128  c;
-
-		// Load
-		a = _mm_load_ps(op1);
-		b = _mm_load_ps(op2);
-
-		// Calculate
-		c = _mm_add_ps(a, b);	// c = a + b
-
-		// Store
-		_mm_store_ps(result, c);
-
-		cout << result[0] << endl;
-		cout << result[1] << endl;
-		cout << result[2] << endl;
-		cout << result[3] << endl;
-		system("pause");
-
-	}
-
-
-	void sse_add(float* srcA, float* srcB, float* dest, int n) {
-		int len = n >> 2;
-		for (int i = 0; i < len; i++) {
-			*(__m128*)(dest + i * 4) = _mm_add_ps(*(__m128*)(srcA + i * 4), *(__m128*)(srcB + i * 4));
-		}
-	}
-
-	void normal_add(float* srcA, float* srcB, float* dest, int n) {
-		for (int i = 0; i < n; i++) {
-			dest[i] = srcA[i] + srcB[i];
-		}
-	}
-
-	void studySSECase3() {
-
-
-
-		DWORD timeStart = 0, timeEnd = 0;
-		const int size = 10000; //申请的内存中存放的数据个数
-		const int count = 10000;//循环计算的次数，便于观察执行效率
-
-		// 分配16字节对齐的内存
-		_MM_ALIGN16 float* srcA = (_MM_ALIGN16 float*)_mm_malloc(sizeof(float) * size, 16);
-		_MM_ALIGN16 float* srcB = (_MM_ALIGN16 float*)_mm_malloc(sizeof(float) * size, 16);
-		_MM_ALIGN16 float* dest = (_MM_ALIGN16 float*)_mm_malloc(sizeof(float) * size, 16);
-
-		// 初始化
-		for (int i = 0; i < size; i++) {
-			srcA[i] = (float)i;
-		}
-		memcpy_s(srcB, sizeof(float) * size, srcA, sizeof(float) * size);
-
-		// 标准加法
-		timeStart = GetTickCount();
-		for (int i = 0; i < count; i++) {
-			normal_add(srcA, srcB, dest, size);
-		}
-		timeEnd = GetTickCount();
-		cout << "标准加法" << (timeEnd - timeStart) << "毫秒" << endl;
-
-		// SSE指令加法
-		timeStart = GetTickCount();
-		for (int i = 0; i < count; i++) {
-			sse_add(srcA, srcB, dest, size);
-		}
-		timeEnd = GetTickCount();
-		cout << "SSE加法" << (timeEnd - timeStart) << "毫秒" << endl;
-
-		// 释放内存
-		_mm_free(srcA);
-		_mm_free(srcB);
-		_mm_free(dest);
-
-		system("pause");
-
-	}
-
-	// doing: 原始dong
-	void baseline(cv::Mat& img1, cv::Mat& imgrst, BlurVersion2& blur2)
-	{
-		//try  // it really needs to exist.
-		//{
-
-
-		//}
-		//catch (const cv::Exception& e)
-		//{
-		//	LOGE("NG_UNDEFINED: e1: {};", e.what());
-		//}
-		//catch (const std::exception& e)
-		//{
-		//	LOGE("NG_UNDEFINED: e2: {};", e.what());
-		//}
-		//catch (...)
-		//{
-		//	LOGE("NG_UNDEFINED: e3: unkown;");
-		//}
-
-					/** init */
-		int _i = 0;
-		cv::Mat _gray, _gray2;
-		if (img1.channels() == 1)
-		{
-			cv::cvtColor(img1, imgrst, cv::COLOR_GRAY2BGR);
-			img1.copyTo(_gray);
-		}
-		else
-		{
-			imgrst = img1.clone();
-			cv::cvtColor(img1, _gray, cv::COLOR_BGR2GRAY);
-
-			//int Height = data.imgori.rows;
-			//int Width = data.imgori.cols;
-			//unsigned char* Src = data.imgori.data;
-			//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
-			//int Stride = Width * 3;
-			//RGB2Y_4(Src, Dest, Width, Height, Stride);      // sse 一次处理12个
-			//_gray = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
-		}
-
-		/** block1 */
-		//_gray2 = _gray.clone();
-		//cv::blur(_gray, _gray2, cv::Size(21, 21));
-		_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
-		int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
-		//blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 2, 2);
-
-
-		/** block2 */
-		_gray = _gray2 - _gray; // 提取高频信息
-
-		/** block3 */
-		int _iresult = picshadowx(_gray, &imgrst, 4);
-
-		return ;
-	}
-
-
-	void optimize_0519(cv::Mat& img1, cv::Mat& imgrst, BlurVersion2& blur2)
-	{
-		//try  // it really needs to exist.
-		//{
-
-
-		//}
-		//catch (const cv::Exception& e)
-		//{
-		//	LOGE("NG_UNDEFINED: e1: {};", e.what());
-		//}
-		//catch (const std::exception& e)
-		//{
-		//	LOGE("NG_UNDEFINED: e2: {};", e.what());
-		//}
-		//catch (...)
-		//{
-		//	LOGE("NG_UNDEFINED: e3: unkown;");
-		//}
-
-					/** init */
-		int _i = 0;
-		cv::Mat _gray, _gray2;
-		if (img1.channels() == 1)
-		{
-			cv::cvtColor(img1, imgrst, cv::COLOR_GRAY2BGR);
-			img1.copyTo(_gray);
-		}
-		else
-		{
-			imgrst = img1.clone();
-			cv::cvtColor(img1, _gray, cv::COLOR_BGR2GRAY);
-
-			//int Height = data.imgori.rows;
-			//int Width = data.imgori.cols;
-			//unsigned char* Src = data.imgori.data;
-			//unsigned char* Dest = new unsigned char[Height * Width];  //! 输出缓冲区需要预先分配 Width*Height 字节空间
-			//int Stride = Width * 3;
-			//RGB2Y_4(Src, Dest, Width, Height, Stride);      // sse 一次处理12个
-			//_gray = cv::Mat(Height, Width, CV_8UC1, Dest);  // 基本不消耗时间
-		}
-
-		/** block1 */
-		//_gray2 = _gray.clone();
-		//cv::blur(_gray, _gray2, cv::Size(21, 21));
-		_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
-		int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
-		//blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 2, 2);
-
-
-		/** block2 */
-		_gray = _gray2 - _gray; // 提取高频信息
-
-		/** block3 */
-		int _iresult = picshadowx_ptr_0519(_gray.ptr(0), imgrst.ptr(0), 4, _gray.cols, _gray.rows);
-
-		return;
-	}
-
-	// 最原始的
-	void experiment6(std::vector<cv::Mat> input) {
-		auto start = std::chrono::high_resolution_clock::now();
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-		int total_pics_num = 1000;
-		BlurVersion2 blur2 = BlurVersion2();
-
-
-		/** standard process*/
-		cv::Mat src1 = input[0];
-		cv::Mat standard_gray, standard_gray2, standard_gray3;
-		cv::Mat standard_imgrst = src1.clone();
-		cv::cvtColor(src1, standard_gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
-		cv::blur(standard_gray, standard_gray2, cv::Size(21, 21));
-		standard_gray3 = standard_gray2 - standard_gray;
-		int standard_iresult = picshadowy(standard_gray3, &standard_imgrst, 4);
-
-
-
-		/** experiments */
-		//cv::Rect roi = cv::Rect(cv::Point(0, 1000), cv::Point(4095, 1200));
-		//cv::Mat img1 = src1(roi);
-		cv::Mat img1 = src1.clone();
-		cv::Mat imgrst = img1.clone();
-		baseline(img1, imgrst, blur2);
-
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			baseline(img1, imgrst, blur2);
-			//if (i % 10 == 0) { LOGD(i); }
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-	}
-
-
-
-	// picshadowx_ptr_0519测试
-	void experiment7(std::vector<cv::Mat> input) {
-		auto start = std::chrono::high_resolution_clock::now();
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-		int total_pics_num = 1000;
-		BlurVersion2 blur2 = BlurVersion2();
-
-
-		/** standard process*/
-		cv::Mat src1 = input[0];
-		cv::Mat standard_gray, standard_gray2, standard_gray3;
-		cv::Mat standard_imgrst = src1.clone();
-		cv::cvtColor(src1, standard_gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
-		cv::blur(standard_gray, standard_gray2, cv::Size(21, 21));
-		standard_gray3 = standard_gray2 - standard_gray;
-		int standard_iresult = picshadowy(standard_gray3, &standard_imgrst, 4);
-
-
-
-		/** experiments */
-		//cv::Rect roi = cv::Rect(cv::Point(0, 1000), cv::Point(4095, 1200));
-		//cv::Mat img1 = src1(roi);
-		cv::Mat img1 = src1.clone();
-		cv::Mat imgrst = img1.clone();
-		optimize_0519(img1, imgrst, blur2);
-
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			optimize_0519(img1, imgrst, blur2);
-			//if (i % 10 == 0) { LOGD(i); }
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("{} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-	}
-
-
-	int enhance_center_image(unsigned char* binary, int width, int height)
-	{
-		int FEATURE3_CONTRAST_DEGREE = 50;
-#pragma omp parallel for num_threads(4)
-		for (int j = 0; j < width; j++)
-		{
-			int feature3_start = -1;
-			int feature3_end = -1;
-
-			int roi_up = -1;
-			int roi_down = -1;
-
-			for (int i = 0; i < height - 3; i++)  //!? 与next_next_p的处理相联系
-			{
-				int p = binary[i * width + j];
-				int next_p = binary[(i + 1) * width + j];
-				int next_next_p = binary[(i + 2) * width + j];
-
-				// 找到上边缘
-				bool feature3_cond1 = (p > FEATURE3_CONTRAST_DEGREE && next_p > FEATURE3_CONTRAST_DEGREE && next_next_p > FEATURE3_CONTRAST_DEGREE);  //!? 必须满足连续一段的像素均超过某个均值，避免椒盐噪声的影响！
-				if (feature3_cond1 && feature3_start == -1) { feature3_start = i; }  // 记录上边界
-				if (feature3_cond1) { feature3_end = i; }                             // 记录下边界，一直在被更新
-
-				// 确定中心区域
-				if (feature3_start != -1) {
-					roi_up = feature3_start + FEATURE3_DIAMETER / 4;
-					roi_down = feature3_start + FEATURE3_DIAMETER / 4 * 3;
-				}
-
-				if (i >= roi_up && i <= roi_down) { binary[i * width + j] += 30; binary[i * width + j] -= 30;
-				}
-			}
-		}
-
-
-		return 0;
-	}
-
-
-	inline int enhance_center_image_0612(unsigned char* binary, int width, int height, int numThreads)
-	{
-		int FEATURE3_CONTRAST_DEGREE = 50;
-
-		const int roi_up_offset = FEATURE3_DIAMETER / 4;
-		const int roi_down_offset = FEATURE3_DIAMETER / 4 * 3;
+			const int roi_up_offset = FEATURE3_DIAMETER / 4;
+			const int roi_down_offset = FEATURE3_DIAMETER / 4 * 3;
 
 #pragma omp parallel for num_threads(numThreads)  // 明确每列的独立性，确保线程间无共享变量冲突
-		for (int j = 0; j < width; j++)
-		{
-			int feature3_start = -1;
-			int roi_up = -1;
-			int roi_down = -1;
-
-			for (int i = 0; i < height - 3; i++)  //!? 与next_next_p的处理相联系
+			for (int j = 0; j < width; j++)
 			{
-				int p0 = binary[i * width + j];
-				int p1 = binary[(i + 1) * width + j];
-				int p2 = binary[(i + 2) * width + j];
+				int feature3_start = -1;
+				int roi_up = -1;
+				int roi_down = -1;
 
-				// 找到上边缘
-				bool cond = (p0 > FEATURE3_CONTRAST_DEGREE && p1 > FEATURE3_CONTRAST_DEGREE && p2 > FEATURE3_CONTRAST_DEGREE);
-				//!? 必须满足连续一段的像素均超过某个均值，避免椒盐噪声的影响！
-				if (cond && feature3_start == -1) { feature3_start = i; }  // 记录上边界
+				for (int i = 0; i < height - 3; i++)  //!? 与next_next_p的处理相联系
+				{
+					int p0 = binary[i * width + j];
+					int p1 = binary[(i + 1) * width + j];
+					int p2 = binary[(i + 2) * width + j];
 
-				// 确定中心区域
-				if (feature3_start != -1) {
-					roi_up = feature3_start + roi_up_offset;
-					roi_down = feature3_start + roi_down_offset;
-				}
+					// 找到上边缘
+					bool cond = (p0 > FEATURE3_CONTRAST_DEGREE && p1 > FEATURE3_CONTRAST_DEGREE && p2 > FEATURE3_CONTRAST_DEGREE);
+					//!? 必须满足连续一段的像素均超过某个均值，避免椒盐噪声的影响！
+					if (cond && feature3_start == -1) { feature3_start = i; }  // 记录上边界
 
-				// enhance operation
-				binary[i * width + j] += (roi_down != -1 && i >= roi_up && i <= roi_down) ? 30 : 0;
-
-				// 节约时间
-				if (roi_down != -1 && i > roi_down) { break; }
-			}
-		}
-
-		return 0;
-	}
-
-
-
-	int enhance_center_image_06122(
-		unsigned char* binary, int width, int height, int numThreads)
-	{
-		int FEATURE3_CONTRAST_DEGREE = 50;
-		const int roi_up_offset = FEATURE3_DIAMETER / 4;
-		const int roi_down_offset = FEATURE3_DIAMETER / 4 * 3;
-#pragma omp parallel for num_threads(4)
-		for (int j = 0; j < width; j++)
-		{
-			int feature3_start = -1;
-			int roi_up = -1;
-			int roi_down = -1;
-
-			for (int i = 0; i < height - 3; i++)  //!? 与next_next_p的处理相联系
-			{
-				int p0 = binary[i * width + j];
-				int p1 = binary[(i + 1) * width + j];
-				int p2 = binary[(i + 2) * width + j];
-
-				// 找到上边缘
-				bool cond = (p0 > FEATURE3_CONTRAST_DEGREE && p1 > FEATURE3_CONTRAST_DEGREE && p2 > FEATURE3_CONTRAST_DEGREE);
-				//!? 必须满足连续一段的像素均超过某个均值，避免椒盐噪声的影响！
-				if (cond && feature3_start == -1) { feature3_start = i; }  // 记录上边界
-
-				// 确定中心区域
-				if (feature3_start != -1) {
-					roi_up = feature3_start + roi_up_offset;
-					roi_down = feature3_start + roi_down_offset;
-
-					for (int c = roi_up; c < roi_down + 1; c++)
-					{
-						binary[(c) * width + j] += 30;
+					// 确定中心区域
+					if (feature3_start != -1) {
+						roi_up = feature3_start + roi_up_offset;
+						roi_down = feature3_start + roi_down_offset;
 					}
 
-					break;
+					// enhance operation
+					binary[i * width + j] += (roi_down != -1 && i >= roi_up && i <= roi_down) ? 30 : 0;
+
+					// 节约时间
+					if (roi_down != -1 && i > roi_down) { break; }
 				}
-
 			}
+
+			return 0;
 		}
 
-		return 0;
-	}
-
-	void optimize_0609(cv::Mat& img1, cv::Mat& imgrst, BlurVersion2& blur2)
-	{
-		int _i = 0;
-		cv::Mat _gray, _gray2;
-		if (img1.channels() == 1)
+		int enhance_center_image_06122(
+			unsigned char* binary, int width, int height, int numThreads)
 		{
-			cv::cvtColor(img1, imgrst, cv::COLOR_GRAY2BGR);
-			img1.copyTo(_gray);
+			int FEATURE3_CONTRAST_DEGREE = 50;
+			const int roi_up_offset = FEATURE3_DIAMETER / 4;
+			const int roi_down_offset = FEATURE3_DIAMETER / 4 * 3;
+#pragma omp parallel for num_threads(4)
+			for (int j = 0; j < width; j++)
+			{
+				int feature3_start = -1;
+				int roi_up = -1;
+				int roi_down = -1;
+
+				for (int i = 0; i < height - 3; i++)  //!? 与next_next_p的处理相联系
+				{
+					int p0 = binary[i * width + j];
+					int p1 = binary[(i + 1) * width + j];
+					int p2 = binary[(i + 2) * width + j];
+
+					// 找到上边缘
+					bool cond = (p0 > FEATURE3_CONTRAST_DEGREE && p1 > FEATURE3_CONTRAST_DEGREE && p2 > FEATURE3_CONTRAST_DEGREE);
+					//!? 必须满足连续一段的像素均超过某个均值，避免椒盐噪声的影响！
+					if (cond && feature3_start == -1) { feature3_start = i; }  // 记录上边界
+
+					// 确定中心区域
+					if (feature3_start != -1) {
+						roi_up = feature3_start + roi_up_offset;
+						roi_down = feature3_start + roi_down_offset;
+
+						for (int c = roi_up; c < roi_down + 1; c++)
+						{
+							binary[(c)*width + j] += 30;
+						}
+
+						break;
+					}
+
+				}
+			}
+
+			return 0;
 		}
-		else
+
+		void optimize_0609(cv::Mat& img1, cv::Mat& imgrst, BlurVersion2& blur2)
 		{
-			imgrst = img1.clone();
-			cv::cvtColor(img1, _gray, cv::COLOR_BGR2GRAY);
+			int _i = 0;
+			cv::Mat _gray, _gray2;
+			if (img1.channels() == 1)
+			{
+				cv::cvtColor(img1, imgrst, cv::COLOR_GRAY2BGR);
+				img1.copyTo(_gray);
+			}
+			else
+			{
+				imgrst = img1.clone();
+				cv::cvtColor(img1, _gray, cv::COLOR_BGR2GRAY);
+			}
+
+			/** block1 */
+			//_gray2 = _gray.clone();
+			//cv::blur(_gray, _gray2, cv::Size(21, 21));
+			_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
+			int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
+			//blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 2, 2);
+
+
+			/** block2 */
+			_gray = _gray2 - _gray; // 提取高频信息
+
+			enhance_center_image(_gray.ptr(0), _gray.cols, _gray.rows);
+
+
+			/** block3 */
+			int _iresult = picshadowx_ptr_0519(_gray.ptr(0), imgrst.ptr(0), 4, _gray.cols, _gray.rows);
+
+			return;
 		}
 
-		/** block1 */
-		//_gray2 = _gray.clone();
-		//cv::blur(_gray, _gray2, cv::Size(21, 21));
-		_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
-		int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
-		//blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 2, 2);
 
-
-		/** block2 */
-		_gray = _gray2 - _gray; // 提取高频信息
-
-		enhance_center_image(_gray.ptr(0), _gray.cols, _gray.rows);
-
-
-		/** block3 */
-		int _iresult = picshadowx_ptr_0519(_gray.ptr(0), imgrst.ptr(0), 4, _gray.cols, _gray.rows);
-
-		return;
-	}
-
-
-	void optimize_0612(cv::Mat& img1, cv::Mat& imgrst, BlurVersion2& blur2)
-	{
-		int _i = 0;
-		cv::Mat _gray, _gray2;
-		if (img1.channels() == 1)
+		void optimize_0612(cv::Mat& img1, cv::Mat& imgrst, BlurVersion2& blur2)
 		{
-			cv::cvtColor(img1, imgrst, cv::COLOR_GRAY2BGR);
-			img1.copyTo(_gray);
+			int _i = 0;
+			cv::Mat _gray, _gray2;
+			if (img1.channels() == 1)
+			{
+				cv::cvtColor(img1, imgrst, cv::COLOR_GRAY2BGR);
+				img1.copyTo(_gray);
+			}
+			else
+			{
+				imgrst = img1.clone();
+				cv::cvtColor(img1, _gray, cv::COLOR_BGR2GRAY);
+			}
+
+			/** block1 */
+			//_gray2 = _gray.clone();
+			//cv::blur(_gray, _gray2, cv::Size(21, 21));
+			_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
+			int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
+			//blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 2, 2);
+
+
+			/** block2 */
+			_gray = _gray2 - _gray; // 提取高频信息
+
+			enhance_center_image_06122(_gray.ptr(0), _gray.cols, _gray.rows, 4);
+
+
+			/** block3 */
+			int _iresult = picshadowx_ptr_0519(_gray.ptr(0), imgrst.ptr(0), 4, _gray.cols, _gray.rows);
+
+			return;
 		}
-		else
-		{
-			imgrst = img1.clone();
-			cv::cvtColor(img1, _gray, cv::COLOR_BGR2GRAY);
-		}
 
-		/** block1 */
-		//_gray2 = _gray.clone();
-		//cv::blur(_gray, _gray2, cv::Size(21, 21));
-		_gray2 = cv::Mat::zeros(_gray.size(), _gray.type());
-		int result2 = blur2.IM_BoxBlur_SSE(_gray.ptr<uchar>(0), _gray2.ptr<uchar>(0), _gray.cols, _gray.rows, _gray.cols, 10);
-		//blur2.IM_BoxBlur_SSE_Blocks(_gray, _gray2, 10, 2, 2);
+		// enhance_center_image测试
+		void experiment8(std::vector<cv::Mat> input) {
+			auto start = std::chrono::high_resolution_clock::now();
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+			int total_pics_num = 1000;
+			BlurVersion2 blur2 = BlurVersion2();
 
 
-		/** block2 */
-		_gray = _gray2 - _gray; // 提取高频信息
-
-		enhance_center_image_06122(_gray.ptr(0), _gray.cols, _gray.rows, 4 );
-
-
-		/** block3 */
-		int _iresult = picshadowx_ptr_0519(_gray.ptr(0), imgrst.ptr(0), 4, _gray.cols, _gray.rows);
-
-		return;
-	}
-
-	// enhance_center_image测试
-	void experiment8(std::vector<cv::Mat> input) {
-		auto start = std::chrono::high_resolution_clock::now();
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-		int total_pics_num = 1000;
-		BlurVersion2 blur2 = BlurVersion2();
-
-
-		/** standard process*/
-		cv::Mat src1 = input[0];
-		cv::Mat standard_gray, standard_gray2, standard_gray3;
-		cv::Mat standard_imgrst = src1.clone();
-		cv::cvtColor(src1, standard_gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
-		cv::blur(standard_gray, standard_gray2, cv::Size(21, 21));
-		standard_gray3 = standard_gray2 - standard_gray;
+			/** standard process*/
+			cv::Mat src1 = input[0];
+			cv::Mat standard_gray, standard_gray2, standard_gray3;
+			cv::Mat standard_imgrst = src1.clone();
+			cv::cvtColor(src1, standard_gray, cv::COLOR_BGR2GRAY);  // 希望取消该方式!
+			cv::blur(standard_gray, standard_gray2, cv::Size(21, 21));
+			standard_gray3 = standard_gray2 - standard_gray;
 
 
 
 
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			enhance_center_image_06122(standard_gray3.ptr(0), standard_gray3.cols, standard_gray3.rows, 4);
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("enhance_center_image0612 {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				enhance_center_image_06122(standard_gray3.ptr(0), standard_gray3.cols, standard_gray3.rows, 4);
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("enhance_center_image0612 {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
 
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
-			enhance_center_image(standard_gray3.ptr(0), standard_gray3.cols, standard_gray3.rows);
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("enhance_center_image0609 {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
-
-
-
-		
-		int standard_iresult = picshadowy(standard_gray3, &standard_imgrst, 4);
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				enhance_center_image(standard_gray3.ptr(0), standard_gray3.cols, standard_gray3.rows);
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("enhance_center_image0609 {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
 
 
-		/** experiments */
-		//cv::Rect roi = cv::Rect(cv::Point(0, 1000), cv::Point(4095, 1200));
-		//cv::Mat img1 = src1(roi);
-		cv::Mat img1 = src1.clone();
-		cv::Mat imgrst = img1.clone();
-		optimize_0612(img1, imgrst, blur2);
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
+
+			int standard_iresult = picshadowy(standard_gray3, &standard_imgrst, 4);
+
+
+
+			/** experiments */
+			//cv::Rect roi = cv::Rect(cv::Point(0, 1000), cv::Point(4095, 1200));
+			//cv::Mat img1 = src1(roi);
+			cv::Mat img1 = src1.clone();
+			cv::Mat imgrst = img1.clone();
 			optimize_0612(img1, imgrst, blur2);
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("0612: {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				optimize_0612(img1, imgrst, blur2);
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("0612: {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
 
-		cv::Mat img2 = src1.clone();
-		cv::Mat imgrst2 = img1.clone();
-		optimize_0609(img2, imgrst2, blur2);
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
+			cv::Mat img2 = src1.clone();
+			cv::Mat imgrst2 = img1.clone();
 			optimize_0609(img2, imgrst2, blur2);
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("0609: {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				optimize_0609(img2, imgrst2, blur2);
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("0609: {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
-		cv::Mat img3 = src1.clone();
-		cv::Mat imgrst3 = img1.clone();
-		optimize_0612(img3, imgrst3, blur2);
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
+			cv::Mat img3 = src1.clone();
+			cv::Mat imgrst3 = img1.clone();
 			optimize_0612(img3, imgrst3, blur2);
-		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("0612: {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				optimize_0612(img3, imgrst3, blur2);
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("0612: {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 
-		cv::Mat img4 = src1.clone();
-		cv::Mat imgrst4 = img1.clone();
-		optimize_0609(img4, imgrst4, blur2);
-		start = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < total_pics_num; i++) {
+			cv::Mat img4 = src1.clone();
+			cv::Mat imgrst4 = img1.clone();
 			optimize_0609(img4, imgrst4, blur2);
+			start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < total_pics_num; i++) {
+				optimize_0609(img4, imgrst4, blur2);
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			LOGD("0609: {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
 		}
-		end = std::chrono::high_resolution_clock::now();
-		duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		LOGD("0609: {} pics time: {}; single pic time: {};", total_pics_num, duration.count(), duration.count() / (float)(total_pics_num));
+	
 	}
+	
 
 	// 测试int变量如果通过++越界，会变成什么
 	// 结论：假如0~255； 则重新从0开始！
@@ -2653,16 +2746,11 @@ namespace NA113 {
 		//experiment7(input03);
 
 		LOGD("720 * 168");
-		experiment6(input0);
-		experiment7(input0);
-		experiment8(input0);
-
-
-
-
+		Case7::experiment6(input0);
+		Case7::experiment7(input0);
+		Case8::experiment8(input0);
 
 		//test1();
-
 
 		return;
 	}

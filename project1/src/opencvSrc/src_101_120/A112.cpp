@@ -20,7 +20,7 @@ using namespace std;
 using namespace cv;
 
 /*
-功能：深度图与点云图互转(产品存在倾斜)
+功能：深度图与点云图互转(获取实际像素点的横坐标)
 */
 
 #define Gaussian_Size 20

@@ -10,7 +10,6 @@
 #pragma execution_character_set("utf-8") 
 
 namespace NA108 {
-    // 线程
 
     void A108_solver()
     {
