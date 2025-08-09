@@ -109,7 +109,6 @@ bool readEngineFile(const std::string& engineFile, IRuntime*& runtime, ICudaEngi
 }
 
 
-
 int yolo_min()
 {
 
@@ -243,8 +242,6 @@ int yolo_min()
 
 	return 1;
 }
-
-
 
 
 int anomalib_min()
