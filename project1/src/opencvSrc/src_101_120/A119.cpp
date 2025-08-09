@@ -10,7 +10,6 @@
 #include <future>
 #include <typeinfo>
 
-#include <iostream>
 #include <memory>
 #include <vector>
 #include <fstream>
@@ -18,9 +17,6 @@
 #include <utility>
 
 
-#include <iostream>
-#include <thread>
-#include <vector>
 #include <windows.h>
 #include <queue>
 #include <list>
@@ -67,8 +63,9 @@ using namespace ml;
 
 
 namespace NA119 {
-
-	void DrawMatchResults(const cv::Mat& srcImage, const std::vector<s_SingleTargetMatch>& matches, const std::string& outputPath = "result.jpg") {
+	/*** 类外函数 ***/
+	// 在元图上绘制所有匹配结果，包括旋转矩形边框、中心点、角度指示线和匹配分数
+	void DrawMatchResults(const cv::Mat& srcImage, const std::vector<s_SingleTargetMatch>& matches, const std::string& outputPath) {
 		// 1. 创建彩色绘制画布（若输入是灰度图则转RGB）
 		cv::Mat displayImage;
 		if (srcImage.channels() == 1) {
@@ -123,9 +120,15 @@ namespace NA119 {
 		//cv::imshow("Match Results", displayImage);
 		//cv::waitKey(0);
 	}
-	bool compareScoreBig2Small(const s_MatchParameter& lhs, const s_MatchParameter& rhs) { return  lhs.dMatchScore > rhs.dMatchScore; }
-	bool comparePtWithAngle(const pair<Point2f, double> lhs, const pair<Point2f, double> rhs) { return lhs.second < rhs.second; }
-	bool compareMatchResultByPos(const s_SingleTargetMatch& lhs, const s_SingleTargetMatch& rhs)
+
+	// 比较两个匹配参数的分数（大到小）
+	inline bool compareScoreBig2Small(const s_MatchParameter& lhs, const s_MatchParameter& rhs) { return  lhs.dMatchScore > rhs.dMatchScore; }
+
+	// 比较两个点的角度值
+	inline bool comparePtWithAngle(const pair<Point2f, double> lhs, const pair<Point2f, double> rhs) { return lhs.second < rhs.second; }
+
+	// 按照中心点的Y坐标和X坐标对匹配结果进行排序，常用于结果展示的顺序
+	inline bool compareMatchResultByPos(const s_SingleTargetMatch& lhs, const s_SingleTargetMatch& rhs)
 	{
 		double dTol = 2;
 		if (fabs(lhs.ptCenter.y - rhs.ptCenter.y) <= dTol)
@@ -134,27 +137,61 @@ namespace NA119 {
 			return lhs.ptCenter.y < rhs.ptCenter.y;
 
 	};
-	bool compareMatchResultByScore(const s_SingleTargetMatch& lhs, const s_SingleTargetMatch& rhs) { return lhs.dMatchScore > rhs.dMatchScore; }
-	bool compareMatchResultByPosX(const s_SingleTargetMatch& lhs, const s_SingleTargetMatch& rhs) { return lhs.ptCenter.x < rhs.ptCenter.x; }
-	void MouseCall(int event, int x, int y, int flag, void* pUserData);
-	const Scalar colorWaterBlue(230, 255, 102);
-	const Scalar colorBlue(255, 0, 0);
-	const Scalar colorYellow(0, 255, 255);
-	const Scalar colorRed(0, 0, 255);
-	const Scalar colorBlack(0, 0, 0);
-	const Scalar colorGray(200, 200, 200);
-	const Scalar colorSystem(240, 240, 240);
-	const Scalar colorGreen(0, 255, 0);
-	const Scalar colorWhite(255, 255, 255);
-	const Scalar colorPurple(214, 112, 218);
-	const Scalar colorGoldenrod(15, 185, 255);
+
+	// 按照匹配分数对匹配结果进行排序
+	inline bool compareMatchResultByScore(const s_SingleTargetMatch& lhs, const s_SingleTargetMatch& rhs) { return lhs.dMatchScore > rhs.dMatchScore; }
+
+	// 按照中心点的X坐标对匹配结果进行排序
+	inline bool compareMatchResultByPosX(const s_SingleTargetMatch& lhs, const s_SingleTargetMatch& rhs) { return lhs.ptCenter.x < rhs.ptCenter.x; }
+
+	// SIMD指令辅助函数，对128为向量进行水平求和，加速卷积计算
+	inline int _mm_hsum_epi32(__m128i V)      // V3 V2 V1 V0
+	{
+		// 實測這個速度要快些，_mm_extract_epi32最慢。
+		__m128i T = _mm_add_epi32(V, _mm_srli_si128(V, 8));  // V3+V1   V2+V0  V1  V0  
+		T = _mm_add_epi32(T, _mm_srli_si128(T, 4));    // V3+V1+V2+V0  V2+V0+V1 V1+V0 V0 
+		return _mm_cvtsi128_si32(T);       // 提取低位 
+	}
+
+	// SIMD指令辅助函数，对两个8位无符号整数数组进行卷积计算，返回卷积结果的和
+	inline int IM_Conv_SIMD(unsigned char* pCharKernel, unsigned char* pCharConv, int iLength)
+	{
+		const int iBlockSize = 16, Block = iLength / iBlockSize;
+		__m128i SumV = _mm_setzero_si128();
+		__m128i Zero = _mm_setzero_si128();
+		for (int Y = 0; Y < Block * iBlockSize; Y += iBlockSize)
+		{
+			__m128i SrcK = _mm_loadu_si128((__m128i*)(pCharKernel + Y));
+			__m128i SrcC = _mm_loadu_si128((__m128i*)(pCharConv + Y));
+			__m128i SrcK_L = _mm_unpacklo_epi8(SrcK, Zero);
+			__m128i SrcK_H = _mm_unpackhi_epi8(SrcK, Zero);
+			__m128i SrcC_L = _mm_unpacklo_epi8(SrcC, Zero);
+			__m128i SrcC_H = _mm_unpackhi_epi8(SrcC, Zero);
+			__m128i SumT = _mm_add_epi32(_mm_madd_epi16(SrcK_L, SrcC_L), _mm_madd_epi16(SrcK_H, SrcC_H));
+			SumV = _mm_add_epi32(SumV, SumT);
+		}
+		int Sum = _mm_hsum_epi32(SumV);
+		for (int Y = Block * iBlockSize; Y < iLength; Y++)
+		{
+			Sum += pCharKernel[Y] * pCharConv[Y];
+		}
+		return Sum;
+	}
 
 
 
+
+
+
+
+	/*** 类内函数 ***/
+	// 构造函数
 	CMatchToolDlg::CMatchToolDlg()
 	{
 		LOGD("ss");
 	}
+
+	// 对模板图像进行多尺度金字塔构建，计算每层的均值、范数、逆面积等统计信息，为后续匹配做准备
 	void CMatchToolDlg::LearnPattern()  // 生成多尺度金字塔、计算每层模板的统计信息
 	{
 		//!? 需要指定！
@@ -199,6 +236,8 @@ namespace NA119 {
 		}
 		templData->bIsPatternLearned = TRUE;
 	}
+
+	// 获取模板图像的金字塔层数，避免过度下采样
 	int CMatchToolDlg::GetTopLayer(Mat* matTempl, int iMinDstLength)
 	{
 		int iTopLayer = 0;
@@ -211,8 +250,8 @@ namespace NA119 {
 		}
 		return iTopLayer;
 	}
-	bool comparePosWithY(const pair<Point2d, char>& lhs, const pair<Point2d, char>& rhs) { return lhs.first.y < rhs.first.y; }
-	bool comparePosWithX(const pair<Point2d, char>& lhs, const pair<Point2d, char>& rhs) { return lhs.first.x < rhs.first.x; }
+
+	// 对匹配结果进行亚像素级别的精确估计，提高精度
 	BOOL CMatchToolDlg::SubPixEsimation(vector<s_MatchParameter>* vec, double* dNewX, double* dNewY, double* dNewAngle, double dAngleStep, int iMaxScoreIndex)
 	{
 		//Az=S, (A.T)Az=(A.T)s, z = ((A.T)A).inv (A.T)s
@@ -286,36 +325,8 @@ namespace NA119 {
 		*dNewAngle = matDelta.at<double>(2, 0) * R2D;
 		return TRUE;
 	}
-	inline int _mm_hsum_epi32(__m128i V)      // V3 V2 V1 V0
-	{
-		// 實測這個速度要快些，_mm_extract_epi32最慢。
-		__m128i T = _mm_add_epi32(V, _mm_srli_si128(V, 8));  // V3+V1   V2+V0  V1  V0  
-		T = _mm_add_epi32(T, _mm_srli_si128(T, 4));    // V3+V1+V2+V0  V2+V0+V1 V1+V0 V0 
-		return _mm_cvtsi128_si32(T);       // 提取低位 
-	}
-	inline int IM_Conv_SIMD(unsigned char* pCharKernel, unsigned char* pCharConv, int iLength)
-	{
-		const int iBlockSize = 16, Block = iLength / iBlockSize;
-		__m128i SumV = _mm_setzero_si128();
-		__m128i Zero = _mm_setzero_si128();
-		for (int Y = 0; Y < Block * iBlockSize; Y += iBlockSize)
-		{
-			__m128i SrcK = _mm_loadu_si128((__m128i*)(pCharKernel + Y));
-			__m128i SrcC = _mm_loadu_si128((__m128i*)(pCharConv + Y));
-			__m128i SrcK_L = _mm_unpacklo_epi8(SrcK, Zero);
-			__m128i SrcK_H = _mm_unpackhi_epi8(SrcK, Zero);
-			__m128i SrcC_L = _mm_unpacklo_epi8(SrcC, Zero);
-			__m128i SrcC_H = _mm_unpackhi_epi8(SrcC, Zero);
-			__m128i SumT = _mm_add_epi32(_mm_madd_epi16(SrcK_L, SrcC_L), _mm_madd_epi16(SrcK_H, SrcC_H));
-			SumV = _mm_add_epi32(SumV, SumT);
-		}
-		int Sum = _mm_hsum_epi32(SumV);
-		for (int Y = Block * iBlockSize; Y < iLength; Y++)
-		{
-			Sum += pCharKernel[Y] * pCharConv[Y];
-		}
-		return Sum;
-	}
+
+	// 对指定层的源图像和模板做模板匹配，支持SMID加速和OPENCV自带方法，并做归一化处理
 	void CMatchToolDlg::MatchTemplate(cv::Mat& matSrc, s_TemplData* pTemplData, cv::Mat& matResult, int iLayer, BOOL bUseSIMD)
 	{
 		if (xt_m_ckSIMD && bUseSIMD)
@@ -353,6 +364,8 @@ namespace NA119 {
 		minMaxLoc(diff, 0, &dMaxValue, 0,0);*/
 		CCOEFF_Denominator(matSrc, pTemplData, matResult, iLayer);
 	}
+
+	// 获取源图像旋转后指定区域的ROI，保证模板不会被裁剪
 	void CMatchToolDlg::GetRotatedROI(Mat& matSrc, Size size, Point2f ptLT, double dAngle, Mat& matROI)
 	{
 		double dAngle_radian = dAngle * D2R;
@@ -370,6 +383,8 @@ namespace NA119 {
 		//Debug
 		warpAffine(matSrc, matROI, rMat, sizePadding);
 	}
+	
+	// 计算归一化互相关的分母部分，利用积分图加速窗口均值和方差计算
 	void CMatchToolDlg::CCOEFF_Denominator(cv::Mat& matSrc, s_TemplData* pTemplData, cv::Mat& matResult, int iLayer)
 	{
 
@@ -452,6 +467,8 @@ namespace NA119 {
 			}
 		}
 	}
+	
+	// 根据旋转角度计算源图像的最佳旋转尺寸，确保旋转后不会裁剪模板
 	Size CMatchToolDlg::GetBestRotationSize(Size sizeSrc, Size sizeDst, double dRAngle)
 	{
 		double dRAngle_radian = dRAngle * D2R;
@@ -520,6 +537,8 @@ namespace NA119 {
 
 		return sizeRet;
 	}
+	
+	// 实现点绕中心点旋转的坐标变换
 	Point2f CMatchToolDlg::ptRotatePt2f(Point2f ptInput, Point2f ptOrg, double dAngle)
 	{
 		double dWidth = ptOrg.x * 2;
@@ -532,6 +551,8 @@ namespace NA119 {
 		dY = -dY + dHeight;
 		return Point2f((float)dX, (float)dY);
 	}
+
+	// 过滤掉分数低于阈值的匹配结果
 	void CMatchToolDlg::FilterWithScore(vector<s_MatchParameter>* vec, double dScore)
 	{
 		sort(vec->begin(), vec->end(), compareScoreBig2Small);
@@ -549,6 +570,8 @@ namespace NA119 {
 		vec->erase(vec->begin() + iIndexDelete, vec->end());
 		return;
 	}
+
+	// 过滤掉重叠面积大于指定比例的匹配结果，使用旋转矩形进行判断
 	void CMatchToolDlg::FilterWithRotatedRect(vector<s_MatchParameter>* vec, int iMethod, double dMaxOverLap)
 	{
 		int iMatchSize = (int)vec->size();
@@ -609,6 +632,8 @@ namespace NA119 {
 				++it;
 		}
 	}
+	
+	// 在结果图中查找下一个最大值位置，避免与上一次结果重叠
 	Point CMatchToolDlg::GetNextMaxLoc(Mat& matResult, Point ptMaxLoc, Size sizeTemplate, double& dMaxValue, double dMaxOverlap)
 	{
 		//比對到的區域完全不重疊 : +-一個樣板寬高
@@ -634,6 +659,8 @@ namespace NA119 {
 		minMaxLoc(matResult, 0, &dMaxValue, 0, &ptNewMaxLoc);
 		return ptNewMaxLoc;
 	}
+	
+	// 分块加速版本的下一个最大值查找函数，适合大图像
 	Point CMatchToolDlg::GetNextMaxLoc(Mat& matResult, Point ptMaxLoc, Size sizeTemplate, double& dMaxValue, double dMaxOverlap, s_BlockMax& blockMax)
 	{
 		//比對到的區域需考慮重疊比例
@@ -648,6 +675,8 @@ namespace NA119 {
 		blockMax.GetMaxValueLoc(dMaxValue, ptReturn);
 		return ptReturn;
 	}
+
+	// 以中心点为参考，对点集按照角度进行排序，常用于多边形轮廓处理
 	void CMatchToolDlg::SortPtWithCenter(vector<Point2f>& vecSort)
 	{
 		int iSize = (int)vecSort.size();
@@ -687,6 +716,8 @@ namespace NA119 {
 		for (int i = 0; i < iSize; i++)
 			vecSort[i] = vecPtAngle[i].first;
 	}
+	
+	// 主流程函数，实现模板匹配，包含多尺度金字塔构建、旋转补偿、分数过滤、重叠去除、亚像素优化等，最终输出高精度匹配结果。
 	BOOL CMatchToolDlg::Match(cv::Mat& src, cv::Mat& dst)
 	{
 
@@ -1090,21 +1121,54 @@ namespace NA119 {
 		return (int)xt_m_vecSingleTargetData.size();
 	}
 
+	// 读取并设置匹配相关参数
+	void CMatchToolDlg::SetConfig(const NCCMatchConfig& config)
+	{
+		xt_m_ckSIMD = config.useSIMD;
+		xt_m_iMinReduceArea = config.minReduceArea;
+		xt_m_dScore = config.scoreThreshold;
+		xt_m_iMaxPos = config.maxMatchCount;
+		xt_m_bDebugMode = config.debugMode;
+		xt_m_bToleranceRange = config.useToleranceRange;
+		xt_m_dTolerance1 = config.tolerance1;
+		xt_m_dTolerance2 = config.tolerance2;
+		xt_m_dTolerance3 = config.tolerance3;
+		xt_m_dTolerance4 = config.tolerance4;
+		xt_m_dToleranceAngle = config.toleranceAngle;
+		xt_m_dMaxOverlap = config.maxOverlap;
+		xt_m_bStopLayer1 = config.stopAtLayer1;
+	}
 
 
 
     void A119_solver()
     {
+		/** 接口 **/
+		// 图像
 		std::string src_path = "H:\\Projects\\Fastest_Image_Pattern_Matching-main\\Test Images\\Src1.bmp";
 		std::string dst_path = "H:\\Projects\\Fastest_Image_Pattern_Matching-main\\Test Images\\20220611.bmp";
+		
+		// 配置相关参数
+		NCCMatchConfig config;
+		config.scoreThreshold = 0.8;
+		config.maxMatchCount = 5;
+		config.useSIMD = 0;
+
+
+
+		/** 调用算子 **/
 		cv::Mat xt_m_matSrc = cv::imread(src_path, cv::IMREAD_GRAYSCALE);
 		cv::Mat xt_m_matDst = cv::imread(dst_path, cv::IMREAD_GRAYSCALE);
 
-
-		CMatchToolDlg SS = CMatchToolDlg();
-		SS.Match(xt_m_matSrc, xt_m_matDst);
+		CMatchToolDlg matcher;
+		matcher.SetConfig(config);
+		matcher.Match(xt_m_matSrc, xt_m_matDst);
 
         LOGD("......");
         return;
     }
+
+
+
+
 }

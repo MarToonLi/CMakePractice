@@ -233,13 +233,50 @@ namespace NA118 {
     void A118_solver();
 }
 
+
+
+
+
+
+
+/***
+* * @brief A119_solver
+* 算子参考源码：https://github.com/DennisLiu1993/Fastest_Image_Pattern_Matching
+* 算子功能：快速图像模板匹配，多角度、多尺度匹配
+*
+* Demo:
+* std::string src_path = "H:\\Projects\\Fastest_Image_Pattern_Matching-main\\Test Images\\Src1.bmp";
+* std::string dst_path = "H:\\Projects\\Fastest_Image_Pattern_Matching-main\\Test Images\\20220611.bmp";
+* NCCMatchConfig config;
+* cv::Mat xt_m_matSrc = cv::imread(src_path, cv::IMREAD_GRAYSCALE);
+* cv::Mat xt_m_matDst = cv::imread(dst_path, cv::IMREAD_GRAYSCALE);
+* CMatchToolDlg matcher;
+* matcher.SetConfig(config);
+* matcher.Match(xt_m_matSrc, xt_m_matDst);
+*
+*
+**/
 namespace NA119 {
+
+	const Scalar colorWaterBlue(230, 255, 102);
+	const Scalar colorBlue(255, 0, 0);
+	const Scalar colorYellow(0, 255, 255);
+	const Scalar colorRed(0, 0, 255);
+	const Scalar colorBlack(0, 0, 0);
+	const Scalar colorGray(200, 200, 200);
+	const Scalar colorSystem(240, 240, 240);
+	const Scalar colorGreen(0, 255, 0);
+	const Scalar colorWhite(255, 255, 255);
+	const Scalar colorPurple(214, 112, 218);
+	const Scalar colorGoldenrod(15, 185, 255);
+
+
 
 	//!? 存储模板匹配的相关数据和状态，可能是用于多尺度金字塔匹配或者某种优化的模板匹配算法比如归一化互相关。
 	struct s_TemplData
 	{
-		vector<Mat> vecPyramid;         // 存储不同尺度的模板图像金字塔
-		vector<Scalar> vecTemplMean;    // 每个金字塔层模板的均值（BGR或者灰度）
+		vector<cv::Mat> vecPyramid;         // 存储不同尺度的模板图像金字塔
+		vector<cv::Scalar> vecTemplMean;    // 每个金字塔层模板的均值（BGR或者灰度）
 		vector<double> vecTemplNorm;    // 每个金字塔模板的范数（用于归一化计算）
 		vector<double> vecInvArea;      // 每个金字塔层模板的逆面积，用于快速计算
 		vector<BOOL> vecResultEqual1;   // 标记每一层匹配结果是否完全匹配（用于提前终止），如果某层匹配结果完全一致，侧跳过后续层计算
@@ -271,24 +308,25 @@ namespace NA119 {
 
 	struct s_MatchParameter
 	{
-		Point2d pt;
+		cv::Point2d pt;
 		double dMatchScore;
 		double dMatchAngle;
 		//Mat matRotatedSrc;
 		Rect rectRoi;
 		double dAngleStart;
 		double dAngleEnd;
-		RotatedRect rectR;
-		Rect rectBounding;
+		cv::RotatedRect rectR;
+		cv::Rect rectBounding;
 		BOOL bDelete;
 
 		double vecResult[3][3];//for subpixel
 		int iMaxScoreIndex;//for subpixel
 		BOOL bPosOnBorder;
-		Point2d ptSubPixel;
+		cv::Point2d ptSubPixel;
 		double dNewAngle;
 
-		s_MatchParameter(Point2f ptMinMax, double dScore, double dAngle)//, Mat matRotatedSrc = Mat ())
+		//, Mat matRotatedSrc = Mat ())
+		s_MatchParameter(cv::Point2f ptMinMax, double dScore, double dAngle)
 		{
 			pt = ptMinMax;
 			dMatchScore = dScore;
@@ -313,7 +351,7 @@ namespace NA119 {
 
 	struct s_SingleTargetMatch
 	{
-		Point2d ptLT, ptRT, ptRB, ptLB, ptCenter;
+		cv::Point2d ptLT, ptRT, ptRB, ptLB, ptCenter;
 		double dMatchedAngle;
 		double dMatchScore;
 	};
@@ -323,12 +361,12 @@ namespace NA119 {
 	{
 		struct Block
 		{
-			Rect rect;
+			cv::Rect rect;
 			double dMax;
-			Point ptMaxLoc;
+			cv::Point ptMaxLoc;
 			Block()
 			{}
-			Block(Rect rect_, double dMax_, Point ptMaxLoc_)
+			Block(cv::Rect rect_, double dMax_, cv::Point ptMaxLoc_)
 			{
 				rect = rect_;
 				dMax = dMax_;
@@ -338,8 +376,8 @@ namespace NA119 {
 		s_BlockMax()
 		{}
 		vector<Block> vecBlock;
-		Mat matSrc;
-		s_BlockMax(Mat matSrc_, Size sizeTemplate)
+		cv::Mat matSrc;
+		s_BlockMax(cv::Mat matSrc_, cv::Size sizeTemplate)
 		{
 			matSrc = matSrc_;
 			//將matSrc 拆成數個block，分別計算最大值
@@ -406,7 +444,7 @@ namespace NA119 {
 				vecBlock.push_back(blockBottom);
 			}
 		}
-		void UpdateMax(Rect rectIgnore)
+		void UpdateMax(cv::Rect rectIgnore)
 		{
 			if (vecBlock.size() == 0)
 				return;
@@ -423,7 +461,7 @@ namespace NA119 {
 				vecBlock[i].ptMaxLoc += vecBlock[i].rect.tl();
 			}
 		}
-		void GetMaxValueLoc(double& dMax, Point& ptMaxLoc)
+		void GetMaxValueLoc(double& dMax, cv::Point& ptMaxLoc)
 		{
 			int iSize = vecBlock.size();
 			if (iSize == 0)
@@ -446,6 +484,35 @@ namespace NA119 {
 		}
 	};
 
+	struct NCCMatchConfig
+	{
+		int useSIMD = 1;                // 是否使用SIMD加速
+		int minReduceArea = 256;        // 最小金字塔区域
+		double scoreThreshold = 0.6;    // 匹配分数阈值
+		int maxMatchCount = 10;         // 最大返回匹配数
+		int debugMode = 0;              // 是否调试模式
+		int useToleranceRange = 1;      // 是否使用角度范围
+		double tolerance1 = 0;          // 角度范围1起点
+		double tolerance2 = 90;         // 角度范围1终点
+		double tolerance3 = -180;       // 角度范围2起点
+		double tolerance4 = -1;         // 角度范围2终点
+		double toleranceAngle = 0;      // 对称角度范围
+		double maxOverlap = 0.0;        // 最大重叠比例
+		bool stopAtLayer1 = false;      // 是否只到第一层
+	};
+
+
+
+
+	void DrawMatchResults(const cv::Mat& srcImage, const std::vector<s_SingleTargetMatch>& matches, const std::string& outputPath = "result.jpg");
+	inline bool compareScoreBig2Small(const s_MatchParameter& lhs, const s_MatchParameter& rhs);
+	inline bool comparePtWithAngle(const pair<Point2f, double> lhs, const pair<Point2f, double> rhs);
+	inline bool compareMatchResultByPos(const s_SingleTargetMatch& lhs, const s_SingleTargetMatch& rhs);
+	inline bool compareMatchResultByScore(const s_SingleTargetMatch& lhs, const s_SingleTargetMatch& rhs);
+	inline bool compareMatchResultByPosX(const s_SingleTargetMatch& lhs, const s_SingleTargetMatch& rhs);
+	inline int _mm_hsum_epi32(__m128i V);
+	inline int IM_Conv_SIMD(unsigned char* pCharKernel, unsigned char* pCharConv, int iLength);
+
 
 	class CMatchToolDlg
 	{
@@ -456,23 +523,37 @@ namespace NA119 {
 		vector<s_SingleTargetMatch> m_vecSingleTargetData;
 
 
+
+
+
 		void LearnPattern();
-		int GetTopLayer(Mat* matTempl, int iMinDstLength);
+		
+		int GetTopLayer(cv::Mat* matTempl, int iMinDstLength);
+		
 		void MatchTemplate(cv::Mat& matSrc, s_TemplData* pTemplData, cv::Mat& matResult, int iLayer, BOOL bUseSIMD);
-		void GetRotatedROI(Mat& matSrc, Size size, Point2f ptLT, double dAngle, Mat& matROI);
+		
+		void GetRotatedROI(cv::Mat& matSrc, cv::Size size, cv::Point2f ptLT, double dAngle, cv::Mat& matROI);
+		
 		void CCOEFF_Denominator(cv::Mat& matSrc, s_TemplData* pTemplData, cv::Mat& matResult, int iLayer);
-		Size  GetBestRotationSize(Size sizeSrc, Size sizeDst, double dRAngle);
-		Point2f ptRotatePt2f(Point2f ptInput, Point2f ptOrg, double dAngle);
+		
+		cv::Size GetBestRotationSize(cv::Size sizeSrc, cv::Size sizeDst, double dRAngle);
+		
+		cv::Point2f ptRotatePt2f(cv::Point2f ptInput, cv::Point2f ptOrg, double dAngle);
+		
 		void FilterWithScore(vector<s_MatchParameter>* vec, double dScore);
+		
 		void FilterWithRotatedRect(vector<s_MatchParameter>* vec, int iMethod = CV_TM_CCOEFF_NORMED, double dMaxOverLap = 0);
-		Point GetNextMaxLoc(Mat& matResult, Point ptMaxLoc, Size sizeTemplate, double& dMaxValue, double dMaxOverlap);
-		Point GetNextMaxLoc(Mat& matResult, Point ptMaxLoc, Size sizeTemplate, double& dMaxValue, double dMaxOverlap, s_BlockMax& blockMax);
-		void SortPtWithCenter(vector<Point2f>& vecSort);
+		
+		cv::Point GetNextMaxLoc(cv::Mat& matResult, cv::Point ptMaxLoc, cv::Size sizeTemplate, double& dMaxValue, double dMaxOverlap);
+		
+		cv::Point GetNextMaxLoc(cv::Mat& matResult, cv::Point ptMaxLoc, cv::Size sizeTemplate, double& dMaxValue, double dMaxOverlap, s_BlockMax& blockMax);
+		
+		void SortPtWithCenter(vector<cv::Point2f>& vecSort);
+		
 		BOOL SubPixEsimation(vector<s_MatchParameter>* vec, double* dX, double* dY, double* dAngle, double dAngleStep, int iMaxScoreIndex);
 	
 	
 	public:
-		/// <summary>
 		int xt_m_ckSIMD = 1;
 		int xt_m_iMinReduceArea = 256;    // 默认值
 		double xt_m_dScore = 0.6;         // 匹配分数阈值
@@ -488,13 +569,17 @@ namespace NA119 {
 		int xt_m_dToleranceAngle = 0;
 		double xt_m_dMaxOverlap = 0.0;
 		bool xt_m_bStopLayer1 = false;
-		/// </summary>
 
+
+		// 构造函数
 		CMatchToolDlg();
+		
+		// 执行匹配
 		BOOL Match(cv::Mat& src, cv::Mat& dst);
-
+		
+		// 读取配置参数
+		void SetConfig(const NCCMatchConfig& config);
 	};
-
 
 
 
